@@ -1,0 +1,143 @@
+// -*- mode: json -*-
+
+{
+	"layer": "top",
+	"position": "top",
+
+	"modules-left": [
+		"hyprland/workspaces",
+		"custom/right-arrow-dark"
+	],
+	"modules-center": [
+		"custom/left-arrow-dark",
+		"clock#1",
+		"custom/left-arrow-light",
+		"custom/left-arrow-dark",
+		"clock#2",
+		"custom/right-arrow-dark",
+		"custom/right-arrow-light",
+		"clock#3",
+		"custom/right-arrow-dark"
+	],
+	"modules-right": [
+		"custom/screenshare_detector",
+		"custom/left-arrow-dark",
+		"pulseaudio",
+		"custom/left-arrow-light",
+		"custom/left-arrow-dark",
+		"memory",
+		"custom/left-arrow-light",
+		"custom/left-arrow-dark",
+		"cpu",
+		"custom/left-arrow-light",
+		"custom/left-arrow-dark",
+		"battery",
+		"custom/left-arrow-light",
+		"custom/left-arrow-dark",
+		"disk",
+		"custom/left-arrow-light",
+		"custom/left-arrow-dark",
+		"tray"
+	],
+
+	"custom/left-arrow-dark": {
+		"format": "",
+		"tooltip": false
+	},
+	"custom/left-arrow-light": {
+		"format": "",
+		"tooltip": false
+	},
+	"custom/right-arrow-dark": {
+		"format": "",
+		"tooltip": false
+	},
+	"custom/right-arrow-light": {
+		"format": "",
+		"tooltip": false
+	},
+
+	"hyprland/workspaces": {
+		"disable-scroll": true,
+		"format": "{name}"
+	},
+
+	"clock#1": {
+		"format": "{:%a}",
+		"tooltip": false
+	},
+	"clock#2": {
+		"format": "{:%H:%M}",
+		"tooltip": false
+	},
+	"clock#3": {
+		"format": "{:%m-%d}",
+		"tooltip": false
+	},
+
+    "custom/screenshare_detector": {
+        "format": "<span foreground=\"red\"> {} </span>",
+        "exec": "pw-dump | jq -r 'map(.info?.props?) | map(select(.[\"node.name\"]? == \"xdg-desktop-portal-hyprland\")) | map(.[\"stream.is-live\"]? == true | \"⏺ LIVE\") | .[]?'",
+        "interval": 5
+    },
+    "idle_inhibitor": {
+        "format": " {icon} ",
+        "format-icons": {
+            "activated": "",
+            "deactivated": ""
+        }
+    },
+	"pulseaudio": {
+		"format": "{icon} {volume:2}%",
+		"format-bluetooth": "{icon}  {volume}%  ",
+		"format-muted": "MUTE",
+		"format-icons": {
+			"headphones": "",
+			"default": [
+				"",
+				""
+			]
+		},
+		"scroll-step": 5,
+		"on-click": "pavucontrol",
+		"on-click-right": "pamixer -t"
+	},
+	"memory": {
+		"interval": 5,
+		"format": "Mem {}%",
+        "on-click": "gnome-system-monitor --show-processes-tab"
+	},
+	"cpu": {
+		"interval": 5,
+		"format": "CPU {usage:2}%",
+        "on-click": "kitty htop",
+        "on-click-right": "gnome-system-monitor --show-resources-tab"
+	},
+	"battery": {
+		"states": {
+			"good": 95,
+			"warning": 30,
+			"critical": 15
+		},
+		"format": "{icon} {capacity}%",
+		"format-icons": [
+			"",
+			"",
+			"",
+			"",
+			""
+		],
+        "on-click": "tlpui"
+	},
+	"disk": {
+		"interval": 5,
+		"format": "Disk {percentage_used:2}%",
+		"path": "/",
+        "on-click": "kitty ncdu ~",
+        "on-click-right": "gnome-system-monitor --show-file-systems-tab"
+	},
+	"tray": {
+		"icon-size": 20
+	}
+}
+
