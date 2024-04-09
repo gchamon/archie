@@ -18,6 +18,6 @@ EXIT_ACTION=$({
     fi
 })
 
-if [[ "$(rofi -dmenu -p "Confirm $EXIT_TYPE? [y/N]" | awk '{print tolower($0)}' )" == "y" ]]; then
+if [[ "$(rofi -dmenu -p "Confirm $EXIT_TYPE? [y/N]" -theme-str 'listview { enabled: false; } window { width: 10%; } ' | awk '{print tolower($0)}' )" == "y" ]]; then
     bash -c "$EXIT_ACTION"
 fi

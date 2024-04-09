@@ -98,9 +98,10 @@
 				""
 			]
 		},
-		"scroll-step": 5,
+		"scroll-step": 1,
 		"on-click": "pavucontrol",
-		"on-click-right": "pamixer -t"
+		"on-click-right": "pamixer -t",
+        "reverse-scrolling": 1,
 	},
 	"memory": {
 		"interval": 5,
