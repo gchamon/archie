@@ -5,7 +5,7 @@ separator_color = frame
 font = Monospace 12
 timeout = 10
 follow = keyboard
-origin = bottom-left
+# origin = bottom-left
 offset = 40x40
 
 [urgency_low]
