@@ -10,6 +10,17 @@ lvim.format_on_save.enabled = true
 
 lvim.plugins = {
     {
+        "ThePrimeagen/refactoring.nvim",
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+            "nvim-treesitter/nvim-treesitter",
+        },
+        config = function()
+            require("refactoring").setup()
+        end,
+    },
+    { "AndrewRadev/linediff.vim" },
+    {
         "tpope/vim-surround",
 
         -- make sure to change the value of `timeoutlen` if it's not triggering correctly, see https://github.com/tpope/vim-surround/issues/117
