@@ -71,7 +71,7 @@
         "tooltip": false
     },
     "clock#3": {
-        "format": "{:%m-%d}",
+        "format": "{:%y-%m-%d}",
         "tooltip": false
     },
 
