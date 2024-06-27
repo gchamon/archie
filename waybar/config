@@ -63,7 +63,7 @@
     },
 
     "clock#1": {
-        "format": "{:%a}",
+        "format": "{:%m-%d}",
         "tooltip": false
     },
     "clock#2": {
@@ -71,7 +71,7 @@
         "tooltip": false
     },
     "clock#3": {
-        "format": "{:%y-%m-%d}",
+        "format": " {:%a} ",
         "tooltip": false
     },
 
