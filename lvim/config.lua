@@ -6,6 +6,7 @@ vim.opt.relativenumber = true
 vim.opt.number = true
 vim.opt.shiftwidth = 4
 vim.opt.tabstop = 4
+vim.opt.textwidth = 180
 lvim.format_on_save.enabled = true
 
 lvim.plugins = {
