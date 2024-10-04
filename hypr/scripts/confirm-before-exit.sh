@@ -24,9 +24,9 @@ calculate_width() {
 if [[ "$EXIT_TYPE" == "exit" ]]; then
     EXIT_ACTION="$SCRIPT_DIR"/force-exit.sh
 elif [[ "$EXIT_TYPE" == "poweroff" ]]; then
-    EXIT_ACTION="sudo poweroff"
+    EXIT_ACTION="poweroff"
 elif [[ "$EXIT_TYPE" == "reboot" ]]; then
-    EXIT_ACTION="sudo reboot"
+    EXIT_ACTION="reboot"
 else
     echo "Action unsupported: $EXIT_TYPE"
     notify-send "Action unsupported: $EXIT_TYPE"
