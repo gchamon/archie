@@ -138,3 +138,9 @@ linters.setup {
 --         name = "proselint",
 --     },
 -- }
+--
+
+local bashls_options = {
+    filetypes = { "sh", "zsh" }
+}
+require("lvim.lsp.manager").setup("bashls", bashls_options)
