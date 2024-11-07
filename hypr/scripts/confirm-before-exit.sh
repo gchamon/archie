@@ -36,5 +36,8 @@ fi
 calculated_width=$(calculate_width $EXIT_TYPE)
 echo $calculated_width
 if [[ "$(rofi -dmenu -p "Confirm $EXIT_TYPE? [y/N]" -theme-str "listview { enabled: false; } window { width: $calculated_width; }" | awk '{print tolower($0)}' )" == "y" ]]; then
+    # this is necessary so that chrome preserves its internal session and I can join zoom calls without having to re-login. Thanks zoom.
+    notify-send "$EXIT_TYPE: killing chrome"
+    pkill -KILL chromium || true
     bash -c "$EXIT_ACTION"
 fi
