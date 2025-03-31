@@ -10,6 +10,11 @@ vim.opt.textwidth = 90
 lvim.format_on_save.enabled = true
 
 lvim.plugins = {
+    { "rmagatti/logger.nvim" },
+    {
+        "luckasRanarison/tree-sitter-hyprlang",
+        dependencies = { "nvim-treesitter/nvim-treesitter" },
+    },
     {
         "rmagatti/goto-preview",
         config = function()
