@@ -3,6 +3,7 @@
 !/dunst
 !/waybar
 !/lvim
+!/nvim
 !onedrive/config
 !onedrive/sync_list
 !kitty/current-theme.conf
