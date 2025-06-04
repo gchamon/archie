@@ -258,7 +258,10 @@ rsync -av $RECOVERY_PATH/pacman.d/ /etc/pacman.d/
 
 ### 5.4 Change the default shell to zsh
 
+Zsh shell after restore relies on `oh-my-zsh` and `powerlevel10k`, which will need to be installed:
+
 ```bash
+yay -S oh-my-zsh-git zsh-theme-powerlevel10k
 chsh -s $(which zsh)
 ```
 
