@@ -9,8 +9,9 @@
   - [2. Deploying system config](#2-deploying-system-config)
     - [2.1 System specific configuration](#21-system-specific-configuration)
   - [3. Theming](#3-theming)
-    - [3.1 Install GTK Theme](#31-install-gtk-theme)
+    - [3.1 Install Theme files](#31-install-theme-files)
     - [3.2 SDDM Theme (Slice 1.5.1)](#32-sddm-theme-slice-151)
+    - [3.3 Install the GTK theme](#33-install-the-gtk-theme)
   - [4. System Configuration](#4-system-configuration)
     - [4.1 Boot Options](#41-boot-options)
     - [4.2 Key Wallet](#42-key-wallet)
@@ -127,13 +128,15 @@ ln -s ~/.config/hypr/config/empty.conf ~/.config/hypr/config/current.conf
 
 ## 3. Theming
 
-### 3.1 Install GTK Theme
+### 3.1 Install Theme files
 
 ```bash
-yay -S arc-gtk-theme
+yay -S arc-gtk-theme archlinux-wallpaper
 ```
 
 ### 3.2 SDDM Theme (Slice 1.5.1)
+
+Unfortunately the main branch of the slice theme repo isn't compatible with SDDM, making it impossible to just install `sddm-slice-git`.
 
 1. Download the [SDDM Slice theme](https://github.com/EricKotato/sddm-slice/releases/tag/1.5.1).
 2. Deploy to SDDM themes directory:
@@ -141,6 +144,26 @@ yay -S arc-gtk-theme
 ```bash
 sudo cp -r path/to/slice /usr/share/sddm/themes/
 ```
+
+3. Configure sddm theme:
+
+```
+sudo mkdir -p /etc/sddm.conf.d
+sudo cat > /etc/sddm.conf.d/theme.conf <<<EOF
+[Theme]
+Current=slice
+EOF
+```
+
+### 3.3 Install the GTK theme
+
+1. Install NWG Look
+
+```
+yay -S nwg-look
+```
+
+2. Configure `Arc-Dark` in the theme picket. To run the picker, bring up the runner modal with `SUPER+R` and choose `GTK Settings`.
 
 ---
 
