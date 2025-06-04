@@ -232,6 +232,8 @@ borg mount /media/storage/borg-backups/nitro/home /path/to/recovery/home
 borg mount /media/storage/borg-backups/nitro/etc /path/to/recovery/etc
 ```
 
+They will ask for the password which you know where to find.
+
 ### 5.3 Restore Specific Directories and Files
 
 Use the following `rsync` commands to explicitly restore the listed directories and files:
