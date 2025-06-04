@@ -7,6 +7,7 @@
     - [1.2 Install Yay (AUR Helper)](#12-install-yay-aur-helper)
     - [1.3 Install Packages with Yay](#13-install-packages-with-yay)
   - [2. Deploying system config](#2-deploying-system-config)
+    - [2.1 System specific configuration](#21-system-specific-configuration)
   - [3. Theming](#3-theming)
     - [3.1 Install GTK Theme](#31-install-gtk-theme)
     - [3.2 SDDM Theme (Slice 1.5.1)](#32-sddm-theme-slice-151)
@@ -103,6 +104,20 @@ Clone this repo and deploy it to `~/.config`
 git clone https://github.com/gchamon/.config ~/config-deploy
 rsync -va ~/config-deploy/ ~/.config
 rm -rf ~/config-deploy
+```
+
+### 2.1 System specific configuration
+
+System specific configurations reside in `~/.config/hypr/config`. To deploy one config, create a symbolic link for it:
+
+```bash
+ln -s ~/.config/hypr/config/nitro.conf ~/.config/hypr/config/current.conf
+```
+
+If no system specific configuration applies, deploy the empty config:
+
+```bash
+ln -s ~/.config/hypr/config/empty.conf ~/.config/hypr/config/current.conf
 ```
 
 ---
