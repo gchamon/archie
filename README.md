@@ -142,17 +142,21 @@ Unfortunately the main branch of the slice theme repo isn't compatible with SDDM
 2. Deploy to SDDM themes directory:
 
 ```bash
-sudo cp -r path/to/slice /usr/share/sddm/themes/
+cd ~/Downloads
+tar -xzvf sddm-slice-1.5.1.tar.gz
+sudo mv sddm-slice-1.5.1 /usr/share/sddm/themes/slice
 ```
 
 3. Configure sddm theme:
 
-```
-sudo mkdir -p /etc/sddm.conf.d
-sudo cat > /etc/sddm.conf.d/theme.conf <<<EOF
+```bash
+cat > /tmp/theme.conf <<EOF
 [Theme]
 Current=slice
 EOF
+
+sudo mkdir -p /etc/sddm.conf.d
+sudo mv /tmp/theme.conf /etc/sddm.conf.d
 ```
 
 ### 3.3 Install the GTK theme
