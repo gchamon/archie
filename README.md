@@ -5,7 +5,8 @@
   - [1. Initial Setup](#1-initial-setup)
     - [1.1 Install Essential Packages](#11-install-essential-packages)
     - [1.2 Install Yay (AUR Helper)](#12-install-yay-aur-helper)
-  - [2. Install Packages with Yay](#2-install-packages-with-yay)
+    - [1.3 Install Packages with Yay](#13-install-packages-with-yay)
+  - [2. Deploying system config](#2-deploying-system-config)
   - [3. Theming](#3-theming)
     - [3.1 Install GTK Theme](#31-install-gtk-theme)
     - [3.2 SDDM Theme (Slice 1.5.1)](#32-sddm-theme-slice-151)
@@ -48,9 +49,7 @@ yay -S yay
 yay -Scc
 ```
 
----
-
-## 2. Install Packages with Yay
+### 1.3 Install Packages with Yay
 
 Install the following packages using `yay`:
 
@@ -74,6 +73,7 @@ yay -S \
   jq \
   kdeconnect \
   lsd \
+  neovim \
   nfs-utils \
   noto-fonts \
   noto-fonts-emoji \
@@ -91,6 +91,18 @@ yay -S \
   zen-browser-bin \
   zip \
   zsh-fast-syntax-highlighting \
+```
+
+---
+
+## 2. Deploying system config
+
+Clone this repo and deploy it to `~/.config`
+
+```bash
+git clone https://github.com/gchamon/.config ~/config-deploy
+rsync -va ~/config-deploy ~/.config
+rm -rf ~/config-deploy
 ```
 
 ---
