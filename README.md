@@ -85,7 +85,6 @@ yay -S --needed \
   plocate \
   pyenv \
   pyfuse3 \
-  qt5-graphicaleffects \
   rofi-wayland \
   rsync \
   rust \
@@ -131,7 +130,10 @@ ln -s ~/.config/hypr/config/empty.conf ~/.config/hypr/config/current.conf
 ### 3.1 Install Theme files
 
 ```bash
-yay -S arc-gtk-theme archlinux-wallpaper
+yay -S --needed \
+  archlinux-wallpaper \
+  gnome-themes-extra \
+  qt5-graphicaleffects
 ```
 
 ### 3.2 SDDM Theme (Slice 1.5.1)
@@ -167,7 +169,7 @@ sudo mv /tmp/theme.conf /etc/sddm.conf.d
 yay -S nwg-look
 ```
 
-2. Configure `Arc-Dark` in the theme picket. To run the picker, bring up the runner modal with `SUPER+R` and choose `GTK Settings`.
+2. Configure `Adwaita-dark` in the theme picket. To run the picker, bring up the runner modal with `SUPER+R` and choose `GTK Settings`.
 
 ---
 
