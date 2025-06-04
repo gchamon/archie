@@ -61,7 +61,7 @@ yay -S \
   blueman \
   borg \
   cliphist \
-  dunst
+  dunst \
   fzf \
   git \
   gnome-keyring \
@@ -90,7 +90,7 @@ yay -S \
   xcursor-breeze5 \
   zen-browser-bin \
   zip \
-  zsh-fast-syntax-highlighting \
+  zsh-fast-syntax-highlighting
 ```
 
 ---
@@ -101,7 +101,7 @@ Clone this repo and deploy it to `~/.config`
 
 ```bash
 git clone https://github.com/gchamon/.config ~/config-deploy
-rsync -va ~/config-deploy ~/.config
+rsync -va ~/config-deploy/ ~/.config
 rm -rf ~/config-deploy
 ```
 
