@@ -56,7 +56,7 @@ yay -Scc
 Install the following packages using `yay`:
 
 ```bash
-yay -S \
+yay -S --needed \
   bc \
   bind \
   bitwarden \
@@ -80,14 +80,16 @@ yay -S \
   noto-fonts \
   noto-fonts-emoji \
   npm \
+  otf-font-awesome \
   plocate \
   pyenv \
   pyfuse3 \
   qt5-graphicaleffects \
+  rofi-wayland \
   rsync \
   rust \
-  rsync \
   seahorse \
+  waybar \
   wl-clip-persist \
   xcursor-breeze5 \
   zen-browser-bin \
