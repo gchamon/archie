@@ -21,6 +21,7 @@
     - [5.3 Restore Specific Directories and Files](#53-restore-specific-directories-and-files)
       - [**HOME Directory**](#home-directory)
       - [**System Configuration Files**](#system-configuration-files)
+    - [5.4 Change the default shell to zsh](#54-change-the-default-shell-to-zsh)
   - [6. Virtualization Setup](#6-virtualization-setup)
     - [6.1 Install Virtualization Tools](#61-install-virtualization-tools)
     - [6.2 Starting required services](#62-starting-required-services)
@@ -222,6 +223,12 @@ rsync -av $RECOVERY_PATH/Scripts/ ~/Scripts/
 RECOVERY_PATH=~/recovery-etc/etc
 rsync -av $RECOVERY_PATH/pacman.conf /etc/pacman.conf
 rsync -av $RECOVERY_PATH/pacman.d/ /etc/pacman.d/
+```
+
+### 5.4 Change the default shell to zsh
+
+```bash
+chsh -s $(which zsh)
 ```
 
 ---
