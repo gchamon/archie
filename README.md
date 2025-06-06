@@ -14,9 +14,11 @@
     - [3.3 Install the GTK theme](#33-install-the-gtk-theme)
   - [4. System Configuration](#4-system-configuration)
     - [4.1 Boot Options](#41-boot-options)
-    - [4.2 Key Wallet](#42-key-wallet)
-    - [4.3 Systemd Services](#43-systemd-services)
+    - [4.2 Dependencies](#42-dependencies)
+    - [4.3 OneDrive config](#43-onedrive-config)
+    - [4.4 Systemd Services](#44-systemd-services)
   - [5. Restore from Backup](#5-restore-from-backup)
+    - [5.0 Dependencies](#50-dependencies)
     - [5.1 Mount Backup Server](#51-mount-backup-server)
     - [5.2 Mount Borg Backup](#52-mount-borg-backup)
     - [5.3 Restore Specific Directories and Files](#53-restore-specific-directories-and-files)
@@ -60,14 +62,12 @@ Install the following packages using `yay`:
 yay -S --needed \
   bc \
   bind \
-  bitwarden \
   blueman \
   borg \
   cliphist \
   dunst \
   fzf \
   git \
-  gnome-keyring \
   gnome-system-monitor \
   go \
   hyprcursor \
@@ -84,11 +84,10 @@ yay -S --needed \
   otf-font-awesome \
   plocate \
   pyenv \
-  pyfuse3 \
+  python-pyfuse3 \
   rofi-wayland \
   rsync \
   rust \
-  seahorse \
   waybar \
   wl-clip-persist \
   xcursor-breeze5 \
@@ -185,15 +184,19 @@ nvidia_drm.modeset=1
 
 *(Use this if you're using NVIDIA proprietary drivers, as per the Hyprland master tutorial.)*
 
-### 4.2 Key Wallet
-
-Install `gnome-keyring` for secure passphrase storage:
+### 4.2 Dependencies
 
 ```bash
-yay -S gnome-keyring
+yay -S gnome-keyring onedrive-abraunegg seahorse
 ```
 
-### 4.3 Systemd Services
+### 4.3 OneDrive config
+
+```bash
+onedrive --sync
+```
+
+### 4.4 Systemd Services
 
 Enable and start the following services:
 
@@ -215,6 +218,12 @@ done
 
 ## 5. Restore from Backup
 
+### 5.0 Dependencies
+
+```bash
+yay -S bitwarden
+```
+
 ### 5.1 Mount Backup Server
 
 Mount the remote backup server (`192.168.0.5`) to `/media/storage`:
@@ -232,7 +241,7 @@ borg mount /media/storage/borg-backups/nitro/home /path/to/recovery/home
 borg mount /media/storage/borg-backups/nitro/etc /path/to/recovery/etc
 ```
 
-They will ask for the password which you know where to find.
+They will ask for the password which you know where to find. To deploy the password follow the README at [gchamon/borg-automated-backups](github.com/gchamon/borg-automated-backups).
 
 ### 5.3 Restore Specific Directories and Files
 
