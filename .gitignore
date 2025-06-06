@@ -4,6 +4,7 @@
 !/waybar
 !/lvim
 !/nvim
+nvim/lazy-lock.json
 !onedrive/config
 !onedrive/sync_list
 !kitty/current-theme.conf
