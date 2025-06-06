@@ -251,20 +251,20 @@ Use the following `rsync` commands to explicitly restore the listed directories 
 
 ```bash
 RECOVERY_PATH=~/recovery-home/home/gchamon
-rsync -av $RECOVERY_PATH/.mozilla/ ~/.mozilla/
-rsync -av $RECOVERY_PATH/.zen/ ~/.zen/
-rsync -av $RECOVERY_PATH/.local/lib/ ~/.local/lib/
-rsync -av $RECOVERY_PATH/.ssh/ ~/.ssh/
-rsync -av $RECOVERY_PATH/OneDrive/ ~/OneDrive/
-rsync -av $RECOVERY_PATH/Scripts/ ~/Scripts/
+sudo rsync -av $RECOVERY_PATH/.mozilla/ ~/.mozilla/
+sudo rsync -av $RECOVERY_PATH/.zen/ ~/.zen/
+sudo rsync -av $RECOVERY_PATH/.local/lib/ ~/.local/lib/
+sudo rsync -av $RECOVERY_PATH/.ssh/ ~/.ssh/
+sudo rsync -av $RECOVERY_PATH/OneDrive/ ~/OneDrive/
+sudo rsync -av $RECOVERY_PATH/Scripts/ ~/Scripts/
 ```
 
 #### **System Configuration Files**
 
 ```bash
 RECOVERY_PATH=~/recovery-etc/etc
-rsync -av $RECOVERY_PATH/pacman.conf /etc/pacman.conf
-rsync -av $RECOVERY_PATH/pacman.d/ /etc/pacman.d/
+sudo rsync -av $RECOVERY_PATH/pacman.conf /etc/pacman.conf
+sudo rsync -av $RECOVERY_PATH/pacman.d/ /etc/pacman.d/
 ```
 
 ### 5.4 Change the default shell to zsh
