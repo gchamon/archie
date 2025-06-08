@@ -75,6 +75,7 @@ yay -S --needed \
   inotify-tools \
   jq \
   kdeconnect \
+  less \
   lsd \
   neovim \
   nfs-utils \
