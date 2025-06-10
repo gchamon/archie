@@ -224,6 +224,14 @@ for service in bluetooth; do
 done
 ```
 
+### 4.5 Cronjobs
+
+Cronjobs are in the `cronjobs/` folder and can be deployed with rsync:
+
+```
+sudo rsync -va ./cronjobs/ /etc/
+```
+
 ---
 
 ## 5. Restore from Backup
