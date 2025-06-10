@@ -273,7 +273,7 @@ sudo rsync -av $RECOVERY_PATH/pacman.d/ /etc/pacman.d/
 Zsh shell after restore relies on `oh-my-zsh` and `powerlevel10k`, which will need to be installed:
 
 ```bash
-yay -S oh-my-zsh-git zsh-theme-powerlevel10k
+yay -S oh-my-zsh-git zsh-theme-powerlevel10k ttf-meslo-nerd
 chsh -s $(which zsh)
 ```
 
