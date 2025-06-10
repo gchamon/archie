@@ -85,6 +85,7 @@ yay -S --needed \
   kdeconnect \
   less \
   lsd \
+  ncdu \
   neovim \
   nfs-utils \
   noto-fonts \
