@@ -91,6 +91,7 @@ yay -S --needed \
   noto-fonts-emoji \
   npm \
   otf-font-awesome \
+  pavucontrol \
   plocate \
   pyenv \
   python-pyfuse3 \
