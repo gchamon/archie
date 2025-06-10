@@ -11,3 +11,5 @@ nvim/lazy-lock.json
 !kitty/kitty.conf
 !rofi/
 !cronjobs/
+!.zshrc
+

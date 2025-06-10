@@ -3,11 +3,13 @@
 <!--toc:start-->
 - [Arch Linux Installation Guide with Hyprland](#arch-linux-installation-guide-with-hyprland)
   - [1. Initial Setup](#1-initial-setup)
+    - [1.0 Arch post-install notice](#10-arch-post-install-notice)
     - [1.1 Install Essential Packages](#11-install-essential-packages)
     - [1.2 Install Yay (AUR Helper)](#12-install-yay-aur-helper)
     - [1.3 Install Packages with Yay](#13-install-packages-with-yay)
   - [2. Deploying system config](#2-deploying-system-config)
     - [2.1 System specific configuration](#21-system-specific-configuration)
+    - [2.2 Deploy oh-my-zsh](#22-deploy-oh-my-zsh)
   - [3. Theming](#3-theming)
     - [3.1 Install Theme files](#31-install-theme-files)
     - [3.2 SDDM Theme (Slice 1.5.1)](#32-sddm-theme-slice-151)
@@ -17,6 +19,7 @@
     - [4.2 Dependencies](#42-dependencies)
     - [4.3 OneDrive config](#43-onedrive-config)
     - [4.4 Systemd Services](#44-systemd-services)
+    - [4.5 Cronjobs](#45-cronjobs)
   - [5. Restore from Backup](#5-restore-from-backup)
     - [5.0 Dependencies](#50-dependencies)
     - [5.1 Mount Backup Server](#51-mount-backup-server)
@@ -24,7 +27,6 @@
     - [5.3 Restore Specific Directories and Files](#53-restore-specific-directories-and-files)
       - [**HOME Directory**](#home-directory)
       - [**System Configuration Files**](#system-configuration-files)
-    - [5.4 Change the default shell to zsh](#54-change-the-default-shell-to-zsh)
   - [6. Virtualization Setup](#6-virtualization-setup)
     - [6.1 Install Virtualization Tools](#61-install-virtualization-tools)
     - [6.2 Starting required services](#62-starting-required-services)
@@ -131,6 +133,16 @@ If no system specific configuration applies, deploy the empty config:
 
 ```bash
 ln -s ~/.config/hypr/config/empty.conf ~/.config/hypr/config/current.conf
+```
+
+### 2.2 Deploy oh-my-zsh
+
+Zsh shell relies on `oh-my-zsh` and `powerlevel10k`, which will need to be installed:
+
+```bash
+yay -S oh-my-zsh-git zsh-theme-powerlevel10k ttf-meslo-nerd
+ln -s ~/.config/.zshrc ~/.zshrc
+chsh -s $(which zsh)
 ```
 
 ---
@@ -269,30 +281,22 @@ Use the following `rsync` commands to explicitly restore the listed directories 
 #### **HOME Directory**
 
 ```bash
-RECOVERY_PATH=~/recovery-home/home/gchamon
-sudo rsync -av $RECOVERY_PATH/.mozilla/ ~/.mozilla/
-sudo rsync -av $RECOVERY_PATH/.zen/ ~/.zen/
-sudo rsync -av $RECOVERY_PATH/.local/lib/ ~/.local/lib/
-sudo rsync -av $RECOVERY_PATH/.ssh/ ~/.ssh/
-sudo rsync -av $RECOVERY_PATH/OneDrive/ ~/OneDrive/
-sudo rsync -av $RECOVERY_PATH/Scripts/ ~/Scripts/
+RECOVERY_PATH=~/recovery-home$HOME
+sudo rsync -av {$RECOVERY_PATH,~}/.mozilla/
+sudo rsync -av {$RECOVERY_PATH,~}/.zen/
+sudo rsync -av {$RECOVERY_PATH,~}/.local/lib/
+sudo rsync -av {$RECOVERY_PATH,~}/.ssh/
+sudo rsync -av {$RECOVERY_PATH,~}/OneDrive/
+sudo rsync -av {$RECOVERY_PATH,~}/Scripts/
+sudo rsync -av {$RECOVERY_PATH,~}/.zshenv
 ```
 
 #### **System Configuration Files**
 
 ```bash
 RECOVERY_PATH=~/recovery-etc/etc
-sudo rsync -av $RECOVERY_PATH/pacman.conf /etc/pacman.conf
-sudo rsync -av $RECOVERY_PATH/pacman.d/ /etc/pacman.d/
-```
-
-### 5.4 Change the default shell to zsh
-
-Zsh shell after restore relies on `oh-my-zsh` and `powerlevel10k`, which will need to be installed:
-
-```bash
-yay -S oh-my-zsh-git zsh-theme-powerlevel10k ttf-meslo-nerd
-chsh -s $(which zsh)
+sudo rsync -av {$RECOVERY_PATH,/etc}/pacman.conf
+sudo rsync -av {$RECOVERY_PATH,/etc}/pacman.d/
 ```
 
 ---
