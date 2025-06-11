@@ -299,8 +299,7 @@ Then mount the latest archives:
 HOME_LATEST_ARCHIVE=$(sudo borg list $BORG_BACKUP_PATH/home --json | jq -r '.archives[-1].archive')
 ETC_LATEST_ARCHIVE=$(sudo borg list $BORG_BACKUP_PATH/etc --json | jq -r '.archives[-1].archive')
 
-mkdir -p $RECOVERY_PATH/home
-mkdir -p $RECOVERY_PATH/etc
+mkdir -p $RECOVERY_PATH_HOME $RECOVERY_PATH_ETC
 
 sudo borg mount $BORG_BACKUP_PATH/home::$HOME_LATEST_ARCHIVE $RECOVERY_PATH_HOME
 sudo borg mount $BORG_BACKUP_PATH/etc::$ETC_LATEST_ARCHIVE $RECOVERY_PATH_ETC
