@@ -47,7 +47,7 @@ The waybar theme is a slightly modified copy of [cjbassi's waybar config](https:
 
 This guide isn't prescriptive about how to install Arch Linux, but it requires
 the installation of the desktop profile with hyprland when using
-[archinstall](github.com/archlinux/archinstall).
+[archinstall](https://github.com/archlinux/archinstall).
 
 ### 1.1 Install Essential Packages
 
@@ -283,7 +283,7 @@ sudo mount -a
 
 ### 5.2 Mount Borg Backup
 
-1. Deploy the password following the README at [gchamon/borg-automated-backups](github.com/gchamon/borg-automated-backups).
+1. Deploy the password following the README at [gchamon/borg-automated-backups](https://github.com/gchamon/borg-automated-backups).
 
 2. Mount the Borg archives:
 
@@ -340,7 +340,7 @@ sudo rm -rf $RECOVERY_PATH_HOME $RECOVERY_PATH_ETC
 
 ### 5.3. Deploy automatic backups
 
-Use [gchamon/borg-automated-backups](github.com/gchamon/borg-automated-backups)
+Use [gchamon/borg-automated-backups](https://github.com/gchamon/borg-automated-backups)
 to redeploy the backup automation. Make sure to increment the `revX` in the
 backup, for instance, we used in the example `nitro-rev1`, therefore the next
 backup deployment should be `nitro-rev2` after a fresh install. This is so that
