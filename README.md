@@ -105,9 +105,9 @@ yay -S --needed \
 Clone this repo and deploy it to `~/.config`
 
 ```bash
-git clone https://github.com/gchamon/.config ~/config-deploy
-rsync -va ~/config-deploy/ ~/.config
-rm -rf ~/config-deploy
+git clone https://github.com/gchamon/archlinux-system-config
+rsync -va ~/archlinux-system-config/ ~/.config
+rm -rf ~/archlinux-system-config
 ```
 
 ### 2.1 System specific configuration
