@@ -24,6 +24,7 @@
   - [5. Restore from Backup](#5-restore-from-backup)
     - [5.1 Dependencies](#51-dependencies)
     - [5.2 Mount Borg Backup](#52-mount-borg-backup)
+    - [5.3. Deploy automatic backups](#53-deploy-automatic-backups)
   - [6. Virtualization Setup](#6-virtualization-setup)
     - [6.1 Install Virtualization Tools](#61-install-virtualization-tools)
     - [6.2 Starting required services](#62-starting-required-services)
@@ -325,7 +326,17 @@ sudo umount $RECOVERY_PATH_ETC
 sudo rm -rf $RECOVERY_PATH_HOME $RECOVERY_PATH_ETC
 ```
 
----
+### 5.3. Deploy automatic backups
+
+Use [gchamon/borg-automated-backups](github.com/gchamon/borg-automated-backups)
+to redeploy the backup automation. Make sure to increment the `revX` in the
+backup, for instance, we used in the example `nitro-rev1`, therefore the next
+backup deployment should be `nitro-rev2` after a fresh install. This is so that
+I avoid erasing data from previous revisions, which frees me to do lean fresh
+installs without risking losing data.
+
+---                                                                                          h
+                                                                                                                                                                                                                                                                                                                                                                                           e
 
 ## 6. Virtualization Setup
 
