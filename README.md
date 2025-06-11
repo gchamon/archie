@@ -145,8 +145,8 @@ Zsh shell relies on `oh-my-zsh` and `powerlevel10k`, which will need to be insta
 yay -S oh-my-zsh-git zsh-theme-powerlevel10k ttf-meslo-nerd
 test -f ~/.zshrc && mv ~/.zshrc{,.bk}
 ln -s ~/.config/.zshrc ~/.zshrc
-ln -s ~/.config/.p10k-portable.zsh /home/gchamon/.p10k-portable.zsh
-ln -s ~/.config/.p10k.zsh /home/gchamon/.p10k.zsh
+ln -s ~/.config/.p10k-portable.zsh ~/.p10k-portable.zsh
+ln -s ~/.config/.p10k.zsh ~/.p10k.zsh
 chsh -s $(which zsh)
 ```
 
@@ -155,7 +155,7 @@ chsh -s $(which zsh)
 This is for the screenshot utility to work.
 
 ```bash
-mkdir -p $HOME/Pictures/Screenshots
+mkdir -p ~/Pictures/Screenshots
 ```
 
 ---
