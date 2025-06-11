@@ -12,4 +12,4 @@ nvim/lazy-lock.json
 !rofi/
 !cronjobs/
 !.zshrc
-
+!docs/
