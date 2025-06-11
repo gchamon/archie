@@ -13,3 +13,4 @@ nvim/lazy-lock.json
 !cronjobs/
 !.zshrc
 !docs/
+!.p10k*
