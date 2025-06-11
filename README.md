@@ -3,6 +3,7 @@
 <!--toc:start-->
 - [Arch Linux Installation Guide with Hyprland](#arch-linux-installation-guide-with-hyprland)
   - [1. Initial Setup](#1-initial-setup)
+    - [1.0 Installing Arch Linux](#10-installing-arch-linux)
     - [1.1 Install Essential Packages](#11-install-essential-packages)
     - [1.2 Install Yay (AUR Helper)](#12-install-yay-aur-helper)
     - [1.3 Install Packages with Yay](#13-install-packages-with-yay)
@@ -29,7 +30,7 @@
     - [6.2 Starting required services](#62-starting-required-services)
 <!--toc:end-->
 
-This guide provides step-by-step instructions for installing Arch Linux with Hyprland, including package installation, theming, configuration, and backup restoration.
+This guide provides step-by-step instructions for deploying Hyprland to an Arch Linux installation, including package installation, theming, configuration, and backup restoration.
 
 Up to section [4. System Configuration](#4-system-configuration) the guide is supposed to be system and backup agnostic and should work in any system.
 
@@ -41,6 +42,12 @@ The waybar theme is a slightly modified copy of [cjbassi's waybar config](https:
 ---
 
 ## 1. Initial Setup
+
+### 1.0 Installing Arch Linux
+
+This guide isn't prescriptive about how to install Arch Linux, but it requires
+the installation of the desktop profile with hyprland when using
+[archinstall](github.com/archlinux/archinstall).
 
 ### 1.1 Install Essential Packages
 
