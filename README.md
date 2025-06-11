@@ -299,7 +299,7 @@ sudo borg mount $BORG_BACKUP_PATH/etc::$ETC_LATEST_ARCHIVE $RECOVERY_PATH_ETC
 
 Use the following `rsync` commands to explicitly restore the listed directories and files:
 
-3.1. **HOME Directory**
+  3.1. HOME Directory
 
 ```bash
 sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.mozilla/
@@ -311,14 +311,14 @@ sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/Scripts/
 sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.zshenv
 ```
 
-3.2. **System Configuration Files**
+  3.2. System Configuration Files
 
 ```bash
 sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/pacman.conf
 sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/pacman.d/
 ```
 
-3.3. Remove restoration mountpoints
+  3.3. Remove restoration mountpoints
 
 ```bash
 sudo umount $RECOVERY_PATH_HOME
@@ -335,8 +335,7 @@ backup deployment should be `nitro-rev2` after a fresh install. This is so that
 I avoid erasing data from previous revisions, which frees me to do lean fresh
 installs without risking losing data.
 
----                                                                                          h
-                                                                                                                                                                                                                                                                                                                                                                                           e
+---
 
 ## 6. Virtualization Setup
 
