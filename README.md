@@ -20,13 +20,10 @@
     - [4.3 OneDrive config](#43-onedrive-config)
     - [4.4 Systemd Services](#44-systemd-services)
     - [4.5 Cronjobs](#45-cronjobs)
+    - [4.6 Mountpoints](#46-mountpoints)
   - [5. Restore from Backup](#5-restore-from-backup)
-    - [5.0 Dependencies](#50-dependencies)
-    - [5.1 Mount Backup Server](#51-mount-backup-server)
+    - [5.1 Dependencies](#51-dependencies)
     - [5.2 Mount Borg Backup](#52-mount-borg-backup)
-    - [5.3 Restore Specific Directories and Files](#53-restore-specific-directories-and-files)
-      - [**HOME Directory**](#home-directory)
-      - [**System Configuration Files**](#system-configuration-files)
   - [6. Virtualization Setup](#6-virtualization-setup)
     - [6.1 Install Virtualization Tools](#61-install-virtualization-tools)
     - [6.2 Starting required services](#62-starting-required-services)
@@ -73,7 +70,6 @@ yay -S --needed \
   bc \
   bind \
   blueman \
-  borg \
   cliphist \
   dunst \
   fzf \
@@ -97,7 +93,6 @@ yay -S --needed \
   pavucontrol \
   plocate \
   pyenv \
-  python-pyfuse3 \
   rofi-wayland \
   rsync \
   rust \
@@ -245,58 +240,89 @@ Cronjobs are in the `cronjobs/` folder and can be deployed with rsync:
 sudo rsync -va ./cronjobs/ /etc/
 ```
 
+### 4.6 Mountpoints
+
+Add mountpoints in `/etc/fstab` for the NAS:
+
+```bash
+sudo mkdir -p /media/storage /media/fast-storage
+
+sudo cat >> /etc/fstab <<EOF
+# NAS
+192.168.0.5:/media/storage /media/storage  nfs defaults,soft,timeo=30 0 0
+192.168.0.5:/media/fast-storage /media/fast-storage nfs defaults,soft,timeo=30 0 0
+EOF
+
+sudo systemctl daemon-reload
+sudo mount -a
+```
+
 ---
 
 ## 5. Restore from Backup
 
-### 5.0 Dependencies
+### 5.1 Dependencies
 
 ```bash
-yay -S bitwarden
-```
-
-### 5.1 Mount Backup Server
-
-Mount the remote backup server (`192.168.0.5`) to `/media/storage`:
-
-```bash
-sudo mount -t nfs 192.168.0.5:/media/storage /media/storage
+yay -S bitwarden borg python-pyfuse3
 ```
 
 ### 5.2 Mount Borg Backup
 
-Mount the Borg archive:
+1. Deploy the password following the README at [gchamon/borg-automated-backups](github.com/gchamon/borg-automated-backups).
+
+2. Mount the Borg archives:
+
+First specify the backup and restore paths:
 
 ```bash
-borg mount /media/storage/borg-backups/nitro/home /path/to/recovery/home
-borg mount /media/storage/borg-backups/nitro/etc /path/to/recovery/etc
+BORG_BACKUP_PATH=/media/storage/borg-backups/nitro-rev1
+RECOVERY_PATH_HOME=$HOME/recovery-home
+RECOVERY_PATH_ETC=$HOME/recovery-etc
 ```
 
-They will ask for the password which you know where to find. To deploy the password follow the README at [gchamon/borg-automated-backups](github.com/gchamon/borg-automated-backups).
+Then mount the latest archives:
 
-### 5.3 Restore Specific Directories and Files
+```bash
+HOME_LATEST_ARCHIVE=$(sudo borg list $BORG_BACKUP_PATH/home --json | jq -r '.archives[-1].archive')
+ETC_LATEST_ARCHIVE=$(sudo borg list $BORG_BACKUP_PATH/etc --json | jq -r '.archives[-1].archive')
+
+mkdir -p $RECOVERY_PATH/home
+mkdir -p $RECOVERY_PATH/etc
+
+sudo borg mount $BORG_BACKUP_PATH/home::$HOME_LATEST_ARCHIVE $RECOVERY_PATH_HOME
+sudo borg mount $BORG_BACKUP_PATH/etc::$ETC_LATEST_ARCHIVE $RECOVERY_PATH_ETC
+```
+
+3. Restore Specific Directories and Files
 
 Use the following `rsync` commands to explicitly restore the listed directories and files:
 
-#### **HOME Directory**
+3.1. **HOME Directory**
 
 ```bash
-RECOVERY_PATH=~/recovery-home$HOME
-sudo rsync -av {$RECOVERY_PATH,~}/.mozilla/
-sudo rsync -av {$RECOVERY_PATH,~}/.zen/
-sudo rsync -av {$RECOVERY_PATH,~}/.local/lib/
-sudo rsync -av {$RECOVERY_PATH,~}/.ssh/
-sudo rsync -av {$RECOVERY_PATH,~}/OneDrive/
-sudo rsync -av {$RECOVERY_PATH,~}/Scripts/
-sudo rsync -av {$RECOVERY_PATH,~}/.zshenv
+sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.mozilla/
+sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.zen/
+sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.local/lib/
+sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.ssh/
+sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/OneDrive/
+sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/Scripts/
+sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.zshenv
 ```
 
-#### **System Configuration Files**
+3.2. **System Configuration Files**
 
 ```bash
-RECOVERY_PATH=~/recovery-etc/etc
-sudo rsync -av {$RECOVERY_PATH,/etc}/pacman.conf
-sudo rsync -av {$RECOVERY_PATH,/etc}/pacman.d/
+sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/pacman.conf
+sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/pacman.d/
+```
+
+3.3. Remove restoration mountpoints
+
+```bash
+sudo umount $RECOVERY_PATH_HOME
+sudo umount $RECOVERY_PATH_ETC
+sudo rm -rf $RECOVERY_PATH_HOME $RECOVERY_PATH_ETC
 ```
 
 ---
