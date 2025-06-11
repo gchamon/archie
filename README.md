@@ -32,6 +32,8 @@ This guide provides step-by-step instructions for installing Arch Linux with Hyp
 
 Up to section [4. System Configuration](#4-system-configuration) the guide is supposed to be system and backup agnostic and should work in any system.
 
+The waybar theme is a slightly modified copy of [cjbassi's waybar config](https://github.com/cjbassi/config/tree/master/.config/waybar).
+
 ---
 
 ## 1. Initial Setup
