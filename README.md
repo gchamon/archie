@@ -19,7 +19,6 @@
     - [4.3 OneDrive config](#43-onedrive-config)
     - [4.4 Systemd Services](#44-systemd-services)
     - [4.5 Cronjobs](#45-cronjobs)
-    - [4.6 Mountpoints](#46-mountpoints)
   - [5. Restore from Backup](#5-restore-from-backup)
     - [5.1 Dependencies](#51-dependencies)
     - [5.2 Mount Borg Backup](#52-mount-borg-backup)
@@ -30,6 +29,8 @@
 <!--toc:end-->
 
 This guide provides step-by-step instructions for installing Arch Linux with Hyprland, including package installation, theming, configuration, and backup restoration.
+
+Up to section [4. System Configuration](#4-system-configuration) the guide is supposed to be system and backup agnostic and should work in any system.
 
 ---
 
@@ -77,7 +78,6 @@ yay -S --needed \
   lsd \
   ncdu \
   neovim \
-  nfs-utils \
   noto-fonts \
   noto-fonts-emoji \
   npm \
@@ -232,11 +232,17 @@ Cronjobs are in the `cronjobs/` folder and can be deployed with rsync:
 sudo rsync -va ./cronjobs/ /etc/
 ```
 
-### 4.6 Mountpoints
+---
 
-Add mountpoints in `/etc/fstab` for the NAS:
+## 5. Restore from Backup
+
+### 5.1 Dependencies
+
+Install dependencies and add mountpoints in `/etc/fstab` for the NAS:
 
 ```bash
+yay -S bitwarden borg python-pyfuse3 nfs-utils
+
 sudo mkdir -p /media/storage /media/fast-storage
 
 sudo cat >> /etc/fstab <<EOF
@@ -247,16 +253,6 @@ EOF
 
 sudo systemctl daemon-reload
 sudo mount -a
-```
-
----
-
-## 5. Restore from Backup
-
-### 5.1 Dependencies
-
-```bash
-yay -S bitwarden borg python-pyfuse3
 ```
 
 ### 5.2 Mount Borg Backup
