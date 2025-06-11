@@ -9,6 +9,7 @@
   - [2. Deploying system config](#2-deploying-system-config)
     - [2.1 System specific configuration](#21-system-specific-configuration)
     - [2.2 Deploy oh-my-zsh](#22-deploy-oh-my-zsh)
+    - [2.3 Add required home folders](#23-add-required-home-folders)
   - [3. Theming](#3-theming)
     - [3.1 Install Theme files](#31-install-theme-files)
     - [3.2 SDDM Theme (Slice 1.5.1)](#32-sddm-theme-slice-151)
@@ -71,11 +72,13 @@ yay -S --needed \
   git \
   gnome-system-monitor \
   go \
+  grimblast-git \
   hyprcursor \
   hyprpaper \
   inotify-tools \
   jq \
   kdeconnect \
+  ksnip \
   less \
   lsd \
   ncdu \
@@ -132,6 +135,14 @@ Zsh shell relies on `oh-my-zsh` and `powerlevel10k`, which will need to be insta
 yay -S oh-my-zsh-git zsh-theme-powerlevel10k ttf-meslo-nerd
 ln -s ~/.config/.zshrc ~/.zshrc
 chsh -s $(which zsh)
+```
+
+### 2.3 Add required home folders
+
+This is for the screenshot utility to work.
+
+```bash
+mkdir -p $HOME/Pictures/Screenshots
 ```
 
 ---
