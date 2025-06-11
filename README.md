@@ -3,7 +3,6 @@
 <!--toc:start-->
 - [Arch Linux Installation Guide with Hyprland](#arch-linux-installation-guide-with-hyprland)
   - [1. Initial Setup](#1-initial-setup)
-    - [1.0 Arch post-install notice](#10-arch-post-install-notice)
     - [1.1 Install Essential Packages](#11-install-essential-packages)
     - [1.2 Install Yay (AUR Helper)](#12-install-yay-aur-helper)
     - [1.3 Install Packages with Yay](#13-install-packages-with-yay)
@@ -35,14 +34,6 @@ This guide provides step-by-step instructions for installing Arch Linux with Hyp
 ---
 
 ## 1. Initial Setup
-
-### 1.0 Arch post-install notice
-
-After installing archlinux with [archinstall](github.com/archlinux/archinstall)
-there can be a problem with decrypting a separate home partition, where
-cryptsetup still asks for a password even with a valid decryption key that
-`archinstall` creates. The workaround is described in [this
-issue](https://github.com/archlinux/archinstall/issues/3583).
 
 ### 1.1 Install Essential Packages
 
