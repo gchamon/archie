@@ -145,8 +145,27 @@ Zsh shell relies on `oh-my-zsh` and `powerlevel10k`, which will need to be insta
 yay -S oh-my-zsh-git zsh-theme-powerlevel10k ttf-meslo-nerd
 test -f ~/.zshrc && mv ~/.zshrc{,.bk}
 ln -s ~/.config/.zshrc ~/.zshrc
+```
+
+There are four preconfigured powerlevel10k prompt styles. Choose one of
+`.p10k-classic.zsh`, `.p10k-lean.zsh`, `.p10k-pure.zsh` or `.p10k-rainbow.zsh`
+and create a symbolic link to `~/.p10k.zsh`:
+
+```bash
+ln -s ~/.config/.p10k-classic.zsh ~/.p10k.zsh
+```
+
+There is a fifth powerlevel10k prompt style that is geared towards supporting
+tty shells, which is called `.p10k-portable.zsh` and it should be deployed to
+the home folder along with the chosen profile:
+
+```bash
 ln -s ~/.config/.p10k-portable.zsh /home/gchamon/.p10k-portable.zsh
-ln -s ~/.config/.p10k.zsh /home/gchamon/.p10k.zsh
+```
+
+Now change the shell to if necessary:
+
+```bash
 chsh -s $(which zsh)
 ```
 
