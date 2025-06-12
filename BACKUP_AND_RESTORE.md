@@ -105,7 +105,7 @@ installs without risking losing data.
 
 ### 1.4 OneDrive config
 
-Install [abraunegg's onedrive client]():
+Install [abraunegg's onedrive client](https://github.com/abraunegg/onedrive) for linux:
 
 ```bash
 onedrive-abraunegg 
@@ -141,4 +141,3 @@ Once the `~/Scripts` folder is restored from backup you can just:
 ```bash
 ~/Scripts/qemu-services.sh
 ```
-
