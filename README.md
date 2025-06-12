@@ -171,7 +171,7 @@ tty shells, which is called `.p10k-portable.zsh` and it should be deployed to
 the home folder along with the chosen profile:
 
 ```bash
-ln -s ~/.config/.p10k-portable.zsh /home/gchamon/.p10k-portable.zsh
+ln -s ~/.config/.p10k-portable.zsh ~/.p10k-portable.zsh
 ```
 
 Now change the shell to if necessary:
