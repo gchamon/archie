@@ -35,8 +35,8 @@ window#waybar {
 	padding: 0 2px;
 	color: #fdf6e3;
 }
-#workspaces button.focused {
-	color: #268bd2;
+#workspaces button.active {
+	color: #ffa400;
 }
 #workspaces button:hover {
 	box-shadow: inherit;
@@ -72,4 +72,3 @@ window#waybar {
 #disk {
 	padding: 0 10px;
 }
-
