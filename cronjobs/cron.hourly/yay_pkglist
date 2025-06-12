@@ -1,5 +1,3 @@
 #!/bin/sh
 
-pacman -Qqe > /home/gchamon/Documents/pkglist.txt
-chown gchamon:gchamon /home/gchamon/Documents/pkglist.txt
-
+pacman -Qqe >/etc/pkglist.txt
