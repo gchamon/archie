@@ -37,7 +37,16 @@ Up to section [4. System Configuration](#4-system-configuration) the guide is su
 ![desktop](docs/assets/desktop.png)
 ![windows](docs/assets/windows-opened.png)
 
-The waybar theme is a slightly modified copy of [cjbassi's waybar config](https://github.com/cjbassi/config/tree/master/.config/waybar).
+Credits to
+[cjbassi](https://github.com/cjbassi/config/tree/master/.config/waybar) for the
+waybar theme.
+
+Credits to [catppuccin/dunst](https://github.com/catppuccin/dunst) for the
+dunst theme.
+
+Credits to [EricKotato/sddm-slice](https://github.com/EricKotato/sddm-slice) for the sddm theme.
+
+Theme used for kitty is snazzy. GTK theme is Adwaita-dark.
 
 ---
 
@@ -103,6 +112,7 @@ yay -S --needed \
   rofi-wayland \
   rsync \
   rust \
+  unzip \
   waybar \
   wl-clip-persist \
   xcursor-breeze5 \
