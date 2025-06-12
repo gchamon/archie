@@ -176,7 +176,7 @@ the home folder along with the chosen profile:
 ln -s ~/.config/.p10k-portable.zsh ~/.p10k-portable.zsh
 ```
 
-Now change the shell to if necessary:
+Now change the shell to `zsh` if necessary:
 
 ```bash
 chsh -s $(which zsh)
