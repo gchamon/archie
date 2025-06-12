@@ -203,9 +203,13 @@ yay -S --needed \
 
 ### 3.2 SDDM Theme (Slice 1.5.1)
 
-Unfortunately the main branch of the slice theme repo isn't compatible with SDDM, making it impossible to just install `sddm-slice-git`.
+Unfortunately the main branch of the slice theme repo isn't compatible with
+SDDM, making it impossible to just install `sddm-slice-git`. You must download
+and extract the tar archive related to the [v1.5.1
+release](https://github.com/EricKotato/sddm-slice/releases/tag/1.5.1) and
+deploy it to `/usr/share/sddm/themes/slice` manually.
 
-1. Download the [SDDM Slice theme](https://github.com/EricKotato/sddm-slice/releases/tag/1.5.1).
+1. Download the [SDDM Slice theme v1.5.1](https://github.com/EricKotato/sddm-slice/releases/tag/1.5.1).
 2. Deploy to SDDM themes directory:
 
 ```bash
