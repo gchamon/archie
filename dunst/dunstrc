@@ -24,4 +24,4 @@ timeout = 0
 
 [play_sound]
 summary = "*"
-script = /home/gchamon/.config/dunst/scripts/alert.sh
+script = ~/.config/dunst/scripts/alert.sh
