@@ -125,19 +125,3 @@ systemctl --user start onedrive
 ```
 
 ---
-
-## 2. Virtualization Setup
-
-### 2.1 Install Virtualization Tools
-
-```bash
-yay -S qemu-desktop libvirt virt-manager dnsmasq
-```
-
-### 2.2 Starting required services
-
-Once the `~/Scripts` folder is restored from backup you can just:
-
-```bash
-~/Scripts/qemu-services.sh
-```
