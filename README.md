@@ -156,7 +156,6 @@ Zsh shell relies on `oh-my-zsh` and `powerlevel10k`, which will need to be insta
 yay -S oh-my-zsh-git zsh-theme-powerlevel10k ttf-meslo-nerd
 test -f ~/.zshrc && mv ~/.zshrc{,.bk}
 ln -s ~/.config/.zshrc ~/.zshrc
-<<<<<<< HEAD
 ```
 
 There are four preconfigured powerlevel10k prompt styles. Choose one of
