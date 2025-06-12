@@ -6,13 +6,14 @@
     - [1.0 Installing Arch Linux](#10-installing-arch-linux)
     - [1.1 Install Essential Packages](#11-install-essential-packages)
     - [1.2 Install Yay (AUR Helper)](#12-install-yay-aur-helper)
-    - [1.3 Install Packages with Yay](#13-install-packages-with-yay)
+    - [1.3 Install Essential Packages with Yay](#13-install-essential-packages-with-yay)
+    - [1.3 Install Development Packages for LazyVim](#13-install-development-packages-for-lazyvim)
   - [2. Deploying system config](#2-deploying-system-config)
     - [2.1 System specific configuration](#21-system-specific-configuration)
     - [2.2 Deploy oh-my-zsh](#22-deploy-oh-my-zsh)
     - [2.3 Add required home folders](#23-add-required-home-folders)
   - [3. Theming](#3-theming)
-    - [3.1 Install Theme files](#31-install-theme-files)
+    - [3.1 Install Theme Packages](#31-install-theme-packages)
     - [3.2 SDDM Theme (Slice 1.5.1)](#32-sddm-theme-slice-151)
     - [3.3 Install the GTK theme](#33-install-the-gtk-theme)
   - [4. System Configuration](#4-system-configuration)
@@ -21,6 +22,7 @@
     - [4.4 Systemd Services](#44-systemd-services)
     - [4.5 Cronjobs](#45-cronjobs)
   - [5. Backup and Restore](#5-backup-and-restore)
+  - [6. Virtualization and Containarization](#6-virtualization-and-containarization)
 <!--toc:end-->
 
 This guide provides step-by-step instructions for deploying Hyprland to an Arch Linux installation, including package installation, theming, configuration, and backup restoration.
@@ -50,6 +52,9 @@ theme is [powerlevel10k](https://github.com/romkatv/powerlevel10k).
 Special thanks to the [Arch Linux](https://archlinux.org/) team and the folks
 behind [Hyprland](https://hypr.land/).
 
+[NeoVim](https://github.com/neovim/neovim) configuration is provided by
+[LazyVim](https://github.com/LazyVim/LazyVim).
+
 ---
 
 ## 1. Initial Setup
@@ -78,7 +83,7 @@ yay -S yay
 yay -Scc
 ```
 
-### 1.3 Install Packages with Yay
+### 1.3 Install Essential Packages with Yay
 
 Install the following packages using `yay`:
 
@@ -90,9 +95,7 @@ yay -S --needed \
   cliphist \
   dunst \
   fzf \
-  git \
   gnome-system-monitor \
-  go \
   grimblast-git \
   hyprcursor \
   hyprlock \
@@ -104,24 +107,30 @@ yay -S --needed \
   less \
   lsd \
   ncdu \
-  neovim \
   noto-fonts \
   noto-fonts-emoji \
-  npm \
   otf-font-awesome \
   pavucontrol \
   plocate \
-  pyenv \
   rofi-wayland \
   rsync \
-  rust \
   unzip \
   waybar \
   wl-clip-persist \
-  xcursor-breeze5 \
   zen-browser-bin \
   zip \
   zsh-fast-syntax-highlighting
+```
+
+### 1.3 Install Development Packages for LazyVim
+
+```bash
+yay -S --needed \
+  go \
+  neovim \
+  npm \
+  pyenv \
+  rust
 ```
 
 ---
@@ -194,13 +203,14 @@ mkdir -p ~/Pictures/Screenshots
 
 ## 3. Theming
 
-### 3.1 Install Theme files
+### 3.1 Install Theme Packages
 
 ```bash
 yay -S --needed \
   archlinux-wallpaper \
   gnome-themes-extra \
-  qt5-graphicaleffects
+  qt5-graphicaleffects \
+  xcursor-breeze5
 ```
 
 ### 3.2 SDDM Theme (Slice 1.5.1)
