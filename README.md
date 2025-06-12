@@ -32,14 +32,23 @@ Up to section [4. System Configuration](#4-system-configuration) the guide is su
 
 Credits to
 [cjbassi](https://github.com/cjbassi/config/tree/master/.config/waybar) for the
-waybar theme.
+[waybar](https://github.com/Alexays/Waybar) theme.
 
 Credits to [catppuccin/dunst](https://github.com/catppuccin/dunst) for the
-dunst theme.
+[dunst](https://github.com/dunst-project/dunst) theme.
 
-Credits to [EricKotato/sddm-slice](https://github.com/EricKotato/sddm-slice) for the sddm theme.
+Credits to [EricKotato/sddm-slice](https://github.com/EricKotato/sddm-slice)
+for the [sddm](https://github.com/sddm/sddm) theme.
 
-Theme used for kitty is snazzy. GTK theme is Adwaita-dark.
+Credits to
+[connorholyday/kitty-snazzy](https://github.com/connorholyday/kitty-snazzy) for
+the [kitty](https://github.com/kovidgoyal/kitty) theme.
+
+ GTK theme is Adwaita-dark. [Oh-my-zsh](https://github.com/ohmyzsh/ohmyzsh/)
+ theme is [powerlevel10k](https://github.com/romkatv/powerlevel10k).
+
+Special thanks to [Arch Linux](https://archlinux.org/) team and the folks behind
+[Hyprland](https://hypr.land/).
 
 ---
 
