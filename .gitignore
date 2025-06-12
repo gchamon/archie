@@ -16,3 +16,4 @@ nvim/lazy-lock.json
 !.p10k*
 !README.md
 !BACKUP_AND_RESTORE.md
+!CONTAINERS.md
