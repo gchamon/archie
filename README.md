@@ -1,7 +1,7 @@
-# Arch Linux Installation Guide with Hyprland
+# Arch Linux system configuration guide
 
 <!--toc:start-->
-- [Arch Linux Installation Guide with Hyprland](#arch-linux-installation-guide-with-hyprland)
+- [Arch Linux system configuration guide](#arch-linux-system-configuration-guide)
   - [1. Initial Setup](#1-initial-setup)
     - [1.0 Installing Arch Linux](#10-installing-arch-linux)
     - [1.1 Install Essential Packages](#11-install-essential-packages)
@@ -44,11 +44,11 @@ Credits to
 [connorholyday/kitty-snazzy](https://github.com/connorholyday/kitty-snazzy) for
 the [kitty](https://github.com/kovidgoyal/kitty) theme.
 
- GTK theme is Adwaita-dark. [Oh-my-zsh](https://github.com/ohmyzsh/ohmyzsh/)
- theme is [powerlevel10k](https://github.com/romkatv/powerlevel10k).
+GTK theme is Adwaita-dark. [Oh-my-zsh](https://github.com/ohmyzsh/ohmyzsh/)
+theme is [powerlevel10k](https://github.com/romkatv/powerlevel10k).
 
-Special thanks to [Arch Linux](https://archlinux.org/) team and the folks behind
-[Hyprland](https://hypr.land/).
+Special thanks to the [Arch Linux](https://archlinux.org/) team and the folks
+behind [Hyprland](https://hypr.land/).
 
 ---
 
@@ -57,7 +57,7 @@ Special thanks to [Arch Linux](https://archlinux.org/) team and the folks behind
 ### 1.0 Installing Arch Linux
 
 This guide isn't prescriptive about how to install Arch Linux, but it requires
-the installation of the desktop profile with hyprland when using
+the installation of the desktop profile with hyprland by using
 [archinstall](https://github.com/archlinux/archinstall).
 
 ### 1.1 Install Essential Packages
