@@ -93,6 +93,7 @@ yay -S --needed \
   go \
   grimblast-git \
   hyprcursor \
+  hyprlock \
   hyprpaper \
   inotify-tools \
   jq \
