@@ -37,7 +37,16 @@ Up to section [4. System Configuration](#4-system-configuration) the guide is su
 ![desktop](docs/assets/desktop.png)
 ![windows](docs/assets/windows-opened.png)
 
-The waybar theme is a slightly modified copy of [cjbassi's waybar config](https://github.com/cjbassi/config/tree/master/.config/waybar).
+Credits to
+[cjbassi](https://github.com/cjbassi/config/tree/master/.config/waybar) for the
+waybar theme.
+
+Credits to [catppuccin/dunst](https://github.com/catppuccin/dunst) for the
+dunst theme.
+
+Credits to [EricKotato/sddm-slice](https://github.com/EricKotato/sddm-slice) for the sddm theme.
+
+Theme used for kitty is snazzy. GTK theme is Adwaita-dark.
 
 ---
 
@@ -47,7 +56,7 @@ The waybar theme is a slightly modified copy of [cjbassi's waybar config](https:
 
 This guide isn't prescriptive about how to install Arch Linux, but it requires
 the installation of the desktop profile with hyprland when using
-[archinstall](github.com/archlinux/archinstall).
+[archinstall](https://github.com/archlinux/archinstall).
 
 ### 1.1 Install Essential Packages
 
@@ -84,6 +93,7 @@ yay -S --needed \
   go \
   grimblast-git \
   hyprcursor \
+  hyprlock \
   hyprpaper \
   inotify-tools \
   jq \
@@ -103,6 +113,7 @@ yay -S --needed \
   rofi-wayland \
   rsync \
   rust \
+  unzip \
   waybar \
   wl-clip-persist \
   xcursor-breeze5 \
@@ -145,6 +156,7 @@ Zsh shell relies on `oh-my-zsh` and `powerlevel10k`, which will need to be insta
 yay -S oh-my-zsh-git zsh-theme-powerlevel10k ttf-meslo-nerd
 test -f ~/.zshrc && mv ~/.zshrc{,.bk}
 ln -s ~/.config/.zshrc ~/.zshrc
+<<<<<<< HEAD
 ```
 
 There are four preconfigured powerlevel10k prompt styles. Choose one of
@@ -174,7 +186,7 @@ chsh -s $(which zsh)
 This is for the screenshot utility to work.
 
 ```bash
-mkdir -p $HOME/Pictures/Screenshots
+mkdir -p ~/Pictures/Screenshots
 ```
 
 ---
@@ -302,7 +314,7 @@ sudo mount -a
 
 ### 5.2 Mount Borg Backup
 
-1. Deploy the password following the README at [gchamon/borg-automated-backups](github.com/gchamon/borg-automated-backups).
+1. Deploy the password following the README at [gchamon/borg-automated-backups](https://github.com/gchamon/borg-automated-backups).
 
 2. Mount the Borg archives:
 
@@ -359,7 +371,7 @@ sudo rm -rf $RECOVERY_PATH_HOME $RECOVERY_PATH_ETC
 
 ### 5.3. Deploy automatic backups
 
-Use [gchamon/borg-automated-backups](github.com/gchamon/borg-automated-backups)
+Use [gchamon/borg-automated-backups](https://github.com/gchamon/borg-automated-backups)
 to redeploy the backup automation. Make sure to increment the `revX` in the
 backup, for instance, we used in the example `nitro-rev1`, therefore the next
 backup deployment should be `nitro-rev2` after a fresh install. This is so that
