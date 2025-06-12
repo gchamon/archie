@@ -18,16 +18,9 @@
   - [4. System Configuration](#4-system-configuration)
     - [4.1 Boot Options](#41-boot-options)
     - [4.2 Dependencies](#42-dependencies)
-    - [4.3 OneDrive config](#43-onedrive-config)
     - [4.4 Systemd Services](#44-systemd-services)
     - [4.5 Cronjobs](#45-cronjobs)
-  - [5. Restore from Backup](#5-restore-from-backup)
-    - [5.1 Dependencies](#51-dependencies)
-    - [5.2 Mount Borg Backup](#52-mount-borg-backup)
-    - [5.3. Deploy automatic backups](#53-deploy-automatic-backups)
-  - [6. Virtualization Setup](#6-virtualization-setup)
-    - [6.1 Install Virtualization Tools](#61-install-virtualization-tools)
-    - [6.2 Starting required services](#62-starting-required-services)
+  - [5. Backup and Restore](#5-backup-and-restore)
 <!--toc:end-->
 
 This guide provides step-by-step instructions for deploying Hyprland to an Arch Linux installation, including package installation, theming, configuration, and backup restoration.
@@ -257,13 +250,7 @@ nvidia_drm.modeset=1
 ### 4.2 Dependencies
 
 ```bash
-yay -S gnome-keyring onedrive-abraunegg seahorse
-```
-
-### 4.3 OneDrive config
-
-```bash
-onedrive --sync
+yay -S gnome-keyring seahorse
 ```
 
 ### 4.4 Systemd Services
@@ -272,7 +259,7 @@ Enable and start the following services:
 
 ```bash
 # User services
-for service in gcr-ssh-agent onedrive; do
+for service in gcr-ssh-agent; do
   systemctl --user enable $service
   systemctl --user start $service
 done
@@ -292,113 +279,17 @@ Cronjobs are in the `cronjobs/` folder and can be deployed with rsync:
 sudo rsync -va ./cronjobs/ /etc/
 ```
 
----
+Current cronjobs are:
 
-## 5. Restore from Backup
-
-### 5.1 Dependencies
-
-Install dependencies and add mountpoints in `/etc/fstab` for the NAS:
-
-```bash
-yay -S bitwarden borg python-pyfuse3 nfs-utils
-
-sudo mkdir -p /media/storage /media/fast-storage
-
-sudo cat >> /etc/fstab <<EOF
-# NAS
-192.168.0.5:/media/storage /media/storage  nfs defaults,soft,timeo=30 0 0
-192.168.0.5:/media/fast-storage /media/fast-storage nfs defaults,soft,timeo=30 0 0
-EOF
-
-sudo systemctl daemon-reload
-sudo mount -a
-```
-
-### 5.2 Mount Borg Backup
-
-1. Deploy the password following the README at [gchamon/borg-automated-backups](https://github.com/gchamon/borg-automated-backups).
-
-2. Mount the Borg archives:
-
-First specify the backup and restore paths:
-
-```bash
-BORG_BACKUP_PATH=/media/storage/borg-backups/nitro-rev1
-RECOVERY_PATH_HOME=$HOME/recovery-home
-RECOVERY_PATH_ETC=$HOME/recovery-etc
-```
-
-Then mount the latest archives:
-
-```bash
-HOME_LATEST_ARCHIVE=$(sudo borg list $BORG_BACKUP_PATH/home --json | jq -r '.archives[-1].archive')
-ETC_LATEST_ARCHIVE=$(sudo borg list $BORG_BACKUP_PATH/etc --json | jq -r '.archives[-1].archive')
-
-mkdir -p $RECOVERY_PATH_HOME $RECOVERY_PATH_ETC
-
-sudo borg mount $BORG_BACKUP_PATH/home::$HOME_LATEST_ARCHIVE $RECOVERY_PATH_HOME
-sudo borg mount $BORG_BACKUP_PATH/etc::$ETC_LATEST_ARCHIVE $RECOVERY_PATH_ETC
-```
-
-3. Restore Specific Directories and Files
-
-Use the following `rsync` commands to explicitly restore the listed directories and files:
-
-  3.1. HOME Directory
-
-```bash
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.mozilla/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.zen/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.local/lib/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.ssh/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/OneDrive/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/Scripts/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.zshenv
-```
-
-  3.2. System Configuration Files
-
-```bash
-sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/pacman.conf
-sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/pacman.d/
-```
-
-  3.3. Remove restoration mountpoints
-
-```bash
-sudo umount $RECOVERY_PATH_HOME
-sudo umount $RECOVERY_PATH_ETC
-sudo rm -rf $RECOVERY_PATH_HOME $RECOVERY_PATH_ETC
-```
-
-### 5.3. Deploy automatic backups
-
-Use [gchamon/borg-automated-backups](https://github.com/gchamon/borg-automated-backups)
-to redeploy the backup automation. Make sure to increment the `revX` in the
-backup, for instance, we used in the example `nitro-rev1`, therefore the next
-backup deployment should be `nitro-rev2` after a fresh install. This is so that
-I avoid erasing data from previous revisions, which frees me to do lean fresh
-installs without risking losing data.
+| Cronjob                 | Description                                                                                        |
+|-------------------------|----------------------------------------------------------------------------------------------------|
+| cron.hourly/yay_pkglist | Takes an inventory of the packages manually installed with yay and writes it to `/etc/pkglist.txt` |
 
 ---
 
-## 6. Virtualization Setup
+## 5. Backup and Restore
 
-### 6.1 Install Virtualization Tools
-
-```bash
-yay -S qemu-desktop libvirt virt-manager dnsmasq
-```
-
-### 6.2 Starting required services
-
-Once the `~/Scripts` folder is restored from backup you can just:
-
-```bash
-~/Scripts/qemu-services.sh
-```
-
----
-
-This guide assumes a clean Arch Linux installation. Adjust paths and configurations as needed for your specific environment.
+The [Backup and Restore](BACKUP_AND_RESTORE.md) guide isn't intended to be
+generally applicable outside my personal environment. It's there for my
+personal disaster recovery drills, but could inspire others looking for backup
+strategies.
