@@ -94,6 +94,7 @@ yay -S --needed \
   blueman \
   cliphist \
   dunst \
+  fd \
   fzf \
   gnome-system-monitor \
   grimblast-git \
