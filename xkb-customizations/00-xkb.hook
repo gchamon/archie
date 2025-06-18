@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = xkeyboard-config
+
+[Action]
+Description = Reinstalling xkb customizations...
+When = PostTransaction
+Exec = /usr/bin/rsync -a /etc/xkb-customizations/ /usr/share/xkeyboard-config-2/
