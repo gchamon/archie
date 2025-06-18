@@ -6,14 +6,12 @@ inspiration for others to follow similar backup strategies, but this is a much
 more personal guide, not intended to be generally usable.
 
 <!--toc:start-->
-- [1. Restore from Backup](#1-restore-from-backup)
-  - [1.1 Dependencies](#11-dependencies)
-  - [1.2 Mount Borg Backup](#12-mount-borg-backup)
-  - [1.3. Deploy automatic backups](#13-deploy-automatic-backups)
-  - [1.4 OneDrive config](#14-onedrive-config)
-- [2. Virtualization Setup](#2-virtualization-setup)
-  - [2.1 Install Virtualization Tools](#21-install-virtualization-tools)
-  - [2.2 Starting required services](#22-starting-required-services)
+- [Backup and Restore](#backup-and-restore)
+  - [1. Restore from Backup](#1-restore-from-backup)
+    - [1.1 Dependencies](#11-dependencies)
+    - [1.2 Mount Borg Backup](#12-mount-borg-backup)
+    - [1.3. Deploy automatic backups](#13-deploy-automatic-backups)
+    - [1.4 OneDrive config](#14-onedrive-config)
 <!--toc:end-->
 
 ## 1. Restore from Backup
@@ -123,5 +121,3 @@ Then start the service:
 systemctl --user enable onedrive
 systemctl --user start onedrive
 ```
-
----
