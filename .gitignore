@@ -17,3 +17,5 @@ nvim/lazy-lock.json
 !README.md
 !BACKUP_AND_RESTORE.md
 !CONTAINERS.md
+!KEYBOARD_CUSTOMIZATIONS.md
+!xkb-customizations

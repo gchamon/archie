@@ -318,3 +318,9 @@ strategies.
 
 [This document](CONTAINERS.md) explains steps to install and configure
 virtualization tools I need for daily work.
+
+## 7. Keyboard customizations
+
+[Keyboard customizations](KEYBOARD_CUSTOMIZATIONS.md) documents the deployment
+of xkeyboard-config compatible customizations that makes it easier to type in a
+different language than that of the keyboard in use.
