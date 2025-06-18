@@ -29,8 +29,8 @@ sudo mkdir -p /media/storage /media/fast-storage
 
 sudo cat >> /etc/fstab <<EOF
 # NAS
-192.168.0.5:/media/storage /media/storage  nfs defaults,soft,timeo=30 0 0
-192.168.0.5:/media/fast-storage /media/fast-storage nfs defaults,soft,timeo=30 0 0
+192.168.0.5:/media/storage        /media/storage        nfs   nofail,x-systemd.automount,x-systemd.requires=network-online.target,x-systemd.device-timeout=10
+192.168.0.5:/media/fast-storage   /media/fast-storage   nfs   nofail,x-systemd.automount,x-systemd.requires=network-online.target,x-systemd.device-timeout=10
 EOF
 
 sudo systemctl daemon-reload
