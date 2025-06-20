@@ -101,6 +101,7 @@ yay -S --needed \
   cliphist \
   dunst \
   fd \
+  frece \
   fzf \
   gnome-system-monitor \
   grimblast-git \
