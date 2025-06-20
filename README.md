@@ -25,9 +25,15 @@
   - [6. Virtualization and Containarization](#6-virtualization-and-containarization)
 <!--toc:end-->
 
-This guide provides step-by-step instructions for deploying Hyprland to an Arch Linux installation, including package installation, theming, configuration, and backup restoration.
+This guide provides step-by-step instructions for deploying Hyprland to an Arch
+Linux installation, including package installation, theming, configuration, and
+backup restoration.
 
-Up to section [4. System Configuration](#4-system-configuration) the guide is supposed to be system and backup agnostic and should work in any system.
+This is intended for single user devices, personal devices that aren't going to
+be shared by multiple linux users.
+
+Up to section [4. System Configuration](#4-system-configuration) the guide is
+supposed to be system and backup agnostic and should work in any system.
 
 ![desktop](docs/assets/desktop.png)
 ![windows](docs/assets/windows-opened.png)
@@ -125,6 +131,8 @@ yay -S --needed \
 
 ### 1.3 Install Development Packages for LazyVim
 
+Install these language-specific packages:
+
 ```bash
 yay -S --needed \
   go \
@@ -133,6 +141,15 @@ yay -S --needed \
   pyenv \
   rust
 ```
+
+[Install nix](https://nixos.org/download/#nix-install-linux) in single user mode:
+
+```bash
+sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --no-daemon
+```
+
+It's more convenient to install from nix official scripts than with arch native
+package manager to avoid permission issues in neovim.
 
 ---
 
