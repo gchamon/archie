@@ -88,7 +88,7 @@
         }
     },
     "pulseaudio": {
-        "format": "{icon} {volume:2}%",
+        "format": "{icon}  {volume:2}%",
         "format-bluetooth": "{icon} {volume}% ",
         "format-muted": "MUTE",
         "format-icons": {
@@ -110,7 +110,7 @@
     },
     "cpu": {
         "interval": 5,
-        "format": "CPU {usage:2}%",
+        "format": "CPU{usage:2}%",
         "on-click": "kitty htop",
         "on-click-right": "gnome-system-monitor --show-resources-tab"
     },
@@ -120,7 +120,7 @@
             "warning": 30,
             "critical": 15
         },
-        "format": "{icon} {capacity}%",
+        "format": "{icon}  {capacity}%",
         "format-icons": [
             "",
             "",
@@ -132,7 +132,7 @@
     },
     "disk": {
         "interval": 5,
-        "format": "Disk {percentage_used:2}%",
+        "format": "Disk{percentage_used:2}%",
         "path": "/",
         "on-click": "kitty ncdu ~",
         "on-click-right": "gnome-system-monitor --show-file-systems-tab"
