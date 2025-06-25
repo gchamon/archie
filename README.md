@@ -10,6 +10,7 @@
     - [1.3 Install Development Packages for LazyVim](#13-install-development-packages-for-lazyvim)
   - [2. Deploying system config](#2-deploying-system-config)
     - [2.1 System specific configuration](#21-system-specific-configuration)
+      - [Customization of device-specific configs](#customization-of-device-specific-configs)
     - [2.2 Deploy oh-my-zsh](#22-deploy-oh-my-zsh)
     - [2.3 Add required home folders](#23-add-required-home-folders)
   - [3. Theming](#3-theming)
@@ -18,11 +19,14 @@
     - [3.3 Install the GTK theme](#33-install-the-gtk-theme)
   - [4. System Configuration](#4-system-configuration)
     - [4.1 Boot Options](#41-boot-options)
+      - [Nvidia DRM](#nvidia-drm)
+      - [ACPI Backlight control](#acpi-backlight-control)
     - [4.2 Dependencies](#42-dependencies)
     - [4.4 Systemd Services](#44-systemd-services)
     - [4.5 Cronjobs](#45-cronjobs)
   - [5. Backup and Restore](#5-backup-and-restore)
   - [6. Virtualization and Containarization](#6-virtualization-and-containarization)
+  - [7. Keyboard customizations](#7-keyboard-customizations)
 <!--toc:end-->
 
 This guide provides step-by-step instructions for deploying Hyprland to an Arch
@@ -179,6 +183,23 @@ If no system specific configuration applies, deploy the empty config:
 ```bash
 ln -s ~/.config/hypr/config/empty.conf ~/.config/hypr/config/current.conf
 ```
+
+#### Customization of device-specific configs
+
+For `brightnessctl` to work, use `$backlightDevice` to configure which device
+`brightnessctl` should use to control brightness.
+
+To get a list of the available devices, run:
+
+```bash
+ls -1 /sys/class/backlight/
+```
+
+If none is available, you should try using `linux-lts` kernel and play around
+with `acpi_backlight` kernel parameter. For more information see [ACPI
+backlight control](#acpi-backlight-control) and archlinux docs on [Backlight's
+kernel command-line
+options](https://wiki.archlinux.org/title/Backlight#Kernel_command-line_options).
 
 ### 2.2 Deploy oh-my-zsh
 
