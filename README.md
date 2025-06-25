@@ -95,9 +95,11 @@ Install the following packages using `yay`:
 
 ```bash
 yay -S --needed \
+  acpi \
   bc \
   bind \
   blueman \
+  brightnessctl \
   cliphist \
   dunst \
   fd \
@@ -283,13 +285,28 @@ yay -S nwg-look
 
 ### 4.1 Boot Options
 
-Add the following to your bootloader configuration (e.g., `grub.cfg` or `refind.conf`):
+These are options that need to be passed to the kernel at boot time. See the
+bootloader docs for information on how to add these options.
+
+For systemd-boot, which I use, they are located at `/boot/loader/entries/`. One
+of the entries is the fallback, which should be left untouched.
+
+#### Nvidia DRM
 
 ```text
 nvidia_drm.modeset=1
 ```
 
 *(Use this if you're using NVIDIA proprietary drivers, as per the Hyprland master tutorial.)*
+
+#### ACPI Backlight control
+
+For my Acer Nitro notebook, I need to add the following boot option so I can
+control the device's built-in screen brightness with `brightnessctl`:
+
+```
+acpi_backlight=native
+```
 
 ### 4.2 Dependencies
 
