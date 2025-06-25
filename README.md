@@ -24,9 +24,11 @@
     - [4.2 Dependencies](#42-dependencies)
     - [4.4 Systemd Services](#44-systemd-services)
     - [4.5 Cronjobs](#45-cronjobs)
-  - [5. Backup and Restore](#5-backup-and-restore)
-  - [6. Virtualization and Containarization](#6-virtualization-and-containarization)
-  - [7. Keyboard customizations](#7-keyboard-customizations)
+  - [5. Further reading](#5-further-reading)
+    - [5.1 Keyboard shortcuts](#51-keyboard-shortcuts)
+    - [5.2 Keyboard customizations](#52-keyboard-customizations)
+    - [5.3 Backup and Restore](#53-backup-and-restore)
+    - [5.4 Virtualization and Containarization](#54-virtualization-and-containarization)
 <!--toc:end-->
 
 This guide provides step-by-step instructions for deploying Hyprland to an Arch
@@ -369,20 +371,30 @@ Current cronjobs are:
 
 ---
 
-## 5. Backup and Restore
+## 5. Further reading
+
+These are documents that expand the documentation on this desktop environment
+
+### 5.1 Keyboard shortcuts
+
+[Keyboard shortcuts](KEYBOARD_SHORTCUTS.md) documents all the possible keyboard
+shortcuts. The information is extracted from hyprland configuration using
+[Google's Gemini LLM](https://gemini.google.com).
+
+### 5.2 Keyboard customizations
+
+[Keyboard customizations](KEYBOARD_CUSTOMIZATIONS.md) documents the deployment
+of xkeyboard-config compatible customizations that makes it easier to type in a
+different language than that of the keyboard in use.
+
+### 5.3 Backup and Restore
 
 The [Backup and Restore](BACKUP_AND_RESTORE.md) guide isn't intended to be
 generally applicable outside my personal environment. It's there for my
 personal disaster recovery drills, but could inspire others looking for backup
 strategies.
 
-## 6. Virtualization and Containarization
+### 5.4 Virtualization and Containarization
 
 [This document](CONTAINERS.md) explains steps to install and configure
 virtualization tools I need for daily work.
-
-## 7. Keyboard customizations
-
-[Keyboard customizations](KEYBOARD_CUSTOMIZATIONS.md) documents the deployment
-of xkeyboard-config compatible customizations that makes it easier to type in a
-different language than that of the keyboard in use.
