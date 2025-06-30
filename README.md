@@ -133,6 +133,7 @@ yay -S --needed \
   unzip \
   waybar \
   wl-clip-persist \
+  xorg-xhost \
   zen-browser-bin \
   zip \
   zsh-fast-syntax-highlighting
