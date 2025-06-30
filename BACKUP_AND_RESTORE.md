@@ -81,6 +81,7 @@ sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.zshenv
 
 ```bash
 sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/pacman.conf
+sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/makepkg.conf
 sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/pacman.d/
 ```
 
