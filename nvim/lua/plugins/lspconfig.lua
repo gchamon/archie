@@ -1,12 +1,6 @@
 return {
   {
     "neovim/nvim-lspconfig",
-    config = function()
-      local lspconfig = require("lspconfig")
-      lspconfig.elixirls.setup({
-        cmd = { "/usr/lib/elixir-ls/language_server.sh" },
-      })
-    end,
     opts = {
       -- Useful for debugging formatter issues
       format_notify = true,
