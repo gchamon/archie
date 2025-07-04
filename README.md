@@ -126,6 +126,7 @@ yay -S --needed \
   noto-fonts \
   noto-fonts-emoji \
   otf-font-awesome \
+  pamixer \
   pavucontrol \
   plocate \
   rofi-wayland \
