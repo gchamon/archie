@@ -75,6 +75,7 @@ sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.ssh/
 sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/OneDrive/
 sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/Scripts/
 sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.zshenv
+sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.gitconfig
 ```
 
   3.2. System Configuration Files
