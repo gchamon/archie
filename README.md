@@ -396,7 +396,7 @@ generally applicable outside my personal environment. It's there for my
 personal disaster recovery drills, but could inspire others looking for backup
 strategies.
 
-### 5.4 Virtualization and Containarization
+### 5.4 Development
 
-[This document](CONTAINERS.md) explains steps to install and configure
-virtualization tools I need for daily work.
+[This document](DEVELOPMENT.md) explains steps to install and configure
+tools I need for daily work as a developer.
