@@ -122,6 +122,7 @@ yay -S --needed \
   ksnip \
   less \
   lsd \
+  man-db \
   ncdu \
   noto-fonts \
   noto-fonts-emoji \
