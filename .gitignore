@@ -16,7 +16,7 @@ nvim/lazy-lock.json
 !.p10k*
 !README.md
 !BACKUP_AND_RESTORE.md
-!CONTAINERS.md
+!DEVELOPMENT.md
 !KEYBOARD_CUSTOMIZATIONS.md
 !KEYBOARD_SHORTCUTS.md
 !xkb-customizations
