@@ -28,7 +28,7 @@
     - [5.1 Keyboard shortcuts](#51-keyboard-shortcuts)
     - [5.2 Keyboard customizations](#52-keyboard-customizations)
     - [5.3 Backup and Restore](#53-backup-and-restore)
-    - [5.4 Virtualization and Containarization](#54-virtualization-and-containarization)
+    - [5.4 Development](#54-development)
 <!--toc:end-->
 
 This guide provides step-by-step instructions for deploying Hyprland to an Arch
