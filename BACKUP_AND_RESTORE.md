@@ -68,14 +68,17 @@ Use the following `rsync` commands to explicitly restore the listed directories 
   3.1. HOME Directory
 
 ```bash
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.mozilla/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.zen/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.local/lib/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.ssh/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/OneDrive/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/Scripts/
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.zshenv
-sudo rsync -av {$RECOVERY_PATH_HOME/home,~}/.gitconfig
+mkdir -p ~/.config
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.mozilla/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.zen/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.local/lib/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.ssh/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/OneDrive/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/Scripts/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.zshenv
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.gitconfig
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/calibre/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/'Calibre Library'/
 ```
 
   3.2. System Configuration Files
@@ -92,6 +95,12 @@ sudo rsync -av {$RECOVERY_PATH_ETC/etc,/etc}/pacman.d/
 sudo umount $RECOVERY_PATH_HOME
 sudo umount $RECOVERY_PATH_ETC
 sudo rm -rf $RECOVERY_PATH_HOME $RECOVERY_PATH_ETC
+```
+
+  3.4 Fix eventual ownership problems after restore
+
+```bash
+sudo chown -R $USER: $HOME
 ```
 
 ### 1.3. Deploy automatic backups
