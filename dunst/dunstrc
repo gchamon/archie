@@ -7,6 +7,7 @@ timeout = 10
 follow = keyboard
 # origin = bottom-left
 offset = 40x40
+dmenu = "rofi -dmenu"
 
 [urgency_low]
 background = "#303446"
