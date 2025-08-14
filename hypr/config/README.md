@@ -1,7 +1,9 @@
 # Device specific configurations
 
-This folder holds device specific configurations. Each filename is a nickname for a device. To use one specific configuration, create a symbolic link to `current.conf`:
+This folder holds device specific configurations. Copy from `device.dist.conf`
+and change the required configs:
 
 ```bash
-ln -s $HOME/.config/hypr/config/{nitro.conf,current.conf}
+cp $HOME/.config/hypr/config/device{.dist,}.conf
+$EDITOR $HOME/.config/hypr/config/device.conf
 ```

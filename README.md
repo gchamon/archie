@@ -177,16 +177,13 @@ rm -rf ~/archlinux-system-config
 
 ### 2.1 System specific configuration
 
-System specific configurations reside in `~/.config/hypr/config`. To deploy one config, create a symbolic link for it:
+System specific configurations reside in `~/.config/hypr/config`. To deploy the
+configuration, copy the default distribution file and change it:
 
 ```bash
-ln -s ~/.config/hypr/config/nitro.conf ~/.config/hypr/config/current.conf
-```
-
-If no system specific configuration applies, deploy the empty config:
-
-```bash
-ln -s ~/.config/hypr/config/empty.conf ~/.config/hypr/config/current.conf
+cp ~/.config/hypr/config/device.dist.conf ~/.config/hypr/config/device.conf
+$EDITOR ~/.config/hypr/config/device.conf
+hyprctl reload
 ```
 
 #### Customization of device-specific configs
