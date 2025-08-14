@@ -79,6 +79,7 @@ sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.zshenv
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.gitconfig
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/calibre/
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/'Calibre Library'/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/hypr/config/device.conf
 ```
 
   3.2. System Configuration Files
