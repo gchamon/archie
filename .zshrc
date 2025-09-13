@@ -60,7 +60,7 @@ source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 
-plugins=(git extract fzf docker docker-compose)
+plugins=(git extract fzf docker docker-compose terraform)
 source $ZSH/oh-my-zsh.sh
 
 test -f $HOME/.local/lib/zsh/aliases.sh && source "$HOME/.local/lib/zsh/aliases.sh"
@@ -82,7 +82,7 @@ compinit
 # shells
 if zmodload zsh/terminfo && (( terminfo[colors] >= 256 )); then
   [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-typeset -g POWERLEVEL9K_OS_ICON_CONTENT_EXPANSION=$'\uF303'
+  typeset -g POWERLEVEL9K_OS_ICON_CONTENT_EXPANSION=$'\uF303'
 else
   [[ ! -f ~/.p10k-portable.zsh ]] || source ~/.p10k-portable.zsh
 fi
