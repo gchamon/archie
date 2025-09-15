@@ -130,6 +130,7 @@ yay -S --needed \
   pamixer \
   pavucontrol \
   plocate \
+  ranger \
   rofi-wayland \
   rsync \
   unzip \
