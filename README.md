@@ -19,9 +19,9 @@
     - [3.3 Install the GTK theme](#33-install-the-gtk-theme)
   - [4. System Configuration](#4-system-configuration)
     - [4.1 Boot Options](#41-boot-options)
-      - [Nvidia DRM](#nvidia-drm)
       - [ACPI Backlight control](#acpi-backlight-control)
-    - [4.2 Dependencies](#42-dependencies)
+    - [4.2 Nvidia](#42-nvidia)
+    - [4.3 Dependencies](#43-dependencies)
     - [4.4 Systemd Services](#44-systemd-services)
     - [4.5 Cronjobs](#45-cronjobs)
   - [5. Further reading](#5-further-reading)
@@ -198,6 +198,20 @@ To get a list of the available devices, run:
 ls -1 /sys/class/backlight/
 ```
 
+You can also run `brightnessctl -l` and check which device is related to the
+internal GPU. In my case:
+
+```text
+$ brightnessctl -l
+# ...
+Device 'amdgpu_bl1' of class 'backlight':
+ Current brightness: 181 (71%)
+ Max brightness: 255
+# ...
+```
+
+The name of the device is related to which card it's linked to in `/dev/dri`.
+
 If none is available, you should try using `linux-lts` kernel and play around
 with `acpi_backlight` kernel parameter. For more information see [ACPI
 backlight control](#acpi-backlight-control) and archlinux docs on [Backlight's
@@ -315,14 +329,6 @@ bootloader docs for information on how to add these options.
 For systemd-boot, which I use, they are located at `/boot/loader/entries/`. One
 of the entries is the fallback, which should be left untouched.
 
-#### Nvidia DRM
-
-```text
-nvidia_drm.modeset=1
-```
-
-*(Use this if you're using NVIDIA proprietary drivers, as per the Hyprland master tutorial.)*
-
 #### ACPI Backlight control
 
 For my Acer Nitro notebook, I need to add the following boot option so I can
@@ -332,7 +338,52 @@ control the device's built-in screen brightness with `brightnessctl`:
 acpi_backlight=native
 ```
 
-### 4.2 Dependencies
+### 4.2 Nvidia
+
+Currently using `nvidia-open-dkms` without issues.
+
+From [Hyprland Nvidia](https://wiki.hypr.land/Nvidia/), enable modeset for nvidia_drm:
+
+```bash
+echo "options nvidia_drm modeset=1" | tee /etc/modprobe.d/nvidia.conf
+```
+
+This can also be set via kernel boot parameter `nvidia_drm.modeset=1`. In my
+testing, using the former makes the Nvidia GPU attach to `/dev/dri/card0`,
+while the latter makes it attach to `/dev/dri/card0`. This influences where the
+internal GPU is mapped, which in turn affects the name of the device used to
+control the backlight.
+
+In `/etc/mkinitcpio.conf` add the required Nvidia kernel modules for [early
+loading](https://wiki.archlinux.org/title/Kernel_module#Early_module_loading):
+
+```
+MODULES=(... nvidia nvidia_modeset nvidia_uvm nvidia_drm ...)
+```
+
+After which you must run `sudo mkinitcpio -P`.
+
+Lastly, add the required environment variables to the hyprland config for the
+device under `~/.config/hypr/config/device.conf`:
+
+```hyprland
+env = LIBVA_DRIVER_NAME,nvidia
+env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+```
+
+For dual monitors, you should also follow (Hyprland
+Multi-GPU)[https://wiki.hypr.land/Configuring/Multi-GPU/] guide to check
+which device your internal and external GPU is linked to and set them properly.
+
+#### Bumblebee
+
+Before recent updates, it was OK to have bumblebee installed, but now, due to a
+rule it deploys in `/usr/lib/modprobe.d/bumblebee.conf` it blacklists among
+other kernel modules, the `nvidia_drm` module, which disables external
+monitors. So it's important to make sure that `bumblebee` isn't installed in
+the system.
+
+### 4.3 Dependencies
 
 ```bash
 yay -S gnome-keyring seahorse
