@@ -21,9 +21,12 @@
     - [4.1 Boot Options](#41-boot-options)
       - [ACPI Backlight control](#acpi-backlight-control)
     - [4.2 Nvidia](#42-nvidia)
-    - [4.3 Dependencies](#43-dependencies)
-    - [4.4 Systemd Services](#44-systemd-services)
-    - [4.5 Cronjobs](#45-cronjobs)
+      - [Bumblebee](#bumblebee)
+    - [4.3 Hibernate on lid close](#43-hibernate-on-lid-close)
+      - [External monitor frozen after return from sleep](#external-monitor-frozen-after-return-from-sleep)
+    - [4.4 Keyring](#44-keyring)
+    - [4.5 Systemd Services](#45-systemd-services)
+    - [4.6 Cronjobs](#46-cronjobs)
   - [5. Further reading](#5-further-reading)
     - [5.1 Keyboard shortcuts](#51-keyboard-shortcuts)
     - [5.2 Keyboard customizations](#52-keyboard-customizations)
@@ -383,13 +386,49 @@ other kernel modules, the `nvidia_drm` module, which disables external
 monitors. So it's important to make sure that `bumblebee` isn't installed in
 the system.
 
-### 4.3 Dependencies
+### 4.3 Hibernate on lid close
+
+By default, systemd handles ACPI events via default rules which are documented
+in archlinux's [Power management > ACPI
+events](https://wiki.archlinux.org/title/Power_management#ACPI_events).
+
+To make it so that every lid close event will put the machine in hybrid sleep:
+
+```bash
+sudo mkdir -p /etc/systemd/logind.conf.d
+sudo tee /etc/systemd/logind.conf.d/lid-close.conf <<CONF
+[Login]
+HandleLidSwitch=hybrid-sleep
+HandleLidSwitchDocked=hybrid-sleep
+HandleLidSwitchExternalPower=hybrid-sleep
+CONF
+```
+
+#### External monitor frozen after return from sleep
+
+Sometimes when the system returns from sleep, the second monitor will freeze
+and won't respond to updates. This happens when the HDMI output is connected to
+a different GPU than the built-in display. That seems to happen, however, when
+returning from sleep right after putting it to sleep, maybe because the
+external monitor didn't have time to enter power saving mode. This is
+apparently a [common](https://github.com/hyprwm/Hyprland/issues/9194)
+[issue](https://old.reddit.com/r/hyprland/comments/1jdcpkd/external_monitor_has_its_display_output_frozen/)
+in hyprland and maybe not even hyprland's fault.
+
+In any case, until a better solution is found, the workaround is to execute
+`hyprctl reload` to bring the second screen back to life. In my case I have to
+run it twice, so it picks up the right resolution for the screen.
+
+### 4.4 Keyring
+
+This enables the system to store password for commonly used credentials that
+are password protected, like ssh keys.
 
 ```bash
 yay -S gnome-keyring seahorse
 ```
 
-### 4.4 Systemd Services
+### 4.5 Systemd Services
 
 Enable and start the following services:
 
@@ -407,7 +446,7 @@ for service in bluetooth; do
 done
 ```
 
-### 4.5 Cronjobs
+### 4.6 Cronjobs
 
 Cronjobs are in the `cronjobs/` folder and can be deployed with rsync:
 
