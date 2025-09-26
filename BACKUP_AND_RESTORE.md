@@ -25,7 +25,7 @@ yay -S bitwarden borg python-pyfuse3 nfs-utils
 
 sudo mkdir -p /media/storage /media/fast-storage
 
-sudo cat >> /etc/fstab <<EOF
+sudo tee --append /etc/fstab <<EOF
 # NAS
 192.168.0.5:/media/storage        /media/storage        nfs   nofail,x-systemd.automount,x-systemd.requires=network-online.target,x-systemd.device-timeout=10
 192.168.0.5:/media/fast-storage   /media/fast-storage   nfs   nofail,x-systemd.automount,x-systemd.requires=network-online.target,x-systemd.device-timeout=10
