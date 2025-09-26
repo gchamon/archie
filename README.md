@@ -186,8 +186,15 @@ configuration, copy the default distribution file and change it:
 
 ```bash
 cp ~/.config/hypr/config/device.dist.conf ~/.config/hypr/config/device.conf
-$EDITOR ~/.config/hypr/config/device.conf
+${EDITOR:-nvim} ~/.config/hypr/config/device.conf
 hyprctl reload
+```
+
+`hyprpaper` also needs to be aware of the internal monitor name, which can vary between devices. To configure `hyprpaper`:
+
+```bash
+cp ~/.config/hypr/hyprpaper.dist.conf ~/.config/hyprpaper.conf
+${EDITOR:-nvim} ~/.config/hypr/hyprpaper.conf
 ```
 
 #### Customization of device-specific configs
@@ -451,7 +458,7 @@ done
 Cronjobs are in the `cronjobs/` folder and can be deployed with rsync:
 
 ```
-sudo rsync -va ./cronjobs/ /etc/
+sudo rsync -va ~/.config/cronjobs/ /etc/
 ```
 
 Current cronjobs are:
