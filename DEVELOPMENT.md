@@ -6,16 +6,52 @@ containerization and virtualization running.
 
 <!--toc:start-->
 - [Containers and Virtual Machines](#containers-and-virtual-machines)
-  - [1. Docker install](#1-docker-install)
-  - [2. Virtualization Setup](#2-virtualization-setup)
-    - [2.1 Install Virtualization Tools](#21-install-virtualization-tools)
-    - [2.2 Starting required services](#22-starting-required-services)
-  - [3. Incus install](#3-incus-install)
-  - [3. Git config](#3-git-config)
+    - [LazyVim](#lazyvim)
+  - [Git config](#git-config)
+  - [Docker install](#docker-install)
+  - [Virtualization Setup](#virtualization-setup)
+    - [Install Virtualization Tools](#install-virtualization-tools)
+    - [Starting required services](#starting-required-services)
+  - [Incus install](#incus-install)
 <!--toc:end-->
 
+### LazyVim
 
-## 1. Docker install
+Install these language-specific packages:
+
+```bash
+yay -S --needed \
+  go \
+  neovim \
+  npm \
+  pyenv \
+  rust
+```
+
+[Install nix](https://nixos.org/download/#nix-install-linux) in single user mode:
+
+```bash
+sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --no-daemon
+```
+
+It's more convenient to install from nix official scripts than with arch native
+package manager to avoid permission issues in neovim.
+
+In LazyVim, `:LazyExtras` then install `mini-surround`.
+
+## Git config
+
+Git configuration should be restored from [Backup and
+Restore](BACKUP_AND_RESTORE.md) procedure, but the configuration is done so
+that merge strategy and git signing using ssh key is configured:
+
+- Configure email and name
+- Set rebase to false (default strategy merge)
+- Set default branch to main
+- Configure `git-signing-key` as a signing key following [this
+  doc](https://docs.gitlab.com/user/project/repository/signed_commits/ssh/).
+
+## Docker install
 
 ```bash
 yay -S docker docker-buildx
@@ -24,15 +60,15 @@ sudo systemctl start docker
 sudo gpasswd -a $USER docker
 ```
 
-## 2. Virtualization Setup
+## Virtualization Setup
 
-### 2.1 Install Virtualization Tools
+### Install Virtualization Tools
 
 ```bash
 yay -S qemu-desktop libvirt virt-manager dnsmasq
 ```
 
-### 2.2 Starting required services
+### Starting required services
 
 Once the `~/Scripts` folder is restored from backup you can just:
 
@@ -46,7 +82,7 @@ To stop these services:
 ~/Scripts/qemu-services.sh stop
 ```
 
-## 3. Incus install
+## Incus install
 
 ```bash
 yay -S incus
@@ -99,17 +135,6 @@ projects:
 certificates: []
 EOF
 
-inus admin init --preseed /tmp/incus-config.yml
+incus admin init --preseed /tmp/incus-config.yml
 ```
 
-## 3. Git config
-
-Git configuration should be restored from [Backup and
-Restore](BACKUP_AND_RESTORE.md) procedure, but the configuration is done so
-that merge strategy and git signing using ssh key is configured:
-
-- Configure email and name
-- Set rebase to false (default strategy merge)
-- Set default branch to main
-- Configure `git-signing-key` as a signing key following [this
-  doc](https://docs.gitlab.com/user/project/repository/signed_commits/ssh/).

@@ -121,27 +121,6 @@ yay -S --needed \
   zsh-fast-syntax-highlighting
 ```
 
-### 1.3 Install Development Packages for LazyVim
-
-Install these language-specific packages:
-
-```bash
-yay -S --needed \
-  go \
-  neovim \
-  npm \
-  pyenv \
-  rust
-```
-
-[Install nix](https://nixos.org/download/#nix-install-linux) in single user mode:
-
-```bash
-sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --no-daemon
-```
-
-It's more convenient to install from nix official scripts than with arch native
-package manager to avoid permission issues in neovim.
 
 ---
 
