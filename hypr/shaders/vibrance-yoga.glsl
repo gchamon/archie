@@ -8,7 +8,7 @@ uniform sampler2D tex;
 out vec4 fragColor;
 
 // see https://github.com/CeeJayDK/SweetFX/blob/a792aee788c6203385a858ebdea82a77f81c67f0/Shaders/Vibrance.fx#L20-L30
-const vec3 VIB_RGB_BALANCE = vec3(1, 1, 0.1);
+const vec3 VIB_RGB_BALANCE = vec3(1.4, 0.8, 0.1);
 const float VIB_VIBRANCE = -0.3;
 const vec3 VIB_coeffVibrance = VIB_RGB_BALANCE * -VIB_VIBRANCE;
 
