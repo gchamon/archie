@@ -422,32 +422,4 @@ Current cronjobs are:
 |-------------------------|----------------------------------------------------------------------------------------------------|
 | cron.hourly/yay_pkglist | Takes an inventory of the packages manually installed with yay and writes it to `/etc/pkglist.txt` |
 
----
 
-## 5. Further reading
-
-These are documents that expand the documentation on this desktop environment
-
-### 5.1 Keyboard shortcuts
-
-[Keyboard shortcuts](KEYBOARD_SHORTCUTS.md) documents all the possible keyboard
-shortcuts. The information is extracted from hyprland configuration using
-[Google's Gemini LLM](https://gemini.google.com).
-
-### 5.2 Keyboard customizations
-
-[Keyboard customizations](KEYBOARD_CUSTOMIZATIONS.md) documents the deployment
-of xkeyboard-config compatible customizations that makes it easier to type in a
-different language than that of the keyboard in use.
-
-### 5.3 Backup and Restore
-
-The [Backup and Restore](BACKUP_AND_RESTORE.md) guide isn't intended to be
-generally applicable outside my personal environment. It's there for my
-personal disaster recovery drills, but could inspire others looking for backup
-strategies.
-
-### 5.4 Development
-
-[This document](DEVELOPMENT.md) explains steps to install and configure
-tools I need for daily work as a developer.
