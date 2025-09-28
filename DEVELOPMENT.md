@@ -54,7 +54,7 @@ that merge strategy and git signing using ssh key is configured:
 ## Docker install
 
 ```bash
-yay -S docker docker-buildx
+yay -S docker docker-buildx docker-compose
 sudo systemctl enable docker
 sudo systemctl start docker
 sudo gpasswd -a $USER docker
