@@ -1,0 +1,8 @@
+[[shades]]
+name = "vibrance-oled"
+default = true
+
+[[shades]]
+name = "night-vibrance-oled"
+start_time = 19:00:00
+end_time = 06:00:00
