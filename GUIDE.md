@@ -284,15 +284,15 @@ yay -S nwg-look
 
 ---
 
-## 4. System Configuration
+## 4. System config customizations
 
 ### 4.1 Boot Options
 
 These are options that need to be passed to the kernel at boot time. See the
 bootloader docs for information on how to add these options.
 
-For systemd-boot, which I use, they are located at `/boot/loader/entries/`. One
-of the entries is the fallback, which should be left untouched.
+For `systemd-boot`, they are located at `/boot/loader/entries/`. One of the
+entries is the fallback, which should be left untouched.
 
 #### ACPI Backlight control
 

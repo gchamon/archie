@@ -13,8 +13,8 @@ const float temperatureStrength = 1.0;
 const float LuminancePreservationFactor = 1.0;
 
 // Vibrance settings
-const vec3 VIB_RGB_BALANCE = vec3(1.4, 0.8, 0.1);
-const float VIB_VIBRANCE = -0.3; // Negative value reduces saturation
+const vec3 VIB_RGB_BALANCE = vec3(1.4, 1, 0.1);
+const float VIB_VIBRANCE = -0.4;
 const vec3 VIB_coeffVibrance = VIB_RGB_BALANCE * -VIB_VIBRANCE;
 const vec3 VIB_coefLuma = vec3(0.212656, 0.715158, 0.072186);
 
