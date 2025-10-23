@@ -109,6 +109,7 @@ yay -S --needed \
   bind \
   blueman \
   brightnessctl \
+  calibre \
   cliphist \
   dunst \
   fd \
