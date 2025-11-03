@@ -69,17 +69,18 @@ Use the following `rsync` commands to explicitly restore the listed directories 
 
 ```bash
 mkdir -p ~/.config
-sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.mozilla/
-sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.zen/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/'Calibre Library'/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/aider/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/calibre/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/hypr/config/device.conf
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.gitconfig
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.local/lib/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.mozilla/
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.ssh/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.zen/
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.zshenv
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/OneDrive/
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/Scripts/
-sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.zshenv
-sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.gitconfig
-sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/calibre/
-sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/'Calibre Library'/
-sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/hypr/config/device.conf
 ```
 
   3.2. System Configuration Files
