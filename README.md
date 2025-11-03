@@ -1,6 +1,6 @@
 # Archie
 
-Archie is the name of my system and this is it's companion guide.
+Archie is the name of my system and this is its companion guide.
 
 ![desktop](docs/assets/desktop.png)
 ![windows](docs/assets/windows-opened.png)
