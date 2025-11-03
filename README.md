@@ -32,30 +32,30 @@ behind [Hyprland](https://hypr.land/).
 
 These are the topics included in this handbook.
 
-### [System installation guide](GUIDE.md)
+### [System installation guide](docs/GUIDE.md)
 
-The system installation guide documents necessary steps to get archie up and running, so start [here](GUIDE.md)!
+The system installation guide documents necessary steps to get archie up and running, so start [here](docs/GUIDE.md)!
 
-### [Keyboard shortcuts](KEYBOARD_SHORTCUTS.md)
+### [Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md)
 
-[Keyboard shortcuts](KEYBOARD_SHORTCUTS.md) documents all the possible keyboard
+[Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md) documents all the possible keyboard
 shortcuts. The information is extracted from hyprland configuration using
 [Google's Gemini LLM](https/gemini.google.com).
 
-### [Keyboard customizations](KEYBOARD_CUSTOMIZATIONS.md)
+### [Keyboard customizations](docs/KEYBOARD_CUSTOMIZATIONS.md)
 
-[Keyboard customizations](KEYBOARD_CUSTOMIZATIONS.md) documents the deployment
+[Keyboard customizations](docs/KEYBOARD_CUSTOMIZATIONS.md) documents the deployment
 of xkeyboard-config compatible customizations that makes it easier to type in a
 different language than that of the keyboard in use.
 
-### [Backup and Restore](BACKUP_AND_RESTORE.md)
+### [Backup and Restore](docs/BACKUP_AND_RESTORE.md)
 
-The [Backup and Restore](BACKUP_AND_RESTORE.md) guide isn't intended to be
+The [Backup and Restore](docs/BACKUP_AND_RESTORE.md) guide isn't intended to be
 generally applicable outside my personal environment. It's there for my
 personal disaster recovery drills, but could inspire others looking for backup
 strategies.
 
-### [Development](DEVELOPMENT.md)
+### [Development](docs/DEVELOPMENT.md)
 
-[This document](DEVELOPMENT.md) explains steps to install and configure
+[This document](docs/DEVELOPMENT.md) explains steps to install and configure
 tools I need for daily work as a developer.
