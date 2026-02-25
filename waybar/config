@@ -5,6 +5,12 @@
     "position": "top",
 
     "modules-left": [
+        "cpu",
+        "custom/right-arrow-dark",
+        "custom/right-arrow-light",
+        "memory",
+        "custom/right-arrow-dark",
+        "custom/right-arrow-light",
         "hyprland/workspaces",
         "custom/right-arrow-dark"
     ],
@@ -23,12 +29,6 @@
         "custom/screenshare_detector",
         "custom/left-arrow-dark",
         "pulseaudio",
-        "custom/left-arrow-light",
-        "custom/left-arrow-dark",
-        "memory",
-        "custom/left-arrow-light",
-        "custom/left-arrow-dark",
-        "cpu",
         "custom/left-arrow-light",
         "custom/left-arrow-dark",
         "battery",
@@ -141,4 +141,3 @@
         "icon-size": 20
     }
 }
-
