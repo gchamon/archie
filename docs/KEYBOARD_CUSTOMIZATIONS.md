@@ -8,8 +8,8 @@ that the keyboard in use is designed to.
 Choose a customization which can be listed with `ls xkb-customizations`:
 
 ```bash
-sudo rsync -va /etc/xkb-customizations/us-br/ /usr/share/xkeyboard-config-2/
-sudo rsync -va /etc/xkb-customizations/us-br/ /etc/xkb-customizations
+sudo rsync -va ./xkb-customizations/us-br/ /etc/xkb-customizations
+sudo rsync -va ./xkb-customizations/us-br/ /usr/share/xkeyboard-config-2/
 ```
 
 Deploy the `00-xkb.hook`, which always redeploy the customization whenever
