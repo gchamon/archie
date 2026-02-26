@@ -44,7 +44,6 @@ be shared by multiple linux users.
 Up to section [4. System Configuration](#4-system-configuration) the guide is
 supposed to be system and backup agnostic and should work in any system.
 
-
 ---
 
 ## 1. Initial Setup
@@ -120,7 +119,6 @@ yay -S --needed \
   zip \
   zsh-fast-syntax-highlighting
 ```
-
 
 ---
 
@@ -240,27 +238,13 @@ yay -S --needed \
   archlinux-wallpaper \
   gnome-themes-extra \
   qt5-graphicaleffects \
+  sddm-slice-qt6-git \
   xcursor-breeze5
 ```
 
-### 3.2 SDDM Theme (Slice 1.5.1)
+### 3.2 SDDM Theme
 
-Unfortunately the main branch of the slice theme repo isn't compatible with
-SDDM, making it impossible to just install `sddm-slice-git`. You must download
-and extract the tar archive related to the [v1.5.1
-release](https://github.com/EricKotato/sddm-slice/releases/tag/1.5.1) and
-deploy it to `/usr/share/sddm/themes/slice` manually.
-
-1. Download the [SDDM Slice theme v1.5.1](https://github.com/EricKotato/sddm-slice/releases/tag/1.5.1).
-2. Deploy to SDDM themes directory:
-
-```bash
-cd ~/Downloads
-tar -xzvf sddm-slice-1.5.1.tar.gz
-sudo mv sddm-slice-1.5.1 /usr/share/sddm/themes/slice
-```
-
-3. Configure sddm theme:
+To configure sddm to use the `slice` theme:
 
 ```bash
 cat > /tmp/theme.conf <<EOF
@@ -421,5 +405,3 @@ Current cronjobs are:
 | Cronjob                 | Description                                                                                        |
 |-------------------------|----------------------------------------------------------------------------------------------------|
 | cron.hourly/yay_pkglist | Takes an inventory of the packages manually installed with yay and writes it to `/etc/pkglist.txt` |
-
-
