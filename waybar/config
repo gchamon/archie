@@ -109,12 +109,12 @@
     },
     "memory": {
         "interval": 5,
-        "format": "Mem {}%",
+        "format": " {}%",
         "on-click": "gnome-system-monitor --show-processes-tab"
     },
     "cpu": {
         "interval": 5,
-        "format": "CPU {usage:2}%",
+        "format": " {usage:2}%",
         "on-click": "kitty htop",
         "on-click-right": "gnome-system-monitor --show-resources-tab"
     },
@@ -136,7 +136,7 @@
     },
     "disk": {
         "interval": 5,
-        "format": "Disk {percentage_used:2}%",
+        "format": "󱛟 {percentage_used:2}%",
         "path": "/",
         "on-click": "kitty ncdu ~",
         "on-click-right": "gnome-system-monitor --show-file-systems-tab"
