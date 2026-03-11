@@ -18,7 +18,8 @@
 | `SUPER + C`                  | `killactive,`         | Kills the active window.                     |
 | `SUPER + E`                  | `exec, $fileManager`  | Launches your file manager (`kitty ranger`). |
 | `SUPER + W`                  | `exec, $windowMenu`   | Opens the Rofi window menu.                  |
-| `SUPER + J`                  | `togglesplit,`        | Toggles split direction in dwindle layout.   |
+| `SUPER + J`                  | `layoutmsg, togglesplit` | Toggles split direction in dwindle layout. |
+| `SUPER + SHIFT + J`          | `layoutmsg, swapsplit` | Swaps the split direction in dwindle layout. |
 | `SUPER + SHIFT + F`          | `togglefloating,`     | Toggles floating mode for the active window. |
 | `SUPER + F`                  | `fullscreen`          | Toggles fullscreen for the active window.    |
 | `SUPER + SHIFT + Left`       | `swapwindow, l`       | Swaps the active window with the window to its left. |
@@ -43,6 +44,7 @@
 | `SUPER + [1-9, 0]`           | `workspace, [1-9, 10]`         | Switches to the specified workspace.           |
 | `CTRL + ALT + Right`         | `workspace, m+1`               | Switches to the next monitor's workspace.      |
 | `CTRL + ALT + Left`          | `workspace, m-1`               | Switches to the previous monitor's workspace.  |
+| `CTRL + ALT + 21`            | `workspace, r+1`               | Switches to the next workspace relative to the current one. (CTRL + ALT + '+ =' key in the keyboard) |
 | `SUPER + SHIFT + [1-9, 0]`   | `movetoworkspace, [1-9, 10]`   | Moves the active window to the specified workspace. |
 | `SUPER + SHIFT + L`          | `movetoworkspace, r+1`         | Moves the active window to the next right workspace (on another monitor if applicable). |
 | `SUPER + SHIFT + H`          | `movetoworkspace, r-1`         | Moves the active window to the next left workspace (on another monitor if applicable). |
@@ -82,6 +84,8 @@
 | :----------------------------- | :--------------------------------------------------- | :----------------------------------- |
 | `SUPER + CTRL + 86` (Numpad's `+`) | `exec, brightnessctl --device $backlightDevice set 10%+` | Increases screen brightness by 10%.  |
 | `SUPER + CTRL + 82` (Numpad's `-`) | `exec, brightnessctl --device $backlightDevice set 10%-` | Decreases screen brightness by 10%.  |
+| `233`                        | `exec, brightnessctl --device $backlightDevice set 10%+` | Increases screen brightness by 10%. (Built-in keyboard function key)  |
+| `232`                        | `exec, brightnessctl --device $backlightDevice set 10%-` | Decreases screen brightness by 10%. (Built-in keyboard function key) |
 
 ## Window Resizing and Movement (Mouse)
 
