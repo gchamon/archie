@@ -74,7 +74,8 @@
 | :--------------------------- | :-------------------------------------------- | :------------------------------------------------- |
 | `SUPER + M`                  | `exec, ~/.config/hypr/scripts/confirm-before-exit.sh exit` | Prompts for confirmation before exiting Hyprland. |
 | `SUPER + SHIFT + M`          | `exec, ~/.config/hypr/scripts/confirm-before-exit.sh poweroff` | Prompts for confirmation before powering off.     |
-| `SUPER + CTRL + M`           | `exec, ~/.config/hypr/scripts/confirm-before-exit.sh reboot` | Prompts for confirmation before rebooting.        |
+| `SUPER + CTRL + M`           | `exec, ~/.config/hypr/scripts/confirm-berore-exit.sh reboot` | Prompts for confirmation before rebooting.        |
+| `SUPER + CTRL + ALT + R`     | `exec, hyprctl reload`                       | Reloads the Hyprland configuration.               |
 | `SUPER + L`                  | `exec, hyprlock`                              | Locks the screen using hyprlock.                   |
 | `Lid Switch`                 | `exec, hyprlock`                              | Locks the screen when the laptop lid is closed.    |
 
