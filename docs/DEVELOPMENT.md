@@ -3,10 +3,9 @@
 I aim to document the required configuration to have docker and other forms of
 containerization and virtualization running.
 
-
 <!--toc:start-->
 - [Containers and Virtual Machines](#containers-and-virtual-machines)
-    - [LazyVim](#lazyvim)
+  - [LazyVim](#lazyvim)
   - [Git config](#git-config)
   - [Docker install](#docker-install)
   - [Virtualization Setup](#virtualization-setup)
@@ -50,6 +49,18 @@ that merge strategy and git signing using ssh key is configured:
 - Set default branch to main
 - Configure `git-signing-key` as a signing key following [this
   doc](https://docs.gitlab.com/user/project/repository/signed_commits/ssh/).
+
+### git-delta
+
+To install [git-delta](https://github.com/dandavison/delta): `yay -S git-delta`. Then configure it:
+
+```
+git config --global core.pager delta
+git config --global interactive.diffFilter 'delta --color-only'
+git config --global delta.navigate true
+git config --global delta.dark true  # or `delta.light true`, or omit for auto-detection
+git config --global merge.conflictStyle zdiff3
+```
 
 ## Docker install
 
@@ -137,4 +148,3 @@ EOF
 
 incus admin init --preseed /tmp/incus-config.yml
 ```
-
