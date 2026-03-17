@@ -65,6 +65,7 @@ source $ZSH/oh-my-zsh.sh
 
 test -f $HOME/.local/lib/zsh/aliases.sh && source "$HOME/.local/lib/zsh/aliases.sh"
 test -f $HOME/.local/lib/zsh/functions.sh && source "$HOME/.local/lib/zsh/functions.sh"
+test -f $HOME/.local/lib/zsh/overrides.sh && source "$HOME/.local/lib/zsh/overrides.sh"
 test -f $HOME/.fzf.zsh && source "$HOME/.fzf.zsh"
 
 source /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
