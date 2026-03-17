@@ -12,6 +12,8 @@ return {
         "erlang",
         "heex",
         "html",
+        "markdown",
+        "markdown_inline",
         "surface",
       },
       highlight = { enable = true },
