@@ -1,8 +1,14 @@
-These are files that are intended to be read and executed by agents.
+# Agent Briefs
 
-# Example usage
+This directory contains task briefs intended to be read and executed by coding
+agents.
 
-- open codex
+Use these files when you want to hand a concrete, scoped task to an agent
+without restating the full instructions each time.
+
+## Example usage
+
+- Open Codex.
 - `Analyse @archie/agents/AGENT_SPEC.md`
-- check if the analysis matches your understanding of the spec
+- Check whether the analysis matches your understanding of the spec.
 - `Execute @archie/agents/AGENT_SPEC.md`
