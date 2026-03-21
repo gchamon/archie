@@ -50,6 +50,39 @@ that merge strategy and git signing using ssh key is configured:
 - Configure `git-signing-key` as a signing key following [this
   doc](https://docs.gitlab.com/user/project/repository/signed_commits/ssh/).
 
+## Repository hosting
+
+GitLab is the canonical upstream for Archie. GitHub is maintained as a
+read-only mirror of `main` and tags.
+
+Operationally this means:
+
+- open merge requests in GitLab, not GitHub
+- push feature branches to GitLab
+- treat GitHub as a mirror for browsing and cloning only
+- keep `origin` pointing to GitLab in the steady state
+
+Recommended remote layout after the migration:
+
+```bash
+git remote rename origin github
+git remote add origin git@gitlab.com:<namespace>/archlinux-system-config.git
+git remote set-url --push github no_push
+```
+
+If you need to verify the mirror after a merge or tag push:
+
+```bash
+git fetch origin
+git fetch github
+git log --oneline origin/main..github/main
+git log --oneline github/main..origin/main
+git tag --sort=version:refname | tail
+```
+
+The host migration itself is tracked in
+`docs/milestones/repository-hosting-01-gitlab-cutover.md`.
+
 ### git-delta
 
 To install [git-delta](https://github.com/dandavison/delta): `yay -S git-delta`. Then configure it:
