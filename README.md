@@ -32,9 +32,13 @@ behind [Hyprland](https://hypr.land/).
 
 These are the topics included in this handbook.
 
+For the full documentation workspace, including internal planning material, see
+[docs/README.md](docs/README.md).
+
 ### [System installation guide](docs/GUIDE.md)
 
-The system installation guide documents necessary steps to get archie up and running, so start [here](docs/GUIDE.md)!
+The system installation guide documents necessary steps to get archie up and
+running, so start [here](docs/GUIDE.md)!
 
 ### [Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md)
 

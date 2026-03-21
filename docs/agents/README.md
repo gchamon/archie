@@ -9,6 +9,6 @@ without restating the full instructions each time.
 ## Example usage
 
 - Open Codex.
-- `Analyse @archie/agents/AGENT_SPEC.md`
+- `Analyse @docs/agents/AGENT_SPEC.md`
 - Check whether the analysis matches your understanding of the spec.
-- `Execute @archie/agents/AGENT_SPEC.md`
+- `Execute @docs/agents/AGENT_SPEC.md`

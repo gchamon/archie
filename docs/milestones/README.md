@@ -11,5 +11,7 @@ agent for execution. The milestone should define:
 - the key tasks to complete
 - any dependencies on earlier milestones
 
+This directory also includes historical milestone notes for past Archie work.
+
 These files are planning artifacts. They describe the work; they are not the
 implementation itself.
