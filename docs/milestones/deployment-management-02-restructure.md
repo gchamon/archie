@@ -1,4 +1,4 @@
-# Milestone 2: Restructure The Repo For Stow
+# Milestone 2: Restructure The Repo For Deployment Management
 
 Reorganize the repository so the deployment model from Milestone 1 is real and
 executable.

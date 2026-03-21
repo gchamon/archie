@@ -38,5 +38,4 @@ Define and implement a simple automated validation pipeline for Archie VM images
 - Failures provide actionable logs for root-cause analysis.
 
 ## Dependencies
-- `docs/milestones/QEMU_IMAGE.md`.
-
+- `docs/milestones/vm-image-03-qemu-image.md`.

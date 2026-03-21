@@ -1,4 +1,4 @@
-# Milestone 3: Rewrite The Documentation
+# Milestone 3: Rewrite The Deployment Documentation
 
 Update the written guides after the Stow layout has been implemented and
 validated.

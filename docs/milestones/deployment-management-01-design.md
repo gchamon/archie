@@ -1,4 +1,4 @@
-# Milestone 1: Design The Stow Deployment Model
+# Milestone 1: Design The Deployment Management Model
 
 Define the target deployment model before changing the repo structure or the
 docs.
