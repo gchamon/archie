@@ -40,7 +40,7 @@ setup_known_hosts() {
 setup_ssh_key() {
     local key_path="$1"
 
-    printf '%s' "$GITHUB_DEPLOY_KEY_B64" | base64 --decode >"$key_path"
+    printf '%s' "$GITHUB_DEPLOY_KEY_B64" | base64 -d >"$key_path"
     chmod 600 "$key_path"
 }
 
@@ -83,12 +83,11 @@ main() {
     fi
 
     case "$ref_type" in
-        branch|tag)
-            ;;
-        *)
-            usage >&2
-            exit 1
-            ;;
+    branch | tag) ;;
+    *)
+        usage >&2
+        exit 1
+        ;;
     esac
 
     require_env GITHUB_MIRROR_SSH_URL
@@ -106,12 +105,12 @@ main() {
     export GIT_SSH_COMMAND="ssh -i ${key_path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${known_hosts_path}"
 
     case "$ref_type" in
-        branch)
-            push_branch "$remote_name" "$ref_name"
-            ;;
-        tag)
-            push_tag "$remote_name" "$ref_name"
-            ;;
+    branch)
+        push_branch "$remote_name" "$ref_name"
+        ;;
+    tag)
+        push_tag "$remote_name" "$ref_name"
+        ;;
     esac
 }
 
