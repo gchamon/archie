@@ -34,5 +34,5 @@ Build a repeatable pipeline that produces an executable Archie QCOW2 image for m
 - Manual inspection workflow is documented and executable.
 
 ## Dependencies
-- `docs/milestones/ARCHINSTALL.md` and `docs/milestones/CLOUDINIT.md`.
-
+- `docs/milestones/vm-image-01-archinstall.md` and
+  `docs/milestones/vm-image-02-cloudinit.md`.
