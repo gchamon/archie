@@ -50,6 +50,20 @@ that merge strategy and git signing using ssh key is configured:
 - Configure `git-signing-key` as a signing key following [this
   doc](https://docs.gitlab.com/user/project/repository/signed_commits/ssh/).
 
+### git-delta
+
+First install [git-delta](https://github.com/dandavison/delta): `yay -S git-delta`.
+
+To configure git to use delta as the default pager:
+
+```
+git config --global core.pager delta
+git config --global interactive.diffFilter 'delta --color-only'
+git config --global delta.navigate true
+git config --global delta.dark true  # or `delta.light true`, or omit for auto-detection
+git config --global merge.conflictStyle zdiff3
+```
+
 ## Repository hosting
 
 GitLab is the canonical upstream for Archie. GitHub is maintained as a
@@ -62,14 +76,6 @@ Operationally this means:
 - treat GitHub as a mirror for browsing and cloning only
 - keep `origin` pointing to GitLab in the steady state
 
-Recommended remote layout after the migration:
-
-```bash
-git remote rename origin github
-git remote add origin git@gitlab.com:gabriel.chamon/archie.git
-git remote set-url --push github no_push
-```
-
 GitLab CI is responsible for mirroring only the default branch and tags to
 GitHub. The pipeline expects these repository variables:
 
@@ -78,44 +84,8 @@ GitHub. The pipeline expects these repository variables:
 - `GITHUB_DEPLOY_KEY_B64`: base64-encoded private deploy key with write access
   to the GitHub mirror repository
 
-If you need to verify the mirror after a merge or tag push:
-
-```bash
-git fetch origin
-git fetch github
-git log --oneline origin/main..github/main
-git log --oneline github/main..origin/main
-git ls-remote --tags origin
-git ls-remote --tags github
-git tag --sort=version:refname | tail
-```
-
-If the mirror job fails:
-
-1. Check the `mirror_github_main` or `mirror_github_tag` job log in GitLab.
-2. Verify `GITHUB_MIRROR_SSH_URL` and `GITHUB_DEPLOY_KEY_B64` are still present
-   and that the deploy key still has write access in GitHub.
-3. Confirm the GitHub mirror branch or tag has not drifted from GitLab. The
-   job uses a normal push and will fail rather than overwrite unexpected
-   mirror-side changes.
-4. After correcting the underlying issue, retry the failed GitLab job. If you
-   need a one-off manual repair, push the affected ref from a trusted local
-   clone to the `github` remote and then re-run the verification commands.
-
 The host migration itself is tracked in
 `docs/milestones/repository-hosting-01-gitlab-cutover.md`.
-
-### git-delta
-
-To install [git-delta](https://github.com/dandavison/delta): `yay -S git-delta`. Then configure it:
-
-```
-git config --global core.pager delta
-git config --global interactive.diffFilter 'delta --color-only'
-git config --global delta.navigate true
-git config --global delta.dark true  # or `delta.light true`, or omit for auto-detection
-git config --global merge.conflictStyle zdiff3
-```
 
 ## Docker install
 
