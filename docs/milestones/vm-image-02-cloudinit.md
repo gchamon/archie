@@ -33,5 +33,4 @@ Create the cloud-init wrapper that provisions a base Arch cloud image and execut
 - Logs clearly identify where failures occur (cloud-init vs installer logic).
 
 ## Dependencies
-- `docs/milestones/ARCHINSTALL.md` completed outputs.
-
+- `docs/milestones/vm-image-01-archinstall.md` completed outputs.

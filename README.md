@@ -2,6 +2,15 @@
 
 Archie is the name of my system and this is its companion guide.
 
+GitLab is the canonical upstream for Archie:
+<https://gitlab.com/gabriel.chamon/archie>
+
+GitHub is kept as a read-only mirror of `main` and tags:
+<https://github.com/gchamon/archie>
+
+Open merge requests in GitLab. Do not use GitHub pull requests or issues for
+contributions to this repository.
+
 ![desktop](docs/assets/desktop.png)
 ![windows](docs/assets/windows-opened.png)
 
@@ -32,9 +41,13 @@ behind [Hyprland](https://hypr.land/).
 
 These are the topics included in this handbook.
 
+For the full documentation workspace, including internal planning material, see
+[docs/README.md](docs/README.md).
+
 ### [System installation guide](docs/GUIDE.md)
 
-The system installation guide documents necessary steps to get archie up and running, so start [here](docs/GUIDE.md)!
+The system installation guide documents necessary steps to get archie up and
+running, so start [here](docs/GUIDE.md)!
 
 ### [Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md)
 
