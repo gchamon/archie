@@ -93,7 +93,7 @@ main() {
     require_env GITHUB_MIRROR_SSH_URL
     require_env GITHUB_DEPLOY_KEY_B64
 
-    trap 'rm -rf "$tmp_dir"' EXIT
+    trap "rm -rf $tmp_dir" EXIT
 
     setup_ssh_key "$key_path"
     setup_known_hosts "$known_hosts_path"
