@@ -40,7 +40,7 @@ setup_known_hosts() {
 setup_ssh_key() {
     local key_path="$1"
 
-    printf '%s' "$GITHUB_DEPLOY_KEY_B64" | base64 --decode >"$key_path"
+    printf '%s' "$GITHUB_DEPLOY_KEY_B64" | base64 -d >"$key_path"
     chmod 600 "$key_path"
 }
 
@@ -73,9 +73,9 @@ main() {
     local ref_type="${1:-}"
     local ref_name="${2:-}"
     local remote_name="github-mirror"
-    local tmp_dir
-    local key_path
-    local known_hosts_path
+    local tmp_dir="$(mktemp -d)"
+    local key_path="${tmp_dir}/github-mirror"
+    local known_hosts_path="${tmp_dir}/known_hosts"
 
     if [[ -z "$ref_type" || -z "$ref_name" ]]; then
         usage >&2
@@ -83,20 +83,16 @@ main() {
     fi
 
     case "$ref_type" in
-        branch|tag)
-            ;;
-        *)
-            usage >&2
-            exit 1
-            ;;
+    branch | tag) ;;
+    *)
+        usage >&2
+        exit 1
+        ;;
     esac
 
     require_env GITHUB_MIRROR_SSH_URL
     require_env GITHUB_DEPLOY_KEY_B64
 
-    tmp_dir="$(mktemp -d)"
-    key_path="${tmp_dir}/github-mirror"
-    known_hosts_path="${tmp_dir}/known_hosts"
     trap 'rm -rf "$tmp_dir"' EXIT
 
     setup_ssh_key "$key_path"
@@ -106,12 +102,12 @@ main() {
     export GIT_SSH_COMMAND="ssh -i ${key_path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${known_hosts_path}"
 
     case "$ref_type" in
-        branch)
-            push_branch "$remote_name" "$ref_name"
-            ;;
-        tag)
-            push_tag "$remote_name" "$ref_name"
-            ;;
+    branch)
+        push_branch "$remote_name" "$ref_name"
+        ;;
+    tag)
+        push_tag "$remote_name" "$ref_name"
+        ;;
     esac
 }
 

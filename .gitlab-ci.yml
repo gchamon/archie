@@ -17,11 +17,11 @@ mirror_github_main:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   script:
-    - ./scripts/push-github-mirror.sh branch "$CI_DEFAULT_BRANCH"
+    - ./ci/push-github-mirror.sh branch "$CI_DEFAULT_BRANCH"
 
 mirror_github_tag:
   extends: .github_mirror
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_TAG'
   script:
-    - ./scripts/push-github-mirror.sh tag "$CI_COMMIT_TAG"
+    - ./ci/push-github-mirror.sh tag "$CI_COMMIT_TAG"
