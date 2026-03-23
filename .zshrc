@@ -63,8 +63,7 @@ source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
 plugins=(git extract fzf docker docker-compose terraform)
 source $ZSH/oh-my-zsh.sh
 
-test -f $HOME/.local/lib/zsh/aliases.sh && source "$HOME/.local/lib/zsh/aliases.sh"
-test -f $HOME/.local/lib/zsh/functions.sh && source "$HOME/.local/lib/zsh/functions.sh"
+test -f $HOME/.local/lib/zsh/commands.sh && source "$HOME/.local/lib/zsh/commands.sh"
 test -f $HOME/.local/lib/zsh/overrides.sh && source "$HOME/.local/lib/zsh/overrides.sh"
 test -f $HOME/.fzf.zsh && source "$HOME/.fzf.zsh"
 
