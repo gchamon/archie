@@ -77,8 +77,6 @@ GitHub. The pipeline expects these repository variables:
   example `git@github.com:gchamon/archie.git`
 - `GITHUB_DEPLOY_KEY_B64`: base64-encoded private deploy key with write access
   to the GitHub mirror repository
-- `GITHUB_MIRROR_KNOWN_HOSTS`: optional pinned `known_hosts` entry for
-  `github.com`; if unset, the job discovers the host key with `ssh-keyscan`
 
 If you need to verify the mirror after a merge or tag push:
 

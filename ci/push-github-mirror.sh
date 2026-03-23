@@ -13,7 +13,6 @@ Required environment variables:
   GITHUB_DEPLOY_KEY_B64
 
 Optional environment variables:
-  GITHUB_MIRROR_KNOWN_HOSTS
 EOF
 }
 
@@ -28,11 +27,6 @@ require_env() {
 
 setup_known_hosts() {
     local known_hosts_path="$1"
-
-    if [[ -n "${GITHUB_MIRROR_KNOWN_HOSTS:-}" ]]; then
-        printf '%s\n' "$GITHUB_MIRROR_KNOWN_HOSTS" >"$known_hosts_path"
-        return
-    fi
 
     ssh-keyscan github.com >"$known_hosts_path" 2>/dev/null
 }
