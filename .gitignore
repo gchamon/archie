@@ -10,6 +10,8 @@ nvim/lazy-lock.json
 !KEYBOARD_SHORTCUTS.md
 !README.md
 !CLAUDE.md
+!/.gitlab-ci.yml
+!/scripts
 !/dunst
 !/hypr
 !/lvim
