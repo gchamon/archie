@@ -3,6 +3,11 @@
 Define the target deployment model before changing the repo structure or the
 docs.
 
+## Status
+
+Complete. The accepted deployment-management decisions are carried forward into
+Milestone 2 for implementation.
+
 ## Outcome
 
 A decision-complete Stow layout for Archie, including package boundaries,
