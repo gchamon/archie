@@ -47,7 +47,13 @@ For the full documentation workspace, including internal planning material, see
 ### [System installation guide](docs/GUIDE.md)
 
 The system installation guide documents necessary steps to get archie up and
-running, so start [here](docs/GUIDE.md)!
+running, including the Stow-based deployment flow, so start
+[here](docs/GUIDE.md)!
+
+### [Migration guide](docs/MIGRATING.md)
+
+Use the [migration guide](docs/MIGRATING.md) when upgrading from Archie v2 to
+Archie v3.
 
 ### [Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md)
 
