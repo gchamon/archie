@@ -6,11 +6,16 @@ timestamp order, not as one large nested document.
 
 ## File Layout
 
-Session logs are organized by date:
+Session logs are organized by theme:
 
 ```text
-docs/codex-sessions/YYYY/MM/DD/rollout-<timestamp>-<session-id>.jsonl
+docs/codex-sessions/<session-theme>/rollout-<timestamp>-<session-id>.jsonl
 ```
+
+Current themes:
+
+- `arch-distro`: sessions related to the Arch distro / ISO planning work.
+- `archie-v3`: sessions related to Archie v3 deployment, migration, and release work.
 
 ## Top-Level Record Schema
 
