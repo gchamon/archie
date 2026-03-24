@@ -7,17 +7,18 @@
     - [1.1 Install Essential Packages](#11-install-essential-packages)
     - [1.2 Install Yay (AUR Helper)](#12-install-yay-aur-helper)
     - [1.3 Install Essential Packages with Yay](#13-install-essential-packages-with-yay)
-    - [1.3 Install Development Packages for LazyVim](#13-install-development-packages-for-lazyvim)
   - [2. Deploying system config](#2-deploying-system-config)
-    - [2.1 System specific configuration](#21-system-specific-configuration)
+    - [2.1 Deploy Archie with Stow](#21-deploy-archie-with-stow)
+    - [2.2 System specific configuration](#22-system-specific-configuration)
       - [Customization of device-specific configs](#customization-of-device-specific-configs)
-    - [2.2 Deploy oh-my-zsh](#22-deploy-oh-my-zsh)
-    - [2.3 Add required home folders](#23-add-required-home-folders)
+    - [2.3 Zsh setup](#23-zsh-setup)
+    - [2.4 Add required home folders](#24-add-required-home-folders)
   - [3. Theming](#3-theming)
     - [3.1 Install Theme Packages](#31-install-theme-packages)
-    - [3.2 SDDM Theme (Slice 1.5.1)](#32-sddm-theme-slice-151)
-    - [3.3 Install the GTK theme](#33-install-the-gtk-theme)
-  - [4. System Configuration](#4-system-configuration)
+    - [3.2 Terminal Prompt Theme](#32-terminal-prompt-theme)
+    - [3.3 SDDM Theme](#33-sddm-theme)
+    - [3.4 Install the GTK theme](#34-install-the-gtk-theme)
+  - [4. System config customizations](#4-system-config-customizations)
     - [4.1 Boot Options](#41-boot-options)
       - [ACPI Backlight control](#acpi-backlight-control)
     - [4.2 Nvidia](#42-nvidia)
@@ -27,11 +28,6 @@
     - [4.4 Keyring](#44-keyring)
     - [4.5 Systemd Services](#45-systemd-services)
     - [4.6 Cronjobs](#46-cronjobs)
-  - [5. Further reading](#5-further-reading)
-    - [5.1 Keyboard shortcuts](#51-keyboard-shortcuts)
-    - [5.2 Keyboard customizations](#52-keyboard-customizations)
-    - [5.3 Backup and Restore](#53-backup-and-restore)
-    - [5.4 Development](#54-development)
 <!--toc:end-->
 
 This guide provides step-by-step instructions for deploying Hyprland to an Arch
@@ -111,6 +107,7 @@ yay -S --needed \
   ranger \
   rofi-wayland \
   rsync \
+  stow \
   unzip \
   waybar \
   wl-clip-persist \
@@ -124,29 +121,54 @@ yay -S --needed \
 
 ## 2. Deploying system config
 
-Clone this repo and deploy it to `~/.config`
+Clone this repo somewhere persistent outside the deployment targets. Archie is
+deployed with GNU Stow from `deployment-packages/`, not by copying the
+repository into `~/.config`.
 
 ```bash
-git clone https://github.com/gchamon/archlinux-system-config
-rsync -va ~/archlinux-system-config/ ~/.config
-rm -rf ~/archlinux-system-config
+git clone https://gitlab.com/gabriel.chamon/archie.git
+cd archie
 ```
 
-### 2.1 System specific configuration
+### 2.1 Deploy Archie with Stow
 
-System specific configurations reside in `~/.config/hypr/config`. To deploy the
-configuration, copy the default distribution file and change it:
+Deploy the tracked packages into their target roots:
 
 ```bash
-cp ~/.config/hypr/config/device.dist.conf ~/.config/hypr/config/device.conf
+stow --dir deployment-packages --target "$HOME" home
+stow --dir deployment-packages --target "$HOME/.config" config
+stow --dir deployment-packages --target "$HOME/.local" local
+sudo stow --dir deployment-packages --target /etc etc
+sudo stow --dir deployment-packages --target /usr/share/xkeyboard-config-2 xkb
+```
+
+This creates the expected runtime paths such as `~/.zshrc`,
+`~/.config/hypr/...`, `~/.local/lib/zsh/...`, and `~/.p10k-portable.zsh` as
+symlinks into the repo.
+
+### 2.2 System specific configuration
+
+Some files aren't managed by Stow because they are machine-specific local files.
+Create them next to the real deployed template target instead of treating the
+`.dist` file as a copied file.
+
+To create `~/.config/hypr/config/device.conf` from the deployed
+`device.dist.conf` template:
+
+```bash
+device_template="$(readlink -f ~/.config/hypr/config/device.dist.conf)"
+cp "$device_template" "${device_template%.dist.conf}.conf"
 ${EDITOR:-nvim} ~/.config/hypr/config/device.conf
 hyprctl reload
 ```
 
-`hyprpaper` also needs to be aware of the internal monitor name, which can vary between devices. To configure `hyprpaper`:
+`hyprpaper` also needs to be aware of the internal monitor name, which can vary
+between devices. To create `~/.config/hypr/hyprpaper.conf` from the deployed
+template:
 
 ```bash
-cp ~/.config/hypr/hyprpaper.dist.conf ~/.config/hyprpaper.conf
+hyprpaper_template="$(readlink -f ~/.config/hypr/hyprpaper.dist.conf)"
+cp "$hyprpaper_template" "${hyprpaper_template%.dist.conf}.conf"
 ${EDITOR:-nvim} ~/.config/hypr/hyprpaper.conf
 ```
 
@@ -181,7 +203,7 @@ backlight control](#acpi-backlight-control) and archlinux docs on [Backlight's
 kernel command-line
 options](https://wiki.archlinux.org/title/Backlight#Kernel_command-line_options).
 
-### 2.2 Deploy oh-my-zsh
+### 2.3 Zsh setup
 
 Zsh shell relies on `oh-my-zsh` and `powerlevel10k`, which will need to be installed:
 
@@ -192,26 +214,25 @@ yay -S --needed \
   oh-my-zsh-git \
   zsh-theme-powerlevel10k \
   ttf-meslo-nerd
-
-test -f ~/.zshrc && mv ~/.zshrc{,.bk}
-ln -s ~/.config/.zshrc ~/.zshrc
 ```
 
-There are four preconfigured powerlevel10k prompt styles. Choose one of
-`.p10k-classic.zsh`, `.p10k-lean.zsh`, `.p10k-pure.zsh` or `.p10k-rainbow.zsh`
-and create a symbolic link to `~/.p10k.zsh`:
+The Stow deployment already manages:
+
+- `~/.zshrc` from the `home` package
+- `~/.p10k-portable.zsh` from the `home` package
+- `~/.local/lib/zsh/*` from the `local` package
+
+If you want machine-specific zsh customizations, create
+`~/.local/lib/zsh/overrides.sh` from the deployed template:
 
 ```bash
-ln -s ~/.config/.p10k-classic.zsh ~/.p10k.zsh
+overrides_template="$(readlink -f ~/.local/lib/zsh/overrides.dist.sh)"
+cp "$overrides_template" "${overrides_template%.dist.sh}.sh"
+${EDITOR:-nvim} ~/.local/lib/zsh/overrides.sh
 ```
 
-There is a fifth powerlevel10k prompt style that is geared towards supporting
-tty shells, which is called `.p10k-portable.zsh` and it should be deployed to
-the home folder along with the chosen profile:
-
-```bash
-ln -s ~/.config/.p10k-portable.zsh ~/.p10k-portable.zsh
-```
+`overrides.sh` is intentionally local-only and remains untracked by Git and
+outside Stow management.
 
 Now change the shell to `zsh` if necessary:
 
@@ -219,7 +240,12 @@ Now change the shell to `zsh` if necessary:
 chsh -s $(which zsh)
 ```
 
-### 2.3 Add required home folders
+If you are upgrading from Archie v2 to Archie v3, follow
+[docs/MIGRATING.md](./MIGRATING.md) before running the Stow deployment steps in
+this guide. The migration guide covers cleanup of old `rsync`-deployed files
+that would otherwise block the v3 package layout.
+
+### 2.4 Add required home folders
 
 This is for the screenshot utility to work.
 
@@ -242,7 +268,19 @@ yay -S --needed \
   xcursor-breeze5
 ```
 
-### 3.2 SDDM Theme
+### 3.2 Terminal Prompt Theme
+
+Archie ships four optional Powerlevel10k theme packages. Deploy exactly one of
+them to provide `~/.p10k.zsh`:
+
+```bash
+stow --dir deployment-packages --target "$HOME" p10k-lean
+```
+
+Replace `p10k-lean` with exactly one of `p10k-classic`, `p10k-lean`,
+`p10k-pure`, or `p10k-rainbow`.
+
+### 3.3 SDDM Theme
 
 To configure sddm to use the `slice` theme:
 
@@ -256,7 +294,7 @@ sudo mkdir -p /etc/sddm.conf.d
 sudo mv /tmp/theme.conf /etc/sddm.conf.d
 ```
 
-### 3.3 Install the GTK theme
+### 3.4 Install the GTK theme
 
 1. Install NWG Look
 
@@ -394,10 +432,10 @@ done
 
 ### 4.6 Cronjobs
 
-Cronjobs are in the `cronjobs/` folder and can be deployed with rsync:
+Cronjobs are deployed by the `etc` Stow package:
 
-```
-sudo rsync -va ~/.config/cronjobs/ /etc/
+```bash
+sudo stow --dir deployment-packages --target /etc etc
 ```
 
 Current cronjobs are:
