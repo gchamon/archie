@@ -32,6 +32,19 @@ There are no formal unit tests in this repository. Verification is performed by 
 - **Waybar**: Kill and restart (handled by `hypr/scripts/launch-waybar.sh`)
 - **Zsh**: `source ~/.zshrc`
 
+### Changelog Maintenance
+
+- **Changelog File**: `CHANGELOG.md`
+- **Standard**: Follow [common-changelog.org](https://common-changelog.org/)
+- **Release Order**: Keep stable releases only, sorted latest-first, with headings in the form `## [x.y.z] - YYYY-MM-DD`
+- **Version Links**: Link each release heading to the matching GitLab tag page using reference-style links
+- **Change Groups**: Use only `Changed`, `Added`, `Removed`, and `Fixed`, in that order
+- **Change Entries**: Write one-line, imperative, self-contained bullets and include Markdown links to the most relevant commit, merge request, or issue
+- **Unreleased Changes**: Do not keep an `Unreleased` section
+- **Before Tagging**: Update the changelog entry for the release before creating the git tag
+- **Deriving Entries**: Start from `git log --reverse --oneline --no-merges <previous-tag>..<new-tag>`, then curate for user-visible changes instead of copying commit subjects verbatim
+- **Major Upgrades**: Add a one-sentence notice after the release heading when readers must consult a migration or upgrade document
+
 ## 2. Code Style Guidelines
 
 ### General
@@ -125,6 +138,13 @@ When modifying configurations:
 3. **Apply** changes in the Stow package that owns the deployed path.
 4. **Test** by reloading the service (e.g., `hyprctl reload`) or re-running the relevant `stow` command when checking deployment docs.
 5. **Audit** shell scripts with `shellcheck`.
+
+When preparing a release:
+
+1. **Review** the commits since the previous tag with `git log --reverse --oneline --no-merges <previous-tag>..<new-tag>`.
+2. **Curate** `CHANGELOG.md` using Common Changelog categories and GitLab references.
+3. **Link** the release heading to the corresponding GitLab tag page and add any required migration notice.
+4. **Commit** the changelog update before creating the new tag.
 
 ## 6. Environment & Tooling
 
