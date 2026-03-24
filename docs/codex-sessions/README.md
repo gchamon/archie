@@ -1,8 +1,9 @@
 # Codex Session Logs
 
-This directory stores Codex CLI session logs as newline-delimited JSON (`.jsonl`)
-files. Each line is one complete JSON object. Read them as an event stream in
-timestamp order, not as one large nested document.
+This directory documents the local Codex CLI session log format. The `.jsonl`
+files are local artifacts and are ignored by Git; do not commit them. Each line
+is one complete JSON object. Read them as an event stream in timestamp order,
+not as one large nested document.
 
 ## File Layout
 
