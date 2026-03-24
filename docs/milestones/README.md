@@ -9,6 +9,7 @@ Milestone filenames must follow the pattern
 Each milestone file should be self-contained enough to hand to an engineer or
 agent for execution. The milestone should define:
 
+- the current planning status of the stage when useful
 - the goal of the stage
 - the expected outcome
 - the key tasks to complete
@@ -26,6 +27,13 @@ Example filenames:
 
 - `deployment-management-01-design.md`
 - `vm-image-03-qemu-image.md`
+
+Status convention:
+
+- milestone files may include a `## Status` section near the top
+- use short prose values such as `Planned` or `Complete`
+- status communicates planning progress only and does not replace the milestone
+  body
 
 This directory also includes historical milestone notes for past Archie work.
 
