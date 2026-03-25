@@ -3,6 +3,10 @@
 Move Archie from GitHub-only hosting to a GitLab-first workflow while keeping
 GitHub as a read-only mirror of `main` and tags.
 
+## Status
+
+Complete.
+
 ## Goal
 
 Finish the hosting cutover before opening review for `docs/planning-framework`,

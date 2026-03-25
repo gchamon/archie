@@ -84,6 +84,18 @@ urldecode() {
   printf '%b' "${data//%/\x}"
 }
 
+aws:list-profiles() {
+  local config_file="${AWS_CONFIG_FILE:-$HOME/.aws/config}"
+
+  if [[ ! -f "$config_file" ]]; then
+    echo "AWS config not found: $config_file" >&2
+    return 1
+  fi
+
+  yq -p=ini -oy 'to_entries | .[] | select(.key | test("^profile ")) | .key' "$config_file" |
+    cut -d' ' -f2
+}
+
 beautify-clipboard() {
   wl-paste | jq -r . | wl-copy
 }
@@ -98,9 +110,9 @@ exec-script() {
 
 lxc-purge-vms() {
   server="${1:-local}"
-  lxc ls $server: --format json \
-    | jq -rc '.[].name' \
-    | xargs -I '{}' lxc rm --force $server:{}
+  lxc ls $server: --format json |
+    jq -rc '.[].name' |
+    xargs -I '{}' lxc rm --force $server:{}
 }
 
 decode_jwt() {
@@ -124,10 +136,10 @@ elixir-new-module() {
   fi
 
   local module_path=$(
-    echo "$module_name" \
-      | sed 's/\./\//g' \
-      | perl -pe 's/(?<=[a-z])([A-Z])/_\1/g; s/(?<=[A-Z])([A-Z][a-z])/_\1/g' \
-      | tr '[:upper:]' '[:lower:]'
+    echo "$module_name" |
+      sed 's/\./\//g' |
+      perl -pe 's/(?<=[a-z])([A-Z])/_\1/g; s/(?<=[A-Z])([A-Z][a-z])/_\1/g' |
+      tr '[:upper:]' '[:lower:]'
   )
 
   local module_file="${root_dir}/lib/${module_path}.ex"
@@ -150,7 +162,7 @@ elixir-new-module() {
     return 1
   fi
 
-  cat <<EOF > "$module_file"
+  cat <<EOF >"$module_file"
 defmodule $module_name do
   @moduledoc """
   Documentation for \`$module_name\`.
@@ -168,7 +180,7 @@ EOF
     return 1
   fi
 
-  cat <<EOF > "$test_file"
+  cat <<EOF >"$test_file"
 defmodule ${module_name}Test do
   use ExUnit.Case
   doctest $module_name
@@ -195,7 +207,10 @@ docker-run-in-cwd() {
   local cmd="${2:-bash}"
   local extra_args="${3:-}"
 
-  local container_id="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 8; echo)"
+  local container_id="$(
+    tr -dc A-Za-z0-9 </dev/urandom | head -c 8
+    echo
+  )"
   docker run -it --rm \
     -v "$PWD:/app" \
     --workdir /app \
