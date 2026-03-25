@@ -89,6 +89,7 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `urldecode` | Function | URL-decodes a string. |
 | `beautify-clipboard` | Function | Pretty-prints JSON from the clipboard back into the clipboard. |
 | `minify-clipboard` | Function | Minifies JSON from the clipboard back into the clipboard. |
+| `aws:list-profiles` | Function | Prints AWS CLI profile names from `~/.aws/config` or `$AWS_CONFIG_FILE`. |
 | `exec-script` | Function | Runs a script from `$HOME/Scripts/`. |
 | `lxc-purge-vms` | Function | Deletes all Incus/LXC instances on a server. |
 | `decode_jwt` | Function | Decodes a JWT from a file or string and prints header/payload JSON. |

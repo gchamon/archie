@@ -86,7 +86,7 @@ There are no formal unit tests in this repository. Verification is performed by 
 ### Zsh Configuration
 
 - **Sourcing**: Custom shell logic lives under `deployment-packages/local/lib/zsh/` and is sourced from `.zshrc`.
-- **Aliases**: Prefer grouping aliases in `deployment-packages/local/lib/zsh/aliases.sh`.
+- **Aliases and Functions**: Prefer adding shell helpers to the appropriate module under `deployment-packages/local/lib/zsh/commands-*.sh` and keep `commands.sh` as the loader only.
 - **Completion**: Use the built-in `zsh` completion system (`compinit`).
 - **Prompt**: Powerlevel10k is configured via `.p10k.zsh`.
 
@@ -206,6 +206,10 @@ implementation of milestone tasks.
 These rules are engaged when starting a session with `engage with
 {docs/milestone/[milestone-name].md}` or similar, where the `[milestone-name]`
 pattern is documented in [the milestone readme](./docs/milestones/README.md).
+
+### Restrictions
+
+- Never update a milestone that is already completed
 
 ### Preparation phase
 
