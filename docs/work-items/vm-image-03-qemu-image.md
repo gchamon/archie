@@ -1,4 +1,4 @@
-# Milestone: QEMU Image
+# Work Item: QEMU Image
 
 ## Goal
 Build a repeatable pipeline that produces an executable Archie QCOW2 image for manual inspection.
@@ -18,8 +18,8 @@ Build a repeatable pipeline that produces an executable Archie QCOW2 image for m
 - Release-grade distribution of images.
 
 ## Inputs
-- Cloud-init artifacts from `CLOUDINIT` milestone.
-- Archinstall automation from `ARCHINSTALL` milestone.
+- Cloud-init artifacts from the `CLOUDINIT` work item.
+- Archinstall automation from the `ARCHINSTALL` work item.
 
 ## Deliverables
 - Build script/pipeline that outputs Archie QCOW2 images.
@@ -34,5 +34,5 @@ Build a repeatable pipeline that produces an executable Archie QCOW2 image for m
 - Manual inspection workflow is documented and executable.
 
 ## Dependencies
-- `docs/milestones/vm-image-01-archinstall.md` and
-  `docs/milestones/vm-image-02-cloudinit.md`.
+- `docs/work-items/vm-image-01-archinstall.md` and
+  `docs/work-items/vm-image-02-cloudinit.md`.
