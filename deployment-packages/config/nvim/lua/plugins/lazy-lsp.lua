@@ -26,7 +26,7 @@ return {
         "basedpyright", -- too verbose
       },
       preferred_servers = {
-        markdown = {},
+        markdown = { "marksman" },
         python = { "ruff", "pyright" },
         terraform = { "terraformls" },
       },
