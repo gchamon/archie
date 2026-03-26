@@ -71,6 +71,7 @@ source /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.
 
 setopt extendedglob
 
+fpath=(~/.zsh/completions $fpath)
 autoload bashcompinit && bashcompinit
 autoload -Uz +X bashcompinit && bashcompinit
 autoload -Uz compinit && compinit
