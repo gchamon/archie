@@ -1,4 +1,4 @@
-# Milestone: Test Pipeline
+# Work Item: Test Pipeline
 
 ## Goal
 Define and implement a simple automated validation pipeline for Archie VM images.
@@ -22,8 +22,8 @@ Define and implement a simple automated validation pipeline for Archie VM images
 - Performance benchmarking.
 
 ## Inputs
-- Image build outputs from `QEMU_IMAGE` milestone.
-- Installer and provisioning logs from earlier milestones.
+- Image build outputs from the `QEMU_IMAGE` work item.
+- Installer and provisioning logs from earlier work items.
 
 ## Deliverables
 - Test runner scripts for smoke scenarios.
@@ -38,4 +38,4 @@ Define and implement a simple automated validation pipeline for Archie VM images
 - Failures provide actionable logs for root-cause analysis.
 
 ## Dependencies
-- `docs/milestones/vm-image-03-qemu-image.md`.
+- `docs/work-items/vm-image-03-qemu-image.md`.

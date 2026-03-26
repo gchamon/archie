@@ -1,4 +1,4 @@
-# Milestone: Archinstall
+# Work Item: Archinstall
 
 ## Goal
 Build the canonical Python automation entrypoint that controls the `archinstall` SDK for unattended Archie installation.
@@ -24,14 +24,13 @@ Build the canonical Python automation entrypoint that controls the `archinstall`
 - Python installer module and executable entry script.
 - Installer configuration schema file (documented keys and defaults).
 - Post-install orchestration script(s) invoked by installer flow.
-- Milestone documentation mapping manual guide steps to automated steps.
+- Work item documentation mapping manual guide steps to automated steps.
 
 ## Acceptance Criteria
 - Unattended install can complete using the defined schema on a target virtual disk.
 - First boot reaches a usable Archie desktop session baseline.
 - Logs and metadata are generated for each run.
-- Installer flow is deterministic enough to be consumed by cloud-init milestone.
+- Installer flow is deterministic enough to be consumed by the cloud-init work item.
 
 ## Dependencies
-- None (first milestone in this phase).
-
+- None (first work item in this phase).

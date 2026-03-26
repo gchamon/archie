@@ -1,10 +1,12 @@
 # Epics
 
-This directory defines the high-level initiatives represented by milestone files
-in `docs/milestones`.
+This directory defines the high-level initiatives represented by work item files
+in `docs/work-items`.
 
-Each epic groups a sequence of milestone documents that belong to the same
+Each epic groups a sequence of work item documents that belong to the same
 larger change effort.
+
+For more information, see <https://docs.gitlab.com/user/group/epics/>.
 
 ## Current Epics
 
