@@ -85,7 +85,7 @@ GitHub. The pipeline expects these repository variables:
   to the GitHub mirror repository
 
 The host migration itself is tracked in
-`docs/milestones/repository-hosting-01-gitlab-cutover.md`.
+`docs/work-items/repository-hosting-01-gitlab-cutover.md`.
 
 ## Docker install
 

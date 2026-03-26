@@ -1,4 +1,4 @@
-# Milestone: Cloudinit
+# Work Item: Cloudinit
 
 ## Goal
 Create the cloud-init wrapper that provisions a base Arch cloud image and executes the Archie `archinstall` automation non-interactively.
@@ -12,13 +12,13 @@ Create the cloud-init wrapper that provisions a base Arch cloud image and execut
 
 ## Out of Scope
 - Long-term image publishing workflow.
-- End-to-end CI policy enforcement (covered in later milestones).
+- End-to-end CI policy enforcement (covered in later work items).
 - Calamares integration.
 
 ## Inputs
 - Official Arch cloud images (QCOW2).
 - QEMU cloud-init drive/seed mechanism.
-- Output contract from `ARCHINSTALL` milestone.
+- Output contract from the `ARCHINSTALL` work item.
 
 ## Deliverables
 - Cloud-init templates (`user-data`, `meta-data`) for Archie provisioning.
@@ -33,4 +33,4 @@ Create the cloud-init wrapper that provisions a base Arch cloud image and execut
 - Logs clearly identify where failures occur (cloud-init vs installer logic).
 
 ## Dependencies
-- `docs/milestones/vm-image-01-archinstall.md` completed outputs.
+- `docs/work-items/vm-image-01-archinstall.md` completed outputs.

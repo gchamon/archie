@@ -201,20 +201,24 @@ When preparing a release:
 ## 10. Rules of engagement
 
 This section provides instructions for how to behave when engaging with the
-implementation of milestone tasks.
+implementation of work item tasks.
 
 These rules are engaged when starting a session with `engage with
-{docs/milestone/[milestone-name].md}` or similar, where the `[milestone-name]`
-pattern is documented in [the milestone readme](./docs/milestones/README.md).
+{docs/work-items/[work-item-name].md}` or similar, where the
+`[work-item-name]` pattern is documented in [the work items readme](./docs/work-items/README.md).
+
+Archie aligns `epics` with GitLab epics and uses `work items` for these staged
+planning documents. Reserve `milestone` for GitLab's timebox and release
+tracking concept.
 
 ### Restrictions
 
-- Never update a milestone that is already completed
+- Never update a work item that is already completed
 
 ### Preparation phase
 
 First always use the start of the session to ground yourself in the context of
-the milestone. You are free to pull data from ~/.codex/sessions/ whenever
+the work item. You are free to pull data from ~/.codex/sessions/ whenever
 necessary, but always ask when doing so because this can be token-intensive.
 
 ### Execution phase
@@ -224,12 +228,12 @@ changes, before then the agent and the user are going to iterate on the
 implementation.
 
 It's important to always consider if there is need for a final pass over the
-milestone's acceptance criteria before exiting the Execution phase to catch
+work item's acceptance criteria before exiting the Execution phase to catch
 anything that was overlooked.
 
 ### Post phase
 
-In the post phase of implementing a milestone, propagate changes in the design and
-decisions to the next milestone in the sequence, if there are any, in which
-case these changes have to be added to the last milestone under `Decision
+In the post phase of implementing a work item, propagate changes in the design and
+decisions to the next work item in the sequence, if there are any, in which
+case these changes have to be added to the last work item under `Decision
 changes` section.

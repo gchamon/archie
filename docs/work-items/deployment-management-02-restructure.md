@@ -1,6 +1,6 @@
-# Milestone 2: Restructure The Repo For Deployment Management
+# Work Item 2: Restructure The Repo For Deployment Management
 
-Reorganize the repository so the deployment model from Milestone 1 is real and
+Reorganize the repository so the deployment model from Work Item 1 is real and
 executable.
 
 ## Status
@@ -9,8 +9,8 @@ Complete.
 
 ## Decisions
 
-This milestone implements the deployment-management decisions accepted in
-[Milestone 1](deployment-management-01-design.md).
+This work item implements the deployment-management decisions accepted in
+[Work Item 1](deployment-management-01-design.md).
 
 - The package root is `deployment-packages/`.
 - The base Stow packages are `home`, `config`, `local`, `etc`, and `xkb`.
@@ -48,7 +48,7 @@ without changing the runtime paths expected by Archie.
 
 ## Scope Notes
 
-This milestone covers only the repository restructure needed to make the Stow
+This work item covers only the repository restructure needed to make the Stow
 deployment model real.
 
 Included:
@@ -252,7 +252,7 @@ migration rehearsal, including `hypr/config/device.conf` and
 `hypr/hyprpaper.conf`.
 
 Record the conflict classes encountered during migration so the cleanup steps
-are known before the documentation rewrite milestone.
+are known before the documentation rewrite work item.
 
 ### Migration Rollback
 
@@ -328,7 +328,7 @@ ls -l /etc/xkb-customizations /usr/share/xkeyboard-config-2/symbols/us
 ## Exit Criteria
 
 - The repo contains the final `deployment-packages/` layout and package
-  inventory described in this milestone.
+  inventory described in this work item.
 - `stow` can deploy `home`, `config`, `etc`, and `xkb` into the correct
   targets, can deploy `local` into `$HOME/.local`, and can deploy exactly one
   selected `p10k-*` theme package into `$HOME`.

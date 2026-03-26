@@ -21,7 +21,7 @@ This model has several problems:
 - deployment spans multiple target roots, including home files, XDG config,
   shell library paths, and selected system-managed files
 
-The repo’s milestone and session history also established an additional
+The repo’s work item and session history also established an additional
 requirement: Archie should be deployable while cloned outside the target
 directories, without changing the runtime paths expected by Hyprland, zsh, and
 other tools.
@@ -93,5 +93,5 @@ replacement as the new deployment model.
 - migration guidance is required for systems that were previously deployed by
   copying files
 - system-level targets may need explicit privileged commands or helper wrappers
-- future deployment-related milestone work should be framed around deployment
+- future deployment-related work item planning should be framed around deployment
   management, not around Stow as an epic name
