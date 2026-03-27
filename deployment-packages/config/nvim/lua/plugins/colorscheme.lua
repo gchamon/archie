@@ -4,12 +4,18 @@ return {
     priority = 1000,
     config = function()
       local function set_markdown_heading_highlights()
-        vim.api.nvim_set_hl(0, "@markup.heading.1", { fg = "#E6EAF2", bg = "", bold = true }) -- Dark navy
-        vim.api.nvim_set_hl(0, "@markup.heading.2", { fg = "#E6EAF2", bg = "", bold = true }) -- Darker teal
-        vim.api.nvim_set_hl(0, "@markup.heading.3", { fg = "#E6EAF2", bg = "", bold = true }) -- Dark green
-        vim.api.nvim_set_hl(0, "@markup.heading.4", { fg = "#E6EAF2", bg = "", bold = true }) -- Darker violet
-        vim.api.nvim_set_hl(0, "@markup.heading.5", { fg = "#E6EAF2", bg = "", bold = true }) -- Dark amber
-        vim.api.nvim_set_hl(0, "@markup.heading.6", { fg = "#E6EAF2", bg = "", bold = true }) -- Dark brown-orange
+        vim.api.nvim_set_hl(0, "@markup.heading.1", { fg = "#D7DDE8", bg = "#706597", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.1.markdown", { fg = "#D7DDE8", bg = "#706597", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.2", { fg = "#D7DDE8", bg = "#657D91", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.2.markdown", { fg = "#D7DDE8", bg = "#657D91", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.3", { fg = "#D7DDE8", bg = "#6D8D76", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.3.markdown", { fg = "#D7DDE8", bg = "#6D8D76", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.4", { fg = "#D7DDE8", bg = "#A09A84", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.4.markdown", { fg = "#D7DDE8", bg = "#A09A84", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.5", { fg = "#D7DDE8", bg = "#987174", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.5.markdown", { fg = "#D7DDE8", bg = "#987174", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.6", { fg = "#D7DDE8", bg = "#8B5F78", bold = true })
+        vim.api.nvim_set_hl(0, "@markup.heading.6.markdown", { fg = "#D7DDE8", bg = "#8B5F78", bold = true })
       end
 
       -- Apply lunar colorscheme

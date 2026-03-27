@@ -73,6 +73,7 @@ There are no formal unit tests in this repository. Verification is performed by 
 - **LazyVim Conventions**: Adhere to the structure defined in `nvim/CLAUDE.md`.
 - **Plugin Specs**: Return a table from files in `lua/plugins/*.lua`.
 - **Global `vim`**: Use the `vim` global for all Neovim API calls.
+- **Configuration Style**: Prefer explicit declarations over loops or other flow control for static Neovim configuration in `nvim/` when the expanded form stays readable.
 - **Formatting**: Use `ruff` for Python and `stylua` for Lua (if available via Mason).
 - **Indentation**: 2 spaces for Lua, but respect `ftplugin` overrides (e.g., 4 spaces for Shell/JS).
 

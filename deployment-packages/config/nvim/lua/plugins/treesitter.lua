@@ -1,22 +1,12 @@
 return {
   "nvim-treesitter/nvim-treesitter",
-  branch = "master",
-  lazy = false,
-  build = ":TSUpdate",
-  config = function()
-    treesitter = require("nvim-treesitter.configs")
-    treesitter.setup({
-      ensure_installed = {
-        "eex",
-        "elixir",
-        "erlang",
-        "heex",
-        "html",
-        "markdown",
-        "markdown_inline",
-        "surface",
-      },
-      highlight = { enable = true },
+  opts = function(_, opts)
+    vim.list_extend(opts.ensure_installed, {
+      "eex",
+      "elixir",
+      "erlang",
+      "heex",
+      "surface",
     })
   end,
 }
