@@ -12,3 +12,10 @@ This directory holds Archie documentation and repo-internal working material.
 
 The remaining Markdown files in this directory are the user-facing guides for
 installing, operating, and maintaining Archie.
+
+Relevant operational guides include:
+
+- `GUIDE.md`: main Archie installation and deployment handbook.
+- `DEVELOPMENT.md`: host-side development tooling and virtualization setup.
+- `REPRODUCIBLE_ENVIRONMENT.md`: Incus VM bootstrap flow for disposable Archie
+  development guests.
