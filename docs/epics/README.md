@@ -26,3 +26,13 @@ This epic covers building Archie as an unattended VM image pipeline. It starts
 with `archinstall` automation, then layers cloud-init provisioning, QEMU image
 creation, and automated validation so Archie can be built and tested as a
 repeatable virtual machine artifact.
+
+This epic is now historical planning context. The active direction for new VM
+work is `reproducible-environment`.
+
+### `reproducible-environment`
+
+This epic covers building a repeatable Archie development VM workflow around an
+Incus-managed Arch guest. It starts with cloud-init bootstrap to a
+graphical-ready baseline, then layers Archie deployment automation and only
+later standardizes runtime operations and smoke tests where they prove useful.

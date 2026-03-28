@@ -173,3 +173,6 @@ EOF
 
 incus admin init --preseed /tmp/incus-config.yml
 ```
+
+For the repo-owned Archie VM bootstrap flow that builds on this host setup, see
+[REPRODUCIBLE_ENVIRONMENT.md](REPRODUCIBLE_ENVIRONMENT.md).
