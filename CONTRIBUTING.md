@@ -37,6 +37,7 @@ The main terminal entrypoints are:
 - [scripts/launch-archie-instance.sh](scripts/launch-archie-instance.sh)
 - [scripts/cleanup-archie-instance.sh](scripts/cleanup-archie-instance.sh)
 - [scripts/launch-console.sh](scripts/launch-console.sh)
+- [scripts/open-shell.sh](scripts/open-shell.sh)
 - [scripts/setup-shared-clipboard.sh](scripts/setup-shared-clipboard.sh)
 
 That workflow also depends on these repo-owned artifacts:

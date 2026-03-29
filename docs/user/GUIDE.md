@@ -18,7 +18,7 @@
     - [3.1 Install Theme Packages](#31-install-theme-packages)
     - [3.2 Terminal Prompt Theme](#32-terminal-prompt-theme)
     - [3.3 SDDM Theme](#33-sddm-theme)
-    - [3.4 Install the GTK theme](#34-install-the-gtk-theme)
+    - [3.4 Install the desktop dark theme](#34-install-the-desktop-dark-theme)
   - [4. System config customizations](#4-system-config-customizations)
     - [4.1 Boot Options](#41-boot-options)
       - [ACPI Backlight control](#acpi-backlight-control)
@@ -92,6 +92,7 @@ yay -S --needed \
   fzf \
   gnome-system-monitor \
   grimblast-git \
+  htop \
   hyprcursor \
   hyprlock \
   hyprpaper \
@@ -108,8 +109,10 @@ yay -S --needed \
   otf-font-awesome \
   pamixer \
   pavucontrol \
+  polkit-kde-agent \
   plocate \
   ranger \
+  ripgrep \
   rofi-wayland \
   rsync \
   stow \
@@ -121,6 +124,10 @@ yay -S --needed \
   zip \
   zsh-fast-syntax-highlighting
 ```
+
+`polkit-kde-agent` provides the graphical authentication agent launched by
+Hyprland. Without it, admin GUI tools such as `gparted` can fail with `No
+authentication agent found`.
 
 ---
 
@@ -155,6 +162,14 @@ sudo stow --dir deployment-packages --target /usr/share/xkeyboard-config-2 xkb
 This creates the expected runtime paths such as `~/.zshrc`,
 `~/.config/hypr/...`, `~/.local/lib/zsh/...`, and `~/.p10k-portable.zsh` as
 symlinks into the repo.
+
+Optional `/etc`-target packages are deployed separately when needed:
+
+```bash
+sudo stow --dir deployment-packages --target /etc sddm-theme
+sudo stow --dir deployment-packages --target /etc lid-close
+sudo stow --dir deployment-packages --target /etc nvidia
+```
 
 ### 2.2 System specific configuration
 
@@ -273,7 +288,9 @@ mkdir -p ~/Pictures/Screenshots
 yay -S --needed \
   archlinux-wallpaper \
   gnome-themes-extra \
+  qt5ct \
   qt5-graphicaleffects \
+  qt6ct \
   sddm-slice-qt6-git \
   xcursor-breeze5
 ```
@@ -296,35 +313,48 @@ To configure sddm to use the `slice` theme:
 
 The quickstart helper enables this by default. To leave it off there, set
 `ARCHIE_ENABLE_SDDM_THEME=0`
-before running `./scripts/quickstart.sh`.
+before running `./scripts/install.sh`.
 
 ```bash
-cat > /tmp/theme.conf <<EOF
-[Theme]
-Current=slice
-EOF
-
-sudo mkdir -p /etc/sddm.conf.d
-sudo mv /tmp/theme.conf /etc/sddm.conf.d
+sudo stow --dir deployment-packages --target /etc sddm-theme
 ```
 
-### 3.4 Install the GTK theme
+### 3.4 Install the desktop dark theme
 
-1. Install NWG Look
+Run:
 
+```bash
+yay -S --needed nwg-look qt5ct qt6ct xdg-desktop-portal-gnome xdg-desktop-portal-gtk
+
+gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark
+gsettings set org.gnome.desktop.interface color-scheme prefer-dark
 ```
-yay -S nwg-look
-```
 
-2. Best-effort non-interactive setup can be done by ensuring
-   `gtk-theme-name=Adwaita-dark` is present under both
-   `~/.config/gtk-3.0/settings.ini` and `~/.config/gtk-4.0/settings.ini`, and
-   by updating `org.gnome.desktop.interface gtk-theme` through `gsettings` when
-   available.
+This snippet covers the user-managed part of the dark-theme setup:
 
-3. Verify or adjust the theme in NWG Look. To run the picker, bring up the
-   runner modal with `SUPER+R` and choose `GTK Settings`, then confirm
-   `Adwaita-dark`.
+- it installs `nwg-look`, `qt5ct`, `qt6ct`, `xdg-desktop-portal-gnome`, and `xdg-desktop-portal-gtk`
+- it tells GNOME/libadwaita apps to prefer dark mode through `gsettings`
+
+The static theme files themselves are repo-managed. After the `config` and
+`etc` packages are deployed with Stow, Archie provides:
+
+- `~/.config/gtk-3.0/settings.ini`
+- `~/.config/gtk-4.0/settings.ini`
+- `~/.config/qt5ct/qt5ct.conf`
+- `~/.config/qt6ct/qt6ct.conf`
+- `/etc/gtk-3.0/settings.ini`
+- `/etc/gtk-4.0/settings.ini`
+
+The user-level GTK files cover regular apps. The `/etc` GTK files are what
+keep privileged GTK apps such as `gparted` on the same dark theme. The
+remaining manual step here is the runtime desktop preference update through
+`gsettings`. The Hyprland session uses `qt6ct` for current Archie Qt apps such
+as `ksnip`, while GNOME/libadwaita apps depend on the dark preference and the
+GNOME portal backend in the running session.
+
+After running the snippet, verify or fine-tune the result with NWG Look from
+the rofi launcher and with `qt6ct` if you want to adjust the Qt dark palette
+further.
 
 ---
 
@@ -354,7 +384,7 @@ Currently using `nvidia-open-dkms` without issues.
 From [Hyprland Nvidia](https://wiki.hypr.land/Nvidia/), enable modeset for nvidia_drm:
 
 ```bash
-echo "options nvidia_drm modeset=1" | tee /etc/modprobe.d/nvidia.conf
+sudo stow --dir deployment-packages --target /etc nvidia
 ```
 
 This can also be set via kernel boot parameter `nvidia_drm.modeset=1`. In my
@@ -401,13 +431,7 @@ events](https://wiki.archlinux.org/title/Power_management#ACPI_events).
 To make it so that every lid close event will put the machine in hybrid sleep:
 
 ```bash
-sudo mkdir -p /etc/systemd/logind.conf.d
-sudo tee /etc/systemd/logind.conf.d/lid-close.conf <<CONF
-[Login]
-HandleLidSwitch=hybrid-sleep
-HandleLidSwitchDocked=hybrid-sleep
-HandleLidSwitchExternalPower=hybrid-sleep
-CONF
+sudo stow --dir deployment-packages --target /etc lid-close
 ```
 
 #### External monitor frozen after return from sleep

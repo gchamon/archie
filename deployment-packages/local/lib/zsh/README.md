@@ -45,6 +45,22 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 
 | Name | Kind | Description |
 | --- | --- | --- |
+| `git:checkout-main` | Function | Checks out the repo main branch. |
+| `git:difftool-meld` | Function | Opens Git diffs in Meld. |
+| `git:force-checks` | Function | Creates a fixup commit and force-pushes. |
+| `git:log-origin-development` | Function | Pulls log/history from `origin/development`. |
+| `git:log-divergence` | Function | Shows commits between `origin/master` and the current branch. |
+| `git:log-origin-main` | Function | Pulls log/history from `origin/<main>`. |
+| `git:push` | Function | Uses `ggpush` as the default push command. |
+| `git:prune` | Function | Runs `git prune -v`. |
+| `git:pull-prune` | Function | Pulls with prune, then prunes local refs. |
+| `git:review` | Function | Creates a `review/*` branch if needed and runs `gpsetup`. |
+| `git:squash` | Function | Builds a squash branch on top of a target branch. |
+| `git:create-pr` | Function | Opens a GitHub compare page for the current branch. |
+| `git:create-mr` | Function | Opens a GitLab merge request page for the current branch. |
+| `git:create-mr-dev` | Function | Opens a GitLab merge request page targeting the develop branch. |
+| `git:create-pr-dev` | Function | Opens a GitHub compare page targeting the develop branch. |
+| `git:download` | Function | Downloads a sub-tree URL via Subversion checkout. |
 | `gcom` | Alias | Checks out the repo main branch. |
 | `gdtm` | Alias | Opens Git diffs in Meld. |
 | `git_force_checks` | Alias | Creates a fixup commit and force-pushes. |
@@ -55,11 +71,13 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `gpr` | Alias | Runs `git prune -v`. |
 | `gprune` | Alias | Pulls with prune, then prunes local refs. |
 | `greview` | Alias | Creates a `review/*` branch if needed and runs `gpsetup`. |
-| `gsquash` | Function | Builds a squash branch on top of a target branch. |
+| `gsquash` | Alias | Compatibility alias for `git:squash`. |
 | `_parse-repo` | Function | Internal helper that derives repo and destination branch metadata. |
-| `create-pr` | Function | Opens a GitHub compare page for the current branch. |
-| `create-mr` | Function | Opens a GitLab merge request page for the current branch. |
-| `gdl` | Function | Downloads a sub-tree URL via Subversion checkout. |
+| `create-pr` | Alias | Compatibility alias for `git:create-pr`. |
+| `create-mr` | Alias | Compatibility alias for `git:create-mr`. |
+| `create-mr-dev` | Alias | Compatibility alias for `git:create-mr-dev`. |
+| `create-pr-dev` | Alias | Compatibility alias for `git:create-pr-dev`. |
+| `gdl` | Alias | Compatibility alias for `git:download`. |
 
 ## `commands-system.sh`
 

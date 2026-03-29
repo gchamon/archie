@@ -3,13 +3,13 @@ the canonical deployment reference.
 
 When updating the quickstart, treat these files as one unit:
 
-- `./scripts/quickstart.sh`
+- `./scripts/install.sh`
 - `./docs/user/QUICKSTART.md`
 
 Update them in this order:
 
 1. Re-read the relevant sections of `./docs/user/GUIDE.md`.
-2. Update `./scripts/quickstart.sh` so its commands, sequencing, and local-file
+2. Update `./scripts/install.sh` so its commands, sequencing, and local-file
    scaffolding still match the canonical guide.
 3. Update `./docs/user/QUICKSTART.md` so its prose matches the script exactly while
    preserving the canonical-versus-derived framing.

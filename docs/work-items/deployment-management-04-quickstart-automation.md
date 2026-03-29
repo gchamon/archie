@@ -28,6 +28,10 @@ installs.
 
 Complete
 
+Post-delivery notice: `scripts/quickstart.sh` was renamed to
+`scripts/install.sh` after this work item was delivered. Historical references
+in this document are preserved as originally delivered.
+
 ## Outcome
 
 Archie has a short onboarding path for first-time deployment and a staged

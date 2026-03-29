@@ -248,6 +248,15 @@ incus console --type=vga "${ARCHIE_INSTANCE_NAME}"
 If you prefer the convenience wrapper, `./scripts/launch-console.sh`
 implements the same command.
 
+For an interactive SSH shell instead of the VGA console, use:
+
+```bash
+ssh -i "${ARCHIE_INSTANCE_SSH_IDENTITY}" "${ARCHIE_INSTANCE_USERNAME}@${guest_ip}"
+```
+
+If you prefer the convenience wrapper, `./scripts/open-shell.sh` resolves the
+guest IP and runs the same SSH command.
+
 ### 4. Start bidirectional clipboard sync
 
 ```bash
