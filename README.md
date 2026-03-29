@@ -1,5 +1,7 @@
 # Archie
 
+<!--toc:ignore-->
+
 Archie is the name of my system and this is its companion guide.
 
 GitLab is the canonical upstream for Archie:
@@ -37,6 +39,7 @@ behind [Hyprland](https://hypr.land/).
 [NeoVim](https://github.com/neovim/neovim) configuration is provided by
 [LazyVim](https://github.com/LazyVim/LazyVim).
 
+
 ## Topics
 
 These are the topics included in this handbook.
@@ -44,26 +47,32 @@ These are the topics included in this handbook.
 For the full documentation workspace, including internal planning material, see
 [docs/README.md](docs/README.md).
 
-### [System installation guide](docs/GUIDE.md)
+### [System installation guide](docs/user/GUIDE.md)
 
 The system installation guide documents necessary steps to get archie up and
 running, including the Stow-based deployment flow, so start
-[here](docs/GUIDE.md)!
+[here](docs/user/GUIDE.md)!
 
-### [Migration guide](docs/MIGRATING.md)
+### [Quickstart](docs/user/QUICKSTART.md)
 
-Use the [migration guide](docs/MIGRATING.md) when upgrading from Archie v2 to
+Use the [quickstart](docs/user/QUICKSTART.md) for the fastest repo-backed deployment
+path. It is derived from the system installation guide, which remains
+canonical.
+
+### [Migration guide](docs/user/MIGRATING.md)
+
+Use the [migration guide](docs/user/MIGRATING.md) when upgrading from Archie v2 to
 Archie v3.
 
-### [Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md)
+### [Keyboard shortcuts](docs/user/KEYBOARD_SHORTCUTS.md)
 
-[Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md) documents all the possible keyboard
+[Keyboard shortcuts](docs/user/KEYBOARD_SHORTCUTS.md) documents all the possible keyboard
 shortcuts. The information is extracted from hyprland configuration using
 [Google's Gemini LLM](https/gemini.google.com).
 
-### [Keyboard customizations](docs/KEYBOARD_CUSTOMIZATIONS.md)
+### [Keyboard customizations](docs/user/KEYBOARD_CUSTOMIZATIONS.md)
 
-[Keyboard customizations](docs/KEYBOARD_CUSTOMIZATIONS.md) documents the deployment
+[Keyboard customizations](docs/user/KEYBOARD_CUSTOMIZATIONS.md) documents the deployment
 of xkeyboard-config compatible customizations that makes it easier to type in a
 different language than that of the keyboard in use.
 
@@ -74,7 +83,7 @@ generally applicable outside my personal environment. It's there for my
 personal disaster recovery drills, but could inspire others looking for backup
 strategies.
 
-### [Development](docs/DEVELOPMENT.md)
+### [Contributing](CONTRIBUTING.md)
 
-[This document](docs/DEVELOPMENT.md) explains steps to install and configure
-tools I need for daily work as a developer.
+[This document](CONTRIBUTING.md) explains how to maintain Archie and where to
+find the reproducible development-environment workflow.

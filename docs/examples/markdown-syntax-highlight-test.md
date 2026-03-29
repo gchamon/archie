@@ -1,5 +1,29 @@
 # Markdown Syntax Highlight Test
 
+<!--toc:start-->
+
+- [Markdown Syntax Highlight Test](#markdown-syntax-highlight-test)
+  - [Headers](#headers)
+- [Heading Level 1](#heading-level-1)
+  - [Heading Level 2](#heading-level-2)
+    - [Heading Level 3](#heading-level-3)
+      - [Heading Level 4](#heading-level-4)
+        - [Heading Level 5](#heading-level-5)
+          - [Heading Level 6](#heading-level-6)
+  - [Emphasis And Inline Elements](#emphasis-and-inline-elements)
+  - [Lists](#lists)
+  - [Task List](#task-list)
+  - [Blockquote](#blockquote)
+  - [Horizontal Rule](#horizontal-rule)
+  - [Tables](#tables)
+  - [Fenced Code Blocks](#fenced-code-blocks)
+  - [Indented Code Block](#indented-code-block)
+  - [Definition-Like Content](#definition-like-content)
+  - [HTML](#html)
+  - [Mixed Paragraph](#mixed-paragraph)
+  - [Footnotes](#footnotes)
+<!--toc:end-->
+
 This file is intended for manual Neovim markdown highlighting checks.
 
 ## Headers

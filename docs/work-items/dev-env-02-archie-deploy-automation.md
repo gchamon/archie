@@ -1,7 +1,17 @@
-# Work Item 2: Automate Archie Deployment Inside The Reproducible VM
+# Work Item 2: Automate Archie Deployment Inside The Dev Env VM
+
+<!--toc:start-->
+
+- [Work Item 2: Automate Archie Deployment Inside The Dev Env VM](#work-item-2-automate-archie-deployment-inside-the-dev-env-vm)
+  - [Status](#status)
+  - [Outcome](#outcome)
+  - [Decision changes](#decision-changes)
+  - [Main quests](#main-quests)
+  - [Exit Criteria](#exit-criteria)
+<!--toc:end-->
 
 Turn the validated manual Archie installation and deployment flow into a
-repo-owned automation path that runs inside the reproducible VM environment.
+repo-owned automation path that runs inside the dev-env VM environment.
 
 ## Status
 
@@ -20,8 +30,8 @@ real Stow-based deployment model used by the project.
 - Archie deployment automation should follow the documented Arch plus Stow
   deployment model rather than reintroducing `archinstall` as the deployment
   interface.
-- The reproducible VM contract from work item 1 remains authoritative. This
-  work builds on it instead of redefining provisioning or runtime management.
+- The dev-env VM contract from work item 1 remains authoritative. This work
+  builds on it instead of redefining provisioning or runtime management.
 - Automation should cover the guest-side Archie deployment flow, but avoid
   overreaching into image pipeline or release artifact concerns.
 - Work item 1 now defines the reproducible artifact as a locally published Incus
@@ -30,7 +40,7 @@ real Stow-based deployment model used by the project.
   per-instance guest setup, currently used to write `~/pull-archie-repo.sh` for
   the Archie user.
 
-## Tasks
+## Main quests
 
 - Capture the validated manual Archie deployment flow from work item 1 and turn
   it into an explicit automation contract.
@@ -59,11 +69,11 @@ real Stow-based deployment model used by the project.
 
 ## Exit Criteria
 
-- Archie can be deployed inside the reproducible VM through a repo-owned
-  documented automation path.
+- Archie can be deployed inside the dev-env VM through a repo-owned documented
+  automation path.
 - The deployed guest reaches a basic Archie desktop baseline suitable for
   install-script and feature testing.
 - Deployment failures produce actionable logs that distinguish bootstrap,
   deployment, and session startup failures.
-- The automation reuses the reproducible-environment assumptions from work item
-  1 without introducing a separate runtime model.
+- The automation reuses the dev-env assumptions from work item 1 without
+  introducing a separate runtime model.

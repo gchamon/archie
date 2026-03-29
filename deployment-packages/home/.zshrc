@@ -97,4 +97,4 @@ bindkey '^[OQ' edit-command-line  # f2 is ^[OQ; to double check, run `xargs` and
 autoload -U +X bashcompinit && bashcompinit
 
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+command -v pyenv >/dev/null && eval "$(pyenv init -)"

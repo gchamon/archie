@@ -1,5 +1,14 @@
 # Milestone 3: Rewrite The Deployment Documentation
 
+<!--toc:start-->
+
+- [Milestone 3: Rewrite The Deployment Documentation](#milestone-3-rewrite-the-deployment-documentation)
+  - [Outcome](#outcome)
+  - [Decision changes](#decision-changes)
+  - [Main quests](#main-quests)
+  - [Exit Criteria](#exit-criteria)
+<!--toc:end-->
+
 Update the written guides after the Stow layout has been implemented and
 validated.
 
@@ -24,7 +33,7 @@ the old `rsync` method.
   steps are generated from the Stow package contents rather than from hardcoded
   file lists.
 
-## Tasks
+## Main quests
 
 - Add `stow` to the required package lists where appropriate.
 - Replace the main Archie deployment instructions that currently use `rsync`

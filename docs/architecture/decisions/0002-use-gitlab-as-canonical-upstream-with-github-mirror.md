@@ -1,5 +1,18 @@
 # ADR 0002: Use GitLab As Canonical Upstream With GitHub Mirror
 
+<!--toc:start-->
+
+- [ADR 0002: Use GitLab As Canonical Upstream With GitHub Mirror](#adr-0002-use-gitlab-as-canonical-upstream-with-github-mirror)
+  - [Context](#context)
+  - [Decision](#decision)
+  - [Alternatives Considered](#alternatives-considered)
+    - [1. Keep GitHub as the canonical upstream](#1-keep-github-as-the-canonical-upstream)
+    - [2. Use both GitHub and GitLab as writable upstreams](#2-use-both-github-and-gitlab-as-writable-upstreams)
+    - [3. Mirror all branches to GitHub](#3-mirror-all-branches-to-github)
+  - [Rationale](#rationale)
+  - [Consequences](#consequences)
+<!--toc:end-->
+
 - Status: Accepted
 - Date: 2026-03-21
 

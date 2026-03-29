@@ -1,5 +1,14 @@
 # Milestone 1: Design The Deployment Management Model
 
+<!--toc:start-->
+
+- [Milestone 1: Design The Deployment Management Model](#milestone-1-design-the-deployment-management-model)
+  - [Status](#status)
+  - [Outcome](#outcome)
+  - [Main quests](#main-quests)
+  - [Exit Criteria](#exit-criteria)
+<!--toc:end-->
+
 Define the target deployment model before changing the repo structure or the
 docs.
 
@@ -13,7 +22,7 @@ Milestone 2 for implementation.
 A decision-complete Stow layout for Archie, including package boundaries,
 deployment targets, and migration behavior from the old `rsync`-based setup.
 
-## Tasks
+## Main quests
 
 - Decide the Stow package layout for:
   - home-level files under `~`

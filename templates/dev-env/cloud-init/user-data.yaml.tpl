@@ -1,23 +1,23 @@
 #cloud-config
 
-hostname: ${ARCHIE_VM_HOSTNAME}
-fqdn: ${ARCHIE_VM_HOSTNAME}
+hostname: ${ARCHIE_BASE_VM_HOSTNAME}
+fqdn: ${ARCHIE_BASE_VM_HOSTNAME}
 package_update: true
 package_upgrade: true
 ssh_pwauth: false
 
 users:
   - default
-  - name: ${ARCHIE_VM_USERNAME}
+  - name: ${ARCHIE_BASE_VM_USERNAME}
     groups:
       - wheel
       - seat
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     lock_passwd: false
-    hashed_passwd: ${ARCHIE_VM_PASSWORD_HASH}
+    hashed_passwd: ${ARCHIE_BASE_VM_PASSWORD_HASH}
     ssh_authorized_keys:
-      - ${ARCHIE_VM_SSH_AUTHORIZED_KEY}
+      - ${ARCHIE_BASE_VM_SSH_AUTHORIZED_KEY}
 
 packages:
   - base-devel
@@ -65,4 +65,4 @@ runcmd:
   - [ systemctl, enable, seatd.service ]
   - [ bash, -lc, "/usr/local/bin/archie-bootstrap-finish.sh" ]
 
-final_message: "Archie bootstrap finished for ${ARCHIE_VM_NAME}"
+final_message: "Archie bootstrap finished for ${ARCHIE_BASE_VM_NAME}"

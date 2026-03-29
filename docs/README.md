@@ -9,13 +9,12 @@ This directory holds Archie documentation and repo-internal working material.
 - `architecture/`: architecture and distro design notes.
   Architecture decisions are recorded under `architecture/decisions/`.
 - `assets/`: images used by the documentation.
-
-The remaining Markdown files in this directory are the user-facing guides for
-installing, operating, and maintaining Archie.
+- `user/`: end-user installation, migration, and usage guides.
+- `development/`: contributor development-environment guides.
 
 Relevant operational guides include:
 
-- `GUIDE.md`: main Archie installation and deployment handbook.
-- `DEVELOPMENT.md`: host-side development tooling and virtualization setup.
-- `REPRODUCIBLE_ENVIRONMENT.md`: Incus VM bootstrap flow for disposable Archie
+- `user/GUIDE.md`: main Archie installation and deployment handbook.
+- `user/DEVELOPMENT.md`: host-side development tooling and virtualization setup.
+- `development/DEV_ENV.md`: Incus VM bootstrap flow for disposable Archie
   development guests.

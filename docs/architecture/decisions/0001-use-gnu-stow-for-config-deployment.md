@@ -1,5 +1,19 @@
 # ADR 0001: Use GNU Stow For Config Deployment
 
+<!--toc:start-->
+
+- [ADR 0001: Use GNU Stow For Config Deployment](#adr-0001-use-gnu-stow-for-config-deployment)
+  - [Context](#context)
+  - [Decision](#decision)
+  - [Alternatives Considered](#alternatives-considered)
+    - [1. Keep `rsync` as the primary deployment mechanism](#1-keep-rsync-as-the-primary-deployment-mechanism)
+    - [2. Keep the mixed `rsync` plus manual symlink model](#2-keep-the-mixed-rsync-plus-manual-symlink-model)
+    - [3. Build a custom symlink-management wrapper without Stow](#3-build-a-custom-symlink-management-wrapper-without-stow)
+    - [4. Defer standardization and continue the current manual model](#4-defer-standardization-and-continue-the-current-manual-model)
+  - [Rationale](#rationale)
+  - [Consequences](#consequences)
+<!--toc:end-->
+
 - Status: Accepted
 - Date: 2026-03-21
 

@@ -1,6 +1,7 @@
 # Arch Linux system configuration guide
 
 <!--toc:start-->
+
 - [Arch Linux system configuration guide](#arch-linux-system-configuration-guide)
   - [1. Initial Setup](#1-initial-setup)
     - [1.0 Installing Arch Linux](#10-installing-arch-linux)
@@ -33,6 +34,10 @@
 This guide provides step-by-step instructions for deploying Hyprland to an Arch
 Linux installation, including package installation, theming, configuration, and
 backup restoration.
+
+If you want the shortest repo-backed path, use [docs/user/QUICKSTART.md](./QUICKSTART.md).
+It is derived from this guide, uses `vet` against the GitLab raw quickstart
+script as the preferred bootstrap entrypoint, and this guide remains canonical.
 
 This is intended for single user devices, personal devices that aren't going to
 be shared by multiple linux users.
@@ -131,6 +136,11 @@ cd archie
 ```
 
 ### 2.1 Deploy Archie with Stow
+
+If the target machine already has copied Archie files in the deploy roots, move
+those conflicting paths aside before running `stow` so the deployment can
+replace them with symlinks. The quickstart helper automates that backup into
+`~/archie-pre-stow-backup` and `/root/archie-pre-stow-backup`.
 
 Deploy the tracked packages into their target roots:
 
@@ -241,7 +251,7 @@ chsh -s $(which zsh)
 ```
 
 If you are upgrading from Archie v2 to Archie v3, follow
-[docs/MIGRATING.md](./MIGRATING.md) before running the Stow deployment steps in
+[docs/user/MIGRATING.md](./MIGRATING.md) before running the Stow deployment steps in
 this guide. The migration guide covers cleanup of old `rsync`-deployed files
 that would otherwise block the v3 package layout.
 
@@ -284,6 +294,10 @@ Replace `p10k-lean` with exactly one of `p10k-classic`, `p10k-lean`,
 
 To configure sddm to use the `slice` theme:
 
+The quickstart helper enables this by default. To leave it off there, set
+`ARCHIE_ENABLE_SDDM_THEME=0`
+before running `./scripts/quickstart.sh`.
+
 ```bash
 cat > /tmp/theme.conf <<EOF
 [Theme]
@@ -302,7 +316,15 @@ sudo mv /tmp/theme.conf /etc/sddm.conf.d
 yay -S nwg-look
 ```
 
-2. Configure `Adwaita-dark` in the theme picket. To run the picker, bring up the runner modal with `SUPER+R` and choose `GTK Settings`.
+2. Best-effort non-interactive setup can be done by ensuring
+   `gtk-theme-name=Adwaita-dark` is present under both
+   `~/.config/gtk-3.0/settings.ini` and `~/.config/gtk-4.0/settings.ini`, and
+   by updating `org.gnome.desktop.interface gtk-theme` through `gsettings` when
+   available.
+
+3. Verify or adjust the theme in NWG Look. To run the picker, bring up the
+   runner modal with `SUPER+R` and choose `GTK Settings`, then confirm
+   `Adwaita-dark`.
 
 ---
 

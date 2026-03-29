@@ -1,5 +1,17 @@
 # Zsh Library
 
+<!--toc:start-->
+
+- [Zsh Library](#zsh-library)
+  - [`commands.sh`](#commandssh)
+  - [`commands-core.sh`](#commands-coresh)
+  - [`commands-git.sh`](#commands-gitsh)
+  - [`commands-system.sh`](#commands-systemsh)
+  - [`commands-devtools.sh`](#commands-devtoolssh)
+  - [`commands-pacman.sh`](#commands-pacmansh)
+  - [`overrides.dist.sh`](#overridesdistsh)
+<!--toc:end-->
+
 This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is `commands.sh`, which sources the command modules below.
 
 ## `commands.sh`
@@ -14,7 +26,7 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | --- | --- | --- |
 | `sshk` | Alias | Runs Kitty's SSH kitten when the terminal is `xterm-kitty`. |
 | `sudo` | Alias | Preserves alias expansion after `sudo`. |
-| `vim` | Alias | Runs the editor from `$VIM_BIN`. |
+| `vim` | Alias | Runs the editor from `$VIM_BIN`, or `/usr/bin/vim` when `VIM_BIN` is unset. |
 | `where` | Alias | Shortcut to `new_where`. |
 | `icat` | Alias | Runs Kitty image display. |
 | `l` | Alias | `ls -l`. |

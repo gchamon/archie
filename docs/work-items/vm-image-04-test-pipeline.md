@@ -1,5 +1,18 @@
 # Work Item: Test Pipeline
 
+<!--toc:start-->
+
+- [Work Item: Test Pipeline](#work-item-test-pipeline)
+  - [Goal](#goal)
+  - [Scope](#scope)
+  - [Initial Test Scenarios](#initial-test-scenarios)
+  - [Out of Scope](#out-of-scope)
+  - [Inputs](#inputs)
+  - [Deliverables](#deliverables)
+  - [Acceptance Criteria](#acceptance-criteria)
+  - [Dependencies](#dependencies)
+<!--toc:end-->
+
 ## Goal
 Define and implement a simple automated validation pipeline for Archie VM images.
 

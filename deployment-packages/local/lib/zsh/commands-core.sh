@@ -3,7 +3,7 @@
 [ "$TERM" = "xterm-kitty" ] && alias sshk="kitty +kitten ssh "
 
 alias sudo="sudo "
-alias vim="$VIM_BIN "
+alias vim="${VIM_BIN:-/usr/bin/vim} "
 alias where='new_where '
 alias icat="kitten icat "
 

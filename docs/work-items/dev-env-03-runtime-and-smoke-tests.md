@@ -1,7 +1,17 @@
 # Work Item 3: Standardize Runtime Operations And Smoke Tests As Needed
 
+<!--toc:start-->
+
+- [Work Item 3: Standardize Runtime Operations And Smoke Tests As Needed](#work-item-3-standardize-runtime-operations-and-smoke-tests-as-needed)
+  - [Status](#status)
+  - [Outcome](#outcome)
+  - [Decision changes](#decision-changes)
+  - [Main quests](#main-quests)
+  - [Exit Criteria](#exit-criteria)
+<!--toc:end-->
+
 Consolidate the runtime conventions and smoke-test coverage needed to keep the
-reproducible VM workflow practical as bootstrap and Archie deployment mature.
+dev-env VM workflow practical as bootstrap and Archie deployment mature.
 
 ## Status
 
@@ -9,8 +19,8 @@ Planned
 
 ## Outcome
 
-Archie has a lightweight but explicit runtime and validation layer for the
-reproducible environment, defined incrementally from real development needs
+Archie has a lightweight but explicit runtime and validation layer for the dev
+env, defined incrementally from real development needs
 instead of being overdesigned up front.
 
 ## Decision changes
@@ -19,12 +29,12 @@ instead of being overdesigned up front.
   useful at this stage. They should be developed together on a need basis.
 - Incus runtime standardization should grow only where repeated work or failure
   analysis shows clear benefit.
-- Smoke tests should focus on fast, high-signal checks for the reproducible VM
+- Smoke tests should focus on fast, high-signal checks for the dev-env VM
   workflow, not full CI gating or broad UI automation.
 - This work remains local-development oriented. CI, QEMU parity, and build
   artifact promotion are still deferred.
 
-## Tasks
+## Main quests
 
 - Define the minimum stable runtime operations that should be standardized after
   work items 1 and 2 uncover the real pain points, such as:
@@ -51,8 +61,8 @@ instead of being overdesigned up front.
 
 ## Exit Criteria
 
-- The reproducible environment has a documented runtime workflow that removes
-  repeated ad hoc Incus operations.
+- The dev env has a documented runtime workflow that removes repeated ad hoc
+  Incus operations.
 - Smoke tests cover the core bootstrap and Archie deployment expectations with
   useful pass or fail outputs.
 - Failures provide enough evidence to guide debugging without needing full CI

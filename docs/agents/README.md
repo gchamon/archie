@@ -1,5 +1,11 @@
 # Agent Briefs
 
+<!--toc:start-->
+
+- [Agent Briefs](#agent-briefs)
+  - [Example usage](#example-usage)
+<!--toc:end-->
+
 This directory contains task briefs intended to be read and executed by coding
 agents.
 

@@ -1,5 +1,17 @@
 # Work Item: Archinstall
 
+<!--toc:start-->
+
+- [Work Item: Archinstall](#work-item-archinstall)
+  - [Goal](#goal)
+  - [Scope](#scope)
+  - [Out of Scope](#out-of-scope)
+  - [Inputs](#inputs)
+  - [Deliverables](#deliverables)
+  - [Acceptance Criteria](#acceptance-criteria)
+  - [Dependencies](#dependencies)
+<!--toc:end-->
+
 ## Goal
 Build the canonical Python automation entrypoint that controls the `archinstall` SDK for unattended Archie installation.
 

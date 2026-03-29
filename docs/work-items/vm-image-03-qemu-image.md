@@ -1,5 +1,17 @@
 # Work Item: QEMU Image
 
+<!--toc:start-->
+
+- [Work Item: QEMU Image](#work-item-qemu-image)
+  - [Goal](#goal)
+  - [Scope](#scope)
+  - [Out of Scope](#out-of-scope)
+  - [Inputs](#inputs)
+  - [Deliverables](#deliverables)
+  - [Acceptance Criteria](#acceptance-criteria)
+  - [Dependencies](#dependencies)
+<!--toc:end-->
+
 ## Goal
 Build a repeatable pipeline that produces an executable Archie QCOW2 image for manual inspection.
 

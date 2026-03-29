@@ -1,5 +1,40 @@
 # Agent Guide - Arch Linux System Configuration (Archie)
 
+<!--toc:start-->
+
+- [Agent Guide - Arch Linux System Configuration (Archie)](#agent-guide-arch-linux-system-configuration-archie)
+  - [1. Commands](#1-commands)
+    - [Configuration Deployment & Verification](#configuration-deployment-verification)
+    - [Linting & Validation](#linting-validation)
+    - [Test Execution](#test-execution)
+    - [Changelog Maintenance](#changelog-maintenance)
+  - [2. Code Style Guidelines](#2-code-style-guidelines)
+    - [General](#general)
+    - [Shell Scripts (`bash`)](#shell-scripts-bash)
+    - [Neovim (Lua)](#neovim-lua)
+    - [Hyprland Configuration](#hyprland-configuration)
+    - [Zsh Configuration](#zsh-configuration)
+  - [3. Project Structure & Key Files](#3-project-structure-key-files)
+  - [4. Detailed Component Guidance](#4-detailed-component-guidance)
+    - [Neovim LSP & Plugins](#neovim-lsp-plugins)
+    - [UI Customization (Waybar & Rofi)](#ui-customization-waybar-rofi)
+    - [Git & Development](#git-development)
+  - [5. Maintenance Workflow](#5-maintenance-workflow)
+  - [6. Environment & Tooling](#6-environment-tooling)
+  - [7. Common Agent Tasks](#7-common-agent-tasks)
+    - [Adding a New Keybinding](#adding-a-new-keybinding)
+    - [Creating a New Utility Script](#creating-a-new-utility-script)
+    - [Updating Neovim LSP](#updating-neovim-lsp)
+    - [Modifying Waybar](#modifying-waybar)
+  - [8. Troubleshooting for Agents](#8-troubleshooting-for-agents)
+  - [9. External Resources & Rules](#9-external-resources-rules)
+  - [10. Rules of engagement](#10-rules-of-engagement)
+    - [Restrictions](#restrictions)
+    - [Preparation phase](#preparation-phase)
+    - [Execution phase](#execution-phase)
+    - [Post phase](#post-phase)
+<!--toc:end-->
+
 This repository contains the complete configuration for "Archie", a Hyprland-based Arch Linux desktop environment.
 
 ## 1. Commands
@@ -127,7 +162,7 @@ There are no formal unit tests in this repository. Verification is performed by 
 ### Git & Development
 
 - **Git Strategy**: Default merge strategy is `merge` (rebase=false).
-- **Signing**: Commits should be signed using SSH keys as per `docs/DEVELOPMENT.md`.
+- **Signing**: Commits should be signed using SSH keys as per `docs/user/DEVELOPMENT.md`.
 - **Dependencies**: Use `yay` for all package management. Prefer `nix` (single-user) for development tools to avoid permission issues in Neovim.
 
 ## 5. Maintenance Workflow
