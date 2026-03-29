@@ -1,6 +1,17 @@
-# Work Item 1: Bootstrap A Reproducible Arch VM Environment
+# Work Item 1: Bootstrap The Archie Dev Env
 
-Define and implement the base reproducible VM workflow for Archie development
+<!--toc:start-->
+
+- [Work Item 1: Bootstrap The Archie Dev Env](#work-item-1-bootstrap-the-archie-dev-env)
+  - [Status](#status)
+  - [Outcome](#outcome)
+  - [Decision changes](#decision-changes)
+  - [Main quests](#main-quests)
+  - [Exit Criteria](#exit-criteria)
+  - [Implementation Notes](#implementation-notes)
+<!--toc:end-->
+
+Define and implement the base dev-env VM workflow for Archie development
 using an Incus-managed Arch Linux virtual machine provisioned with cloud-init.
 
 ## Status
@@ -17,7 +28,7 @@ guest-side repo acquisition.
 ## Decision changes
 
 - This work replaces the old `vm-image` emphasis on unattended image artifacts
-  with a reproducible development environment emphasis.
+  with a dev-env emphasis.
 - Incus VM is the canonical runtime for the first phase. Containers are out of
   scope for now.
 - `cloud-init` remains in scope because it is the best bridge to later QEMU
@@ -33,7 +44,7 @@ guest-side repo acquisition.
   cloud-init payload for per-instance guest setup such as dropping a repo pull
   helper script into the Archie user home.
 
-## Tasks
+## Main quests
 
 - Define the reproducibility contract for the VM bootstrap flow, including:
   - base image source and versioning strategy
@@ -84,8 +95,8 @@ guest-side repo acquisition.
 ## Implementation Notes
 
 - Repo-owned cloud-init templates:
-  `templates/reproducible-environment/cloud-init/`
+  `templates/dev-env/cloud-init/`
 - User-facing workflow guide:
-  `docs/REPRODUCIBLE_ENVIRONMENT.md`
+  `docs/development/DEV_ENV.md`
 - Canonical runtime interface:
   direct `incus` CLI examples plus SSH into the guest

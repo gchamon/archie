@@ -6,6 +6,7 @@ inspiration for others to follow similar backup strategies, but this is a much
 more personal guide, not intended to be generally usable.
 
 <!--toc:start-->
+
 - [Backup and Restore](#backup-and-restore)
   - [1. Restore from Backup](#1-restore-from-backup)
     - [1.1 Dependencies](#11-dependencies)

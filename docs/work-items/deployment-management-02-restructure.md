@@ -1,5 +1,25 @@
 # Work Item 2: Restructure The Repo For Deployment Management
 
+<!--toc:start-->
+
+- [Work Item 2: Restructure The Repo For Deployment Management](#work-item-2-restructure-the-repo-for-deployment-management)
+  - [Status](#status)
+  - [Decisions](#decisions)
+  - [Outcome](#outcome)
+  - [Scope Notes](#scope-notes)
+  - [Main quests](#main-quests)
+    - [1. Build the Stow package layout](#1-build-the-stow-package-layout)
+    - [2. Move tracked files into the correct packages](#2-move-tracked-files-into-the-correct-packages)
+    - [3. Preserve runtime behavior](#3-preserve-runtime-behavior)
+    - [4. Rehearse migration from the old deployment model](#4-rehearse-migration-from-the-old-deployment-model)
+  - [Manual Testing](#manual-testing)
+    - [Clean Deployment](#clean-deployment)
+    - [Migration Rehearsal](#migration-rehearsal)
+    - [Migration Rollback](#migration-rollback)
+    - [Verification](#verification)
+  - [Exit Criteria](#exit-criteria)
+<!--toc:end-->
+
 Reorganize the repository so the deployment model from Work Item 1 is real and
 executable.
 
@@ -65,7 +85,7 @@ Not included:
 - Rewriting the user-facing deployment guides in full.
 - Adding CI or automated deployment validation.
 
-## Tasks
+## Main quests
 
 ### 1. Build the Stow package layout
 

@@ -1,6 +1,7 @@
 # Keyboard shortcuts
 
 <!--toc:start-->
+
 - [Keyboard shortcuts](#keyboard-shortcuts)
   - [Window Management](#window-management)
   - [Focus and Workspace Navigation](#focus-and-workspace-navigation)

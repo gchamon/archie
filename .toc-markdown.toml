@@ -1,0 +1,10 @@
+[toc-markdown]
+start_marker = "<!--toc:start-->"
+end_marker = "<!--toc:end-->"
+# toc-markdown requires a non-empty header_text. The wrapper removes this
+# placeholder line after generation so the repo can keep headerless TOC blocks.
+header_text = "<!--toc:header-->"
+min_level = 1
+max_level = 6
+list_style = "-"
+indent_chars = "  "

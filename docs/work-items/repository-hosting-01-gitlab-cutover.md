@@ -1,5 +1,16 @@
 # GitLab Canonical Upstream Cutover
 
+<!--toc:start-->
+
+- [GitLab Canonical Upstream Cutover](#gitlab-canonical-upstream-cutover)
+  - [Status](#status)
+  - [Goal](#goal)
+  - [Expected Outcome](#expected-outcome)
+  - [Execution Checklist](#execution-checklist)
+  - [Key Tasks](#key-tasks)
+  - [Dependencies](#dependencies)
+<!--toc:end-->
+
 Move Archie from GitHub-only hosting to a GitLab-first workflow while keeping
 GitHub as a read-only mirror of `main` and tags.
 

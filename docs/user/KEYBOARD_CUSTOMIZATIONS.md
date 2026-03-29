@@ -1,5 +1,12 @@
 # Keyboard Customizations
 
+<!--toc:start-->
+
+- [Keyboard Customizations](#keyboard-customizations)
+  - [Deployment](#deployment)
+  - [US - BR](#us-br)
+<!--toc:end-->
+
 Keyboard customizations serve to facilitate typing in a language different from
 that the keyboard in use is designed to.
 

@@ -1,5 +1,17 @@
 # Work Item: Cloudinit
 
+<!--toc:start-->
+
+- [Work Item: Cloudinit](#work-item-cloudinit)
+  - [Goal](#goal)
+  - [Scope](#scope)
+  - [Out of Scope](#out-of-scope)
+  - [Inputs](#inputs)
+  - [Deliverables](#deliverables)
+  - [Acceptance Criteria](#acceptance-criteria)
+  - [Dependencies](#dependencies)
+<!--toc:end-->
+
 ## Goal
 Create the cloud-init wrapper that provisions a base Arch cloud image and executes the Archie `archinstall` automation non-interactively.
 

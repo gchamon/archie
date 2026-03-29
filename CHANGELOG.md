@@ -1,8 +1,25 @@
 # Changelog
 
+<!--toc:start-->
+
+- [Changelog](#changelog)
+  - [[2.0] - 2025-11-03](#20-2025-11-03)
+    - [Changed](#changed)
+    - [Added](#added)
+    - [Fixed](#fixed)
+  - [[1.2] - 2025-06-30](#12-2025-06-30)
+    - [Changed](#changed-1)
+    - [Added](#added-1)
+    - [Fixed](#fixed-1)
+  - [[1.1] - 2025-06-12](#11-2025-06-12)
+    - [Changed](#changed-2)
+    - [Added](#added-2)
+  - [[1.0] - 2025-06-12](#10-2025-06-12)
+<!--toc:end-->
+
 ## [2.0] - 2025-11-03
 
-_If you are upgrading: please see [docs/MIGRATING.md](docs/MIGRATING.md)._
+_If you are upgrading: please see [docs/user/MIGRATING.md](docs/user/MIGRATING.md)._
 
 ### Changed
 

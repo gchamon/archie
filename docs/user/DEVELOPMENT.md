@@ -4,9 +4,12 @@ I aim to document the required configuration to have docker and other forms of
 containerization and virtualization running.
 
 <!--toc:start-->
+
 - [Containers and Virtual Machines](#containers-and-virtual-machines)
-  - [LazyVim](#lazyvim)
+    - [LazyVim](#lazyvim)
   - [Git config](#git-config)
+    - [git-delta](#git-delta)
+  - [Repository hosting](#repository-hosting)
   - [Docker install](#docker-install)
   - [Virtualization Setup](#virtualization-setup)
     - [Install Virtualization Tools](#install-virtualization-tools)
@@ -41,7 +44,7 @@ In LazyVim, `:LazyExtras` then install `mini-surround`.
 ## Git config
 
 Git configuration should be restored from [Backup and
-Restore](BACKUP_AND_RESTORE.md) procedure, but the configuration is done so
+Restore](../BACKUP_AND_RESTORE.md) procedure, but the configuration is done so
 that merge strategy and git signing using ssh key is configured:
 
 - Configure email and name
@@ -56,7 +59,7 @@ First install [git-delta](https://github.com/dandavison/delta): `yay -S git-delt
 
 To configure git to use delta as the default pager:
 
-```
+```bash
 git config --global core.pager delta
 git config --global interactive.diffFilter 'delta --color-only'
 git config --global delta.navigate true
@@ -175,4 +178,4 @@ incus admin init --preseed /tmp/incus-config.yml
 ```
 
 For the repo-owned Archie VM bootstrap flow that builds on this host setup, see
-[REPRODUCIBLE_ENVIRONMENT.md](REPRODUCIBLE_ENVIRONMENT.md).
+[docs/development/DEV_ENV.md](../development/DEV_ENV.md).

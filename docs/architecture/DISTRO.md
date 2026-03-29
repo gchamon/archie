@@ -1,5 +1,25 @@
 # Archie Distro Plan: Arch-Based ISO With Calamares for General Users
 
+<!--toc:start-->
+
+- [Archie Distro Plan: Arch-Based ISO With Calamares for General Users](#archie-distro-plan-arch-based-iso-with-calamares-for-general-users)
+  - [Summary](#summary)
+  - [Goal And Success Criteria](#goal-and-success-criteria)
+  - [Scope](#scope)
+  - [Architecture And Implementation Plan](#architecture-and-implementation-plan)
+    - [1. Repository Layout And Ownership](#1-repository-layout-and-ownership)
+    - [2. Package/Bundle Model](#2-packagebundle-model)
+    - [3. Archiso Build](#3-archiso-build)
+    - [4. Calamares Integration](#4-calamares-integration)
+    - [5. Config Deployment Strategy](#5-config-deployment-strategy)
+    - [6. Hardware Strategy (Laptop-First)](#6-hardware-strategy-laptop-first)
+    - [7. Release, QA, And Operations](#7-release-qa-and-operations)
+  - [Public Interfaces / Types To Add](#public-interfaces-types-to-add)
+  - [Test Cases And Scenarios](#test-cases-and-scenarios)
+  - [Expected Challenges And Mitigations](#expected-challenges-and-mitigations)
+  - [Assumptions And Defaults Chosen](#assumptions-and-defaults-chosen)
+<!--toc:end-->
+
 ## Summary
 Build `Archie` as a custom Arch-based live ISO with a Calamares GUI installer, laptop-first defaults, selectable software bundles, and quarterly stable releases.  
 Base stays on Arch repos + AUR (enabled broadly), with systemd-boot (UEFI) and ext4 default partitioning with optional LUKS encryption.

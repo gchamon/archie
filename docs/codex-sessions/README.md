@@ -1,5 +1,31 @@
 # Codex Session Logs
 
+<!--toc:start-->
+
+- [Codex Session Logs](#codex-session-logs)
+  - [File Layout](#file-layout)
+  - [Top-Level Record Schema](#top-level-record-schema)
+  - [Record Types](#record-types)
+    - [`session_meta`](#session_meta)
+    - [`turn_context`](#turn_context)
+    - [`event_msg`](#event_msg)
+    - [`response_item`](#response_item)
+  - [How To Read A Turn](#how-to-read-a-turn)
+  - [Useful jq Queries](#useful-jq-queries)
+    - [List top-level record types](#list-top-level-record-types)
+    - [List `payload.type` values under `event_msg` and `response_item`](#list-payloadtype-values-under-event_msg-and-response_item)
+    - [Show only user prompts](#show-only-user-prompts)
+    - [Show assistant commentary and final messages](#show-assistant-commentary-and-final-messages)
+    - [Show reasoning summaries without encrypted blobs](#show-reasoning-summaries-without-encrypted-blobs)
+    - [Show all tool calls](#show-all-tool-calls)
+    - [Show all tool outputs](#show-all-tool-outputs)
+    - [Join tool calls to tool outputs by `call_id`](#join-tool-calls-to-tool-outputs-by-call_id)
+    - [Show token usage snapshots](#show-token-usage-snapshots)
+    - [Extract completed plan text](#extract-completed-plan-text)
+    - [Find turns that contain encrypted reasoning](#find-turns-that-contain-encrypted-reasoning)
+  - [Practical Notes](#practical-notes)
+<!--toc:end-->
+
 This directory documents the local Codex CLI session log format. The `.jsonl`
 files are local artifacts and are ignored by Git; do not commit them. Each line
 is one complete JSON object. Read them as an event stream in timestamp order,
