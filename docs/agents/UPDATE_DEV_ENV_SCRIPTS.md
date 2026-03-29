@@ -8,6 +8,7 @@ When updating the Archie VM convenience scripts, treat these files as one unit:
 - `./scripts/launch-archie-instance.sh`
 - `./scripts/cleanup-archie-instance.sh`
 - `./scripts/launch-console.sh`
+- `./scripts/open-shell.sh`
 - `./scripts/setup-shared-clipboard.sh`
 - `./scripts/dev-env/common.sh`
 - `./scripts/dev-env/ssh-clipboard-sync.sh`
@@ -59,10 +60,13 @@ Verify at least the following after updates:
    `./templates/dev-env/incus/archie-instance-raw-qemu.conf`.
 5. Waiting for the Incus VM agent and waiting for `cloud-init` remain distinct
    phases.
-6. `./scripts/setup-shared-clipboard.sh` still resolves the guest IP from the
+6. `./scripts/open-shell.sh` still resolves the guest IP from the launched
+   instance and opens an interactive SSH shell using
+   `ARCHIE_INSTANCE_SSH_IDENTITY`.
+7. `./scripts/setup-shared-clipboard.sh` still resolves the guest IP from the
    launched instance and delegates to
    `./scripts/dev-env/ssh-clipboard-sync.sh`.
-7. `./CONTRIBUTING.md` still points contributors to the correct script
+8. `./CONTRIBUTING.md` still points contributors to the correct script
    entrypoints and supporting files.
 
 Do not let the convenience scripts become a second source of truth. If a

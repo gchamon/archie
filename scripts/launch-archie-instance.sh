@@ -60,4 +60,5 @@ guest_ip="$(resolve_guest_ip "$ARCHIE_INSTANCE_NAME")"
 
 printf '\nGuest IP: %s\n' "$guest_ip"
 printf 'Next: ./scripts/launch-console.sh\n'
+printf 'Next: ./scripts/open-shell.sh\n'
 printf 'Next: ./scripts/setup-shared-clipboard.sh\n'

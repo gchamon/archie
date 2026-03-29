@@ -259,7 +259,7 @@ necessary, but always ask when doing so because this can be token-intensive.
 
 ### Execution phase
 
-The exeuction phase will go on until the user is satisfied with reviewing the
+The execution phase will go on until the user is satisfied with reviewing the
 changes, before then the agent and the user are going to iterate on the
 implementation.
 
@@ -273,3 +273,9 @@ In the post phase of implementing a work item, propagate changes in the design a
 decisions to the next work item in the sequence, if there are any, in which
 case these changes have to be added to the last work item under `Decision
 changes` section.
+
+Never mark a work item as completed without first checking that all of its main
+quests, side-quests that were taken on as part of the implementation, and exit
+criteria were actually fulfilled. If any accepted quest or exit criterion is
+still open, do not mark the work item as complete; leave it in an appropriate
+non-complete status and record the remaining work explicitly.

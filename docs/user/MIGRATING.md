@@ -3,16 +3,91 @@
 <!--toc:start-->
 
 - [Archie Migration Guide](#archie-migration-guide)
-  - [v2 to v3](#v2-to-v3)
+  - [v3.0 to v3.1](#v30-to-v31)
     - [Migrating](#migrating)
+  - [v2 to v3](#v2-to-v3)
+    - [Migrating](#migrating-1)
     - [Restore after a failed migration](#restore-after-a-failed-migration)
 <!--toc:end-->
 
-This guide covers migration from Archie v2 to Archie v3.
+This guide covers migration across Archie releases.
 
 Archie v2 used an `rsync`-based deployment flow. Archie v3 uses GNU Stow and
 the `deployment-packages/` layout. Stow can be applied on top of a v2
 deployment only after conflicting copied files are moved aside.
+
+## v3.0 to v3.1
+
+In v3.1, several files that were previously created manually from guide snippets
+are now managed through Stow packages:
+
+- `~/.config/gtk-3.0/settings.ini`
+- `~/.config/gtk-4.0/settings.ini`
+- `/etc/sddm.conf.d/theme.conf`
+- `/etc/modprobe.d/nvidia.conf`
+- `/etc/systemd/logind.conf.d/lid-close.conf`
+
+The files that remain machine-specific and still stay outside Stow management
+do not change in this migration:
+
+- `~/.config/hypr/config/device.conf`
+- `~/.config/hypr/hyprpaper.conf`
+- `~/.local/lib/zsh/overrides.sh`
+
+### Migrating
+
+If you already created any of the newly managed files manually, move those
+copies aside before re-stowing:
+
+```bash
+mkdir -p "$HOME/archie-pre-stow-backup/.config/gtk-3.0"
+mkdir -p "$HOME/archie-pre-stow-backup/.config/gtk-4.0"
+sudo mkdir -p /root/archie-pre-stow-backup/sddm.conf.d
+sudo mkdir -p /root/archie-pre-stow-backup/modprobe.d
+sudo mkdir -p /root/archie-pre-stow-backup/systemd/logind.conf.d
+
+if [[ -e "$HOME/.config/gtk-3.0/settings.ini" && ! -L "$HOME/.config/gtk-3.0/settings.ini" ]]; then
+  mv "$HOME/.config/gtk-3.0/settings.ini" "$HOME/archie-pre-stow-backup/.config/gtk-3.0/settings.ini"
+fi
+
+if [[ -e "$HOME/.config/gtk-4.0/settings.ini" && ! -L "$HOME/.config/gtk-4.0/settings.ini" ]]; then
+  mv "$HOME/.config/gtk-4.0/settings.ini" "$HOME/archie-pre-stow-backup/.config/gtk-4.0/settings.ini"
+fi
+
+if sudo test -e /etc/sddm.conf.d/theme.conf && ! sudo test -L /etc/sddm.conf.d/theme.conf; then
+  sudo mv /etc/sddm.conf.d/theme.conf /root/archie-pre-stow-backup/sddm.conf.d/theme.conf
+fi
+
+if sudo test -e /etc/modprobe.d/nvidia.conf && ! sudo test -L /etc/modprobe.d/nvidia.conf; then
+  sudo mv /etc/modprobe.d/nvidia.conf /root/archie-pre-stow-backup/modprobe.d/nvidia.conf
+fi
+
+if sudo test -e /etc/systemd/logind.conf.d/lid-close.conf && ! sudo test -L /etc/systemd/logind.conf.d/lid-close.conf; then
+  sudo mv /etc/systemd/logind.conf.d/lid-close.conf /root/archie-pre-stow-backup/systemd/logind.conf.d/lid-close.conf
+fi
+```
+
+Then redeploy the new Stow-managed files:
+
+```bash
+stow --dir deployment-packages --target "$HOME/.config" config
+sudo stow --dir deployment-packages --target /etc sddm-theme
+sudo stow --dir deployment-packages --target /etc lid-close
+sudo stow --dir deployment-packages --target /etc nvidia
+```
+
+`config` now provides the GTK settings files in addition to the Qt defaults.
+`sddm-theme` and `lid-close` are the new default-on `/etc` packages. `nvidia`
+is opt-in and should only be redeployed on systems that want Archie's Nvidia
+override.
+
+You can also reuse `./scripts/install.sh` to perform this migration. It now
+backs up conflicting Stow targets into `~/archie-pre-stow-backup` and
+`/root/archie-pre-stow-backup` automatically and honors these toggles:
+
+- `ARCHIE_ENABLE_SDDM_THEME`
+- `ARCHIE_ENABLE_LID_CLOSE`
+- `ARCHIE_ENABLE_NVIDIA`
 
 ## v2 to v3
 

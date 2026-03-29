@@ -16,9 +16,17 @@
 
 # Quickstart
 
-# When set to 1, quickstart installs the SDDM slice theme package and writes
-# /etc/sddm.conf.d/theme.conf with Current=slice.
+# When set to 1, quickstart installs the SDDM slice theme package and deploys
+# /etc/sddm.conf.d/theme.conf via the sddm-theme Stow package.
 export ARCHIE_ENABLE_SDDM_THEME=1
+
+# When set to 1, quickstart deploys /etc/systemd/logind.conf.d/lid-close.conf
+# via the lid-close Stow package.
+export ARCHIE_ENABLE_LID_CLOSE=1
+
+# When set to 1, quickstart deploys /etc/modprobe.d/nvidia.conf via the nvidia
+# Stow package.
+export ARCHIE_ENABLE_NVIDIA=0
 
 # When set to 1, quickstart deploys Archie keyboard customizations into
 # /usr/share/xkeyboard-config-2 via the xkb Stow package.

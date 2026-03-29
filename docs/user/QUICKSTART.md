@@ -32,7 +32,7 @@ README:
 If you already have `vet` installed, run:
 
 ```bash
-vet https://gitlab.com/gabriel.chamon/archie/-/raw/main/scripts/quickstart.sh
+vet https://gitlab.com/gabriel.chamon/archie/-/raw/main/scripts/install.sh
 ```
 
 When started this way, the script clones Archie into `~/archie` by default and
@@ -44,7 +44,7 @@ the checkout root:
 
 ```bash
 cd archie
-./scripts/quickstart.sh
+./scripts/install.sh
 ```
 
 Quickstart-specific environment variables are documented in
@@ -55,20 +55,20 @@ automatically. For example, to opt into the SDDM theme path while debugging:
 ```bash
 cp ./.env.dist.sh ./.env.sh
 ${EDITOR:-vi} ./.env.sh
-./scripts/quickstart.sh
+./scripts/install.sh
 ```
 
 If you also pass quickstart environment variables on the command line, those
 command-line values take precedence over `.env.sh`:
 
 ```bash
-ARCHIE_ENABLE_SDDM_THEME=0 ./scripts/quickstart.sh
+ARCHIE_ENABLE_SDDM_THEME=0 ./scripts/install.sh
 ```
 
 For example, to opt into Archie keyboard customizations as part of quickstart:
 
 ```bash
-ARCHIE_ENABLE_XKB_CUSTOMIZATIONS=1 ./scripts/quickstart.sh
+ARCHIE_ENABLE_XKB_CUSTOMIZATIONS=1 ./scripts/install.sh
 ```
 
 The script behaves in two modes:
@@ -93,8 +93,12 @@ The helper runs the common first-run path from the canonical guide:
   deployed `.dist` templates if they do not already exist
 - installs the zsh, theming, and keyring packages
 - deploys `p10k-lean` as the default Powerlevel10k theme
-- optionally installs and configures the SDDM `slice` theme
-- applies a best-effort GTK theme setup for `Adwaita-dark`
+- deploys the SDDM `slice` theme by default through a separate Stow package
+- deploys the lid-close systemd override by default through a separate Stow package
+- optionally deploys the Nvidia modprobe override through a separate Stow package
+- deploys repo-managed GTK and Qt dark-theme defaults through Stow, including
+  system-wide GTK settings for privileged apps, and applies the GNOME
+  `prefer-dark` runtime preference
 - creates `~/Pictures/Screenshots`
 - prints the manual follow-up commands needed to finish machine-specific
   configuration
@@ -105,10 +109,15 @@ The quickstart intentionally makes a few fixed choices:
 
 - the default prompt theme is `p10k-lean`
 - the default GTK theme target is `Adwaita-dark`
+- current Archie Qt apps are wired through `qt6ct`, with matching `qt5ct`
+  defaults also deployed
+- GNOME/libadwaita dark-mode integration relies on `xdg-desktop-portal-gnome`
 - keyring setup installs `gnome-keyring` and `seahorse`
 - `yay` is bootstrapped from `yay-bin` only when `yay-bin` is missing
 - if `yay` is installed but `yay-bin` is missing, quickstart normalizes the system back to `yay-bin`
-- SDDM theme customization is enabled by default; set `ARCHIE_ENABLE_SDDM_THEME=0` to disable it
+- SDDM theme deployment is enabled by default; set `ARCHIE_ENABLE_SDDM_THEME=0` to disable it
+- lid-close override deployment is enabled by default; set `ARCHIE_ENABLE_LID_CLOSE=0` to disable it
+- Nvidia override deployment is disabled by default; set `ARCHIE_ENABLE_NVIDIA=1` to enable it
 - keyboard customizations are disabled by default; set `ARCHIE_ENABLE_XKB_CUSTOMIZATIONS=1` to deploy the `xkb` package
 - package installs run non-interactively
 - `yay` review menus default to `N`

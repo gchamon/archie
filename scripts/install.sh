@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/bash/lib.sh
 source "$SCRIPT_DIR/../lib/bash/lib.sh"
 CANONICAL_REPO_URL="https://gitlab.com/gabriel.chamon/archie.git"
-RAW_SCRIPT_URL="https://gitlab.com/gabriel.chamon/archie/-/raw/main/scripts/quickstart.sh"
+RAW_SCRIPT_URL="https://gitlab.com/gabriel.chamon/archie/-/raw/main/scripts/install.sh"
 
 ESSENTIAL_PACKAGES=(
     acpi
@@ -22,6 +22,7 @@ ESSENTIAL_PACKAGES=(
     fzf
     gnome-system-monitor
     grimblast-git
+    htop
     hyprcursor
     hyprlock
     hyprpaper
@@ -38,8 +39,10 @@ ESSENTIAL_PACKAGES=(
     otf-font-awesome
     pamixer
     pavucontrol
+    polkit-kde-agent
     plocate
     ranger
+    ripgrep
     rofi-wayland
     rsync
     stow
@@ -63,8 +66,12 @@ ZSH_PACKAGES=(
 THEME_PACKAGES=(
     archlinux-wallpaper
     gnome-themes-extra
+    qt5ct
     qt5-graphicaleffects
+    qt6ct
     xcursor-breeze5
+    xdg-desktop-portal-gnome
+    xdg-desktop-portal-gtk
     nwg-look
 )
 
@@ -99,6 +106,8 @@ is_interactive() {
 apply_quickstart_env_defaults() {
     ARCHIE_CHECKOUT_DIR_NAME="${ARCHIE_CHECKOUT_DIR_NAME:-$HOME/archie}"
     ARCHIE_ENABLE_SDDM_THEME="${ARCHIE_ENABLE_SDDM_THEME:-1}"
+    ARCHIE_ENABLE_LID_CLOSE="${ARCHIE_ENABLE_LID_CLOSE:-1}"
+    ARCHIE_ENABLE_NVIDIA="${ARCHIE_ENABLE_NVIDIA:-0}"
     ARCHIE_ENABLE_XKB_CUSTOMIZATIONS="${ARCHIE_ENABLE_XKB_CUSTOMIZATIONS:-0}"
     DEFAULT_P10K_PACKAGE="${ARCHIE_P10K_PACKAGE:-p10k-lean}"
     GTK_THEME="${ARCHIE_GTK_THEME:-Adwaita-dark}"
@@ -412,6 +421,24 @@ backup_existing_stow_targets() {
     backup_stow_conflicts local "$HOME/.local" "$USER_STOW_BACKUP_ROOT/.local"
     backup_stow_conflicts_sudo etc /etc "$SYSTEM_STOW_BACKUP_ROOT"
 
+    if quickstart_bool_enabled "$ARCHIE_ENABLE_SDDM_THEME"; then
+        backup_stow_conflicts_sudo sddm-theme /etc "$SYSTEM_STOW_BACKUP_ROOT"
+    else
+        log_info "Skipping SDDM theme backup; set ARCHIE_ENABLE_SDDM_THEME=1 to enable it again"
+    fi
+
+    if quickstart_bool_enabled "$ARCHIE_ENABLE_LID_CLOSE"; then
+        backup_stow_conflicts_sudo lid-close /etc "$SYSTEM_STOW_BACKUP_ROOT"
+    else
+        log_info "Skipping lid-close backup; set ARCHIE_ENABLE_LID_CLOSE=1 to enable it again"
+    fi
+
+    if quickstart_bool_enabled "$ARCHIE_ENABLE_NVIDIA"; then
+        backup_stow_conflicts_sudo nvidia /etc "$SYSTEM_STOW_BACKUP_ROOT"
+    else
+        log_info "Skipping Nvidia backup; set ARCHIE_ENABLE_NVIDIA=1 to enable Archie Nvidia overrides"
+    fi
+
     if quickstart_bool_enabled "$ARCHIE_ENABLE_XKB_CUSTOMIZATIONS"; then
         backup_stow_conflicts_sudo xkb /usr/share/xkeyboard-config-2 "$SYSTEM_STOW_BACKUP_ROOT/usr-share-xkeyboard-config-2"
     else
@@ -452,6 +479,24 @@ deploy_stow_packages() {
     stow_package "$HOME/.config" config
     stow_package "$HOME/.local" local
     stow_package_sudo /etc etc
+
+    if quickstart_bool_enabled "$ARCHIE_ENABLE_SDDM_THEME"; then
+        stow_package_sudo /etc sddm-theme
+    else
+        log_info "Skipping SDDM theme deployment; set ARCHIE_ENABLE_SDDM_THEME=1 to enable it again"
+    fi
+
+    if quickstart_bool_enabled "$ARCHIE_ENABLE_LID_CLOSE"; then
+        stow_package_sudo /etc lid-close
+    else
+        log_info "Skipping lid-close deployment; set ARCHIE_ENABLE_LID_CLOSE=1 to enable it again"
+    fi
+
+    if quickstart_bool_enabled "$ARCHIE_ENABLE_NVIDIA"; then
+        stow_package_sudo /etc nvidia
+    else
+        log_info "Skipping Nvidia deployment; set ARCHIE_ENABLE_NVIDIA=1 to enable Archie Nvidia overrides"
+    fi
 
     if quickstart_bool_enabled "$ARCHIE_ENABLE_XKB_CUSTOMIZATIONS"; then
         stow_package_sudo /usr/share/xkeyboard-config-2 xkb
@@ -518,74 +563,8 @@ set_login_shell() {
     fi
 }
 
-write_sddm_theme() {
-    local theme_conf=""
-
-    if ! quickstart_bool_enabled "$ARCHIE_ENABLE_SDDM_THEME"; then
-        log_info "Skipping SDDM theme configuration; set ARCHIE_ENABLE_SDDM_THEME=1 to enable it again"
-        return
-    fi
-
-    log_step "Configure SDDM theme"
-    theme_conf="$(mktemp)"
-
-    cat > "$theme_conf" <<'EOF'
-[Theme]
-Current=slice
-EOF
-
-    run_sudo_cmd mkdir -p /etc/sddm.conf.d
-    run_sudo_cmd mv "$theme_conf" /etc/sddm.conf.d/theme.conf
-}
-
-ensure_gtk_theme_key() {
-    local file_path="$1"
-    local tmp_file=""
-
-    mkdir -p "$(dirname "$file_path")"
-
-    if [[ ! -f "$file_path" ]]; then
-        cat > "$file_path" <<EOF
-[Settings]
-gtk-theme-name=$GTK_THEME
-EOF
-        return
-    fi
-
-    if grep -q '^gtk-theme-name=' "$file_path"; then
-        tmp_file="$(mktemp)"
-        sed "s/^gtk-theme-name=.*/gtk-theme-name=$GTK_THEME/" "$file_path" > "$tmp_file"
-        run_cmd mv "$tmp_file" "$file_path"
-        return
-    fi
-
-    if grep -q '^\[Settings\]$' "$file_path"; then
-        tmp_file="$(mktemp)"
-        awk -v theme="$GTK_THEME" '
-            /^\[Settings\]$/ && !inserted {
-                print
-                print "gtk-theme-name=" theme
-                inserted = 1
-                next
-            }
-            { print }
-        ' "$file_path" > "$tmp_file"
-        run_cmd mv "$tmp_file" "$file_path"
-        return
-    fi
-
-    cat >> "$file_path" <<EOF
-
-[Settings]
-gtk-theme-name=$GTK_THEME
-EOF
-}
-
 apply_gtk_theme() {
     log_step "Apply GTK theme"
-
-    ensure_gtk_theme_key "$HOME/.config/gtk-3.0/settings.ini"
-    ensure_gtk_theme_key "$HOME/.config/gtk-4.0/settings.ini"
 
     if command -v gsettings >/dev/null 2>&1; then
         print_command gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME"
@@ -594,10 +573,21 @@ apply_gtk_theme() {
         else
             log_warn "gsettings update failed. Verify the theme later with NWG Look."
         fi
+
+        print_command gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+        if gsettings set org.gnome.desktop.interface color-scheme prefer-dark; then
+            log_info "Updated gsettings color-scheme to prefer-dark"
+        else
+            log_warn "gsettings dark preference update failed. Verify it later in your desktop settings."
+        fi
     else
         log_warn "gsettings is not available. Verify the theme later with NWG Look."
     fi
 
+    log_info "GTK settings files are deployed through the config Stow package."
+    log_info "Privileged GTK apps also rely on the matching /etc GTK settings deployed through the etc Stow package."
+    log_info "Qt support is configured through qt6ct for current Archie Qt apps, with matching qt5ct defaults also deployed."
+    log_info "GNOME/libadwaita apps use the GNOME dark preference together with xdg-desktop-portal-gnome in the running session."
     log_info "If the running session does not pick up the theme, open GTK Settings from rofi and confirm $GTK_THEME."
 }
 
@@ -630,7 +620,6 @@ main() {
     scaffold_local_files
     ensure_required_home_folders
     set_login_shell
-    write_sddm_theme
     apply_gtk_theme
     print_manual_follow_up
 }
