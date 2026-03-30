@@ -44,6 +44,10 @@ git:review() {
   gpsetup
 }
 
+git:reset-origin-hard() {
+  git reset "origin/$(git_current_branch)" --hard
+}
+
 git:squash() {
   if [[ -z "$1" ]]; then
     echo "You must provide a target branch"
@@ -120,6 +124,7 @@ alias gp='git:push'
 alias gpr='git:prune'
 alias gprune='git:pull-prune'
 alias greview='git:review'
+alias groh='git:reset-origin-hard'
 alias gsquash='git:squash'
 alias create-pr='git:create-pr'
 alias create-mr='git:create-mr'
