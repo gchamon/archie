@@ -55,6 +55,7 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `git:prune` | Function | Runs `git prune -v`. |
 | `git:pull-prune` | Function | Pulls with prune, then prunes local refs. |
 | `git:review` | Function | Creates a `review/*` branch if needed and runs `gpsetup`. |
+| `git:stash-commit` | Function | Turns `HEAD` or a contiguous commit range ending at `HEAD` into a stash entry, returns to the original branch, and rewinds the branch to just before that range. |
 | `git:squash` | Function | Builds a squash branch on top of a target branch. |
 | `git:create-pr` | Function | Opens a GitHub compare page for the current branch. |
 | `git:create-mr` | Function | Opens a GitLab merge request page for the current branch. |
@@ -71,6 +72,7 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `gpr` | Alias | Runs `git prune -v`. |
 | `gprune` | Alias | Pulls with prune, then prunes local refs. |
 | `greview` | Alias | Creates a `review/*` branch if needed and runs `gpsetup`. |
+| `gstashc` | Alias | Shorthand alias for `git:stash-commit` ("git stash commit"). |
 | `gsquash` | Alias | Compatibility alias for `git:squash`. |
 | `_parse-repo` | Function | Internal helper that derives repo and destination branch metadata. |
 | `create-pr` | Alias | Compatibility alias for `git:create-pr`. |
