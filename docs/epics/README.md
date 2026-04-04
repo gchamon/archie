@@ -8,6 +8,9 @@
     - [`deployment-management`](#deployment-management)
     - [`vm-image`](#vm-image)
     - [`dev-env`](#dev-env)
+    - [`system-gui`](#system-gui)
+    - [`homepage`](#homepage)
+    - [`assistant`](#assistant)
 <!--toc:end-->
 
 This directory defines the high-level initiatives represented by work item files
@@ -54,31 +57,35 @@ critical
 
 ### `deployment-management`
 
-This epic covers how Archie configuration is deployed and maintained across
-home, XDG, and system-managed paths. It includes standardizing the deployment
-model, restructuring the repository to support that model, and rewriting the
-documentation so deployment and migration are consistent.
-
-GNU Stow is the current architectural choice used to implement this epic, but
-the epic itself is about deployment management rather than any single tool.
+- Definition: [deployment-management.md](./deployment-management.md)
+- Scope: Deployment and maintenance of Archie configuration across home, XDG,
+  and system-managed paths.
 
 ### `vm-image`
 
-This epic covers building Archie as an unattended VM image pipeline. It starts
-with `archinstall` automation, then layers cloud-init provisioning, QEMU image
-creation, and automated validation so Archie can be built and tested as a
-repeatable virtual machine artifact.
-
-This epic is now historical planning context. The active direction for new VM
-work is `dev-env`.
+- Definition: [vm-image.md](./vm-image.md)
+- Scope: Historical VM image pipeline work around `archinstall`, cloud-init,
+  QEMU image creation, and automated validation.
 
 ### `dev-env`
 
-This epic covers building a repeatable Archie development VM workflow around an
-Incus-managed Arch guest. It starts with cloud-init bootstrap to a
-graphical-ready baseline, then layers Archie deployment automation and only
-later standardizes runtime operations and smoke tests where they prove useful.
+- Definition: [dev-env.md](./dev-env.md)
+- Scope: Repeatable Archie development VM workflow around an Incus-managed Arch
+  guest.
 
-This initiative was previously named `reproducible-environment`. The shorter
-`dev-env` name is now the canonical term across docs, scripts, and planning
-artifacts.
+### `system-gui`
+
+- Definition: [system-gui.md](./system-gui.md)
+- Scope: First-party graphical interfaces for Archie system operations.
+
+### `homepage`
+
+- Definition: [homepage.md](./homepage.md)
+- Scope: Archie’s public-facing homepage, product positioning, and supporting
+  proof points.
+
+### `assistant`
+
+- Definition: [assistant.md](./assistant.md)
+- Scope: An Archie assistant experience spanning GUI, TUI, and optional coding
+  agent integration.
