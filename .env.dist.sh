@@ -24,8 +24,9 @@ export ARCHIE_ENABLE_SDDM_THEME=1
 # via the lid-close Stow package.
 export ARCHIE_ENABLE_LID_CLOSE=1
 
-# When set to 1, quickstart deploys /etc/modprobe.d/nvidia.conf via the nvidia
-# Stow package.
+# When set to 1, quickstart deploys the optional Nvidia system package via the
+# nvidia Stow package. That package currently manages
+# /etc/modprobe.d/nvidia.conf and /etc/dkms/nvidia.conf.
 export ARCHIE_ENABLE_NVIDIA=0
 
 # When set to 1, quickstart deploys Archie keyboard customizations into

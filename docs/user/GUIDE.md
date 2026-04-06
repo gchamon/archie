@@ -171,6 +171,11 @@ sudo stow --dir deployment-packages --target /etc lid-close
 sudo stow --dir deployment-packages --target /etc nvidia
 ```
 
+The optional `nvidia` package is intended only for systems that use Nvidia. It
+currently deploys both `/etc/modprobe.d/nvidia.conf` for `nvidia_drm` modeset
+and `/etc/dkms/nvidia.conf` with `parallel_jobs=2` to reduce CPU pressure
+during Nvidia DKMS rebuilds at the cost of longer update times.
+
 ### 2.2 System specific configuration
 
 Some files aren't managed by Stow because they are machine-specific local files.
@@ -381,11 +386,16 @@ acpi_backlight=native
 
 Currently using `nvidia-open-dkms` without issues.
 
-From [Hyprland Nvidia](https://wiki.hypr.land/Nvidia/), enable modeset for nvidia_drm:
+Archie provides an optional Nvidia-specific Stow package for systems that use
+Nvidia. It enables `nvidia_drm` modeset and reduces CPU pressure during Nvidia
+DKMS rebuilds by setting `parallel_jobs=2` for the Nvidia DKMS module:
 
 ```bash
 sudo stow --dir deployment-packages --target /etc nvidia
 ```
+
+That package affects only machines where it is deployed and only Nvidia DKMS
+builds. Other devices and non-Nvidia DKMS modules remain unchanged.
 
 This can also be set via kernel boot parameter `nvidia_drm.modeset=1`. In my
 testing, using the former makes the Nvidia GPU attach to `/dev/dri/card0`,

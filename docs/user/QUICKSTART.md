@@ -95,7 +95,9 @@ The helper runs the common first-run path from the canonical guide:
 - deploys `p10k-lean` as the default Powerlevel10k theme
 - deploys the SDDM `slice` theme by default through a separate Stow package
 - deploys the lid-close systemd override by default through a separate Stow package
-- optionally deploys the Nvidia modprobe override through a separate Stow package
+- optionally deploys the Nvidia system overrides through a separate Stow
+  package, including `nvidia_drm` modeset and Nvidia-only DKMS throttling with
+  `parallel_jobs=2`
 - deploys repo-managed GTK and Qt dark-theme defaults through Stow, including
   system-wide GTK settings for privileged apps, and applies the GNOME
   `prefer-dark` runtime preference
@@ -117,7 +119,7 @@ The quickstart intentionally makes a few fixed choices:
 - if `yay` is installed but `yay-bin` is missing, quickstart normalizes the system back to `yay-bin`
 - SDDM theme deployment is enabled by default; set `ARCHIE_ENABLE_SDDM_THEME=0` to disable it
 - lid-close override deployment is enabled by default; set `ARCHIE_ENABLE_LID_CLOSE=0` to disable it
-- Nvidia override deployment is disabled by default; set `ARCHIE_ENABLE_NVIDIA=1` to enable it
+- Nvidia system override deployment is disabled by default; set `ARCHIE_ENABLE_NVIDIA=1` to enable it
 - keyboard customizations are disabled by default; set `ARCHIE_ENABLE_XKB_CUSTOMIZATIONS=1` to deploy the `xkb` package
 - package installs run non-interactively
 - `yay` review menus default to `N`
