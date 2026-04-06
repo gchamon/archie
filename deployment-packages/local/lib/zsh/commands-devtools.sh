@@ -3,6 +3,7 @@
 alias ipyenv='pipenv run ipython'
 alias jb_hcl_fix='sed -i --regexp-extended "s/registry.terraform.io\///g" **/.terraform/modules/modules.json && sed -i --regexp-extended "s/git::https:\/\/(.*)\.git/\1/" **/.terraform/modules/modules.json'
 alias prettyjson='python -m json.tool'
+alias aws:list-profiles='aws configure list-profiles'
 alias sonar-branch='sonar-scanner -Dsonar.login=$SONAR_TOKEN -Dsonar.branch.name=$(git_current_branch) -Dsonar.branch.target=$(git_main_branch)'
 alias sonar-main='sonar-scanner -Dsonar.login=$SONAR_TOKEN'
 alias docker-swarm-remote='docker -H ssh://${DOCKER_SWARM_REMOTE_HOST} '
@@ -82,18 +83,6 @@ urlencode() {
 urldecode() {
   local data=${1//+/ }
   printf '%b' "${data//%/\x}"
-}
-
-aws:list-profiles() {
-  local config_file="${AWS_CONFIG_FILE:-$HOME/.aws/config}"
-
-  if [[ ! -f "$config_file" ]]; then
-    echo "AWS config not found: $config_file" >&2
-    return 1
-  fi
-
-  yq -p=ini -oy 'to_entries | .[] | select(.key | test("^profile ")) | .key' "$config_file" |
-    cut -d' ' -f2
 }
 
 beautify-clipboard() {
