@@ -1,14 +1,4 @@
-# Work Item 3: Standardize Runtime Operations And Smoke Tests As Needed
-
-<!--toc:start-->
-
-- [Work Item 3: Standardize Runtime Operations And Smoke Tests As Needed](#work-item-3-standardize-runtime-operations-and-smoke-tests-as-needed)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Standardize Runtime Operations And Smoke Tests As Needed
 
 Consolidate the runtime conventions and smoke-test coverage needed to keep the
 dev-env VM workflow practical as bootstrap and Archie deployment mature.
@@ -23,7 +13,7 @@ Archie has a lightweight but explicit runtime and validation layer for the dev
 env, defined incrementally from real development needs
 instead of being overdesigned up front.
 
-## Decision changes
+## Decision Changes
 
 - The old separation between runtime management and test-pipeline work is not
   useful at this stage. They should be developed together on a need basis.
@@ -34,7 +24,7 @@ instead of being overdesigned up front.
 - This work remains local-development oriented. CI, QEMU parity, and build
   artifact promotion are still deferred.
 
-## Main quests
+## Main Quests
 
 - Define the minimum stable runtime operations that should be standardized after
   work items 1 and 2 uncover the real pain points, such as:
@@ -59,7 +49,7 @@ instead of being overdesigned up front.
 - Document known blind spots that remain out of scope in this phase, such as
   advanced UI behavior, hardware-specific validation, and release gating.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - The dev env has a documented runtime workflow that removes repeated ad hoc
   Incus operations.
@@ -69,3 +59,9 @@ instead of being overdesigned up front.
   integration.
 - The work item leaves a clear foundation for later expansion into QEMU parity
   or pipeline automation if that becomes worthwhile.
+
+## Metadata
+
+### id
+
+dev-env-03

@@ -1,55 +1,66 @@
 # Work Items
 
-<!--toc:start-->
+Work items define executable changes and preserve the reasoning needed to make
+those changes durable.
 
-- [Work Items](#work-items)
-  - [Quest Subtypes](#quest-subtypes)
-  - [Metadata](#metadata)
-<!--toc:end-->
+## Standard Shape
 
-This directory contains staged plans for larger Archie changes that should be
-implemented across multiple sessions.
+Each work item should use:
 
-For more information, see <https://docs.gitlab.com/user/work_items/>.
+- `Status`
+- `Outcome`
+- `Decision Changes`
+- `Main Quests`
+- `Acceptance Criteria`
 
-Work item filenames must follow the pattern
-`{epic-name}-{work-item-number}-{work-item-name}.md`.
+Additional sections such as `Dependencies`, `Scope Notes`, `Manual Testing`,
+or `Implementation Notes` may appear when they materially help execution, but
+the standard shape above should remain present.
 
-Each work item file should be self-contained enough to hand to an engineer or
-agent for execution. The work item should define:
+## Naming
 
-- the current planning status of the stage when useful
-- the goal of the stage
-- the expected outcome
-- the main quests to complete
-- any dependencies on earlier work items
+Work item filenames should follow:
 
-Work items in this directory default to the GitLab work item type `Issue`
-unless overridden in metadata.
+`{epic-name}-{work-item-number}-{work-item-name}.md`
 
-Archie planning methodology uses this hierarchy:
+Use lowercase kebab-case for the epic and work item names. Use a zero-padded
+sequence such as `01` for the work item number.
 
-- epics
-- work items
-- work item types: `Issue`, `OKR`, and `Test case`
-- quests inside work items: main quests and side-quests
+Example:
 
-GitLab terminology mapping:
+- `deployment-management-01-design.md`
 
-- work items correspond to GitLab work items:
-  <https://docs.gitlab.com/user/work_items/>
-- main quests and side-quests both correspond to GitLab tasks:
-  <https://docs.gitlab.com/user/tasks/>
-- `OKR` corresponds to GitLab OKRs:
-  <https://docs.gitlab.com/user/okrs/>
-- `Test case` corresponds to GitLab test cases:
-  <https://docs.gitlab.com/ci/test_cases/>
+## Metadata
 
-Critical-chain rule:
+Work items may include a `## Metadata` section when they need to override
+defaults or preserve important planning attributes.
 
-- work items linked to epics with priority `critical` are part of the
-  project's critical chain
-- epic priority is defined canonically in [`docs/epics/README.md`](../epics/README.md)
+- `id` is required for tracked work items and must remain stable across renames
+  and moves
+- `type` defaults to `Issue` when omitted
+- supported explicit values are `Issue`, `OKR`, and `Test case`
+- each metadata key should be a `###` heading under `## Metadata`
+
+Example:
+
+```md
+## Metadata
+
+### id
+
+deployment-management-01
+
+### type
+
+OKR
+```
+
+## Style
+
+The work item should tell a story. Each section should introduce the reader to
+the concepts required and use technical prose to instruct the implementer. The
+only exception is in tasks, which may be simple lists or subsections when the
+task structure needs more detail.
 
 ## Quest Subtypes
 
@@ -61,54 +72,42 @@ maintain.
   implementing the work item. They stay attached to the current work item when
   they materially affect the same docs, tooling, or helper flow and are too
   small to justify a separate work item.
-- Side-quests should be labeled explicitly under `## Main quests`, either as their
-  own subsection or as a clearly named grouping, so they do not get mixed into
-  the main execution path by accident.
+- Side-quests should be labeled explicitly under `## Main Quests`, either as
+  their own subsection or as a clearly named grouping, so they do not get
+  mixed into the main execution path by accident.
 
-## Metadata
+## GitLab Mapping
 
-Work items may include a `## Metadata` subsection near the top when they need
-to override default work item attributes.
+Archie keeps GitLab-first planning vocabulary as the default methodology
+language:
 
-- `type` defaults to `Issue` when omitted.
-- Supported explicit `type` values are `Issue`, `OKR`, and `Test case`.
-- `## Metadata` should treat metadata as nested Markdown structure.
-- Each metadata key should be a `###` heading under `## Metadata`.
-- The value should appear as the body content directly under that `###` key
-  heading.
+- work items correspond to GitLab work items
+- main quests and side-quests correspond to GitLab tasks
+- `OKR` corresponds to GitLab OKRs
+- `Test case` corresponds to GitLab test cases
 
-Example:
+## Status Convention
 
-```md
-## Metadata
+If a work item includes `## Status`, use short prose values such as:
 
-### type
+- `Backlog`
+- `Planned`
+- `Doing`
+- `Done`
 
-OKR
-```
+If status is omitted, treat the work item as `Backlog`.
 
-Naming rules:
+## Migration
 
-- `epic-name`: lowercase kebab-case name shared by all work items in the same
-  initiative.
-- `work-item-number`: two-digit sequence number within the epic, such as `01`
-  or `04`.
-- `work-item-name`: lowercase kebab-case summary of the specific stage.
+Older Archie planning documents that predate stable IDs should add a stable
+`id` to each tracked work item. Keep the ID stable even if the file is
+renamed or moved.
 
-Example filenames:
+## Critical Chain
 
-- `deployment-management-01-design.md`
-- `vm-image-03-qemu-image.md`
-
-Status convention:
-
-- work item files may include a `## Status` section near the top
-- use short prose values such as `Planned`, `In progress`, `Reviewing` or `Complete`
-- status communicates planning progress only and does not replace the work item
-  body
-- If the status is omitted, it's assumed to be `Backlog`
-
-This directory also includes historical work item notes for past Archie work.
+Work items linked to epics with priority `critical` are part of the project's
+critical chain. Epic priority is defined canonically in
+[`docs/epics/README.md`](../epics/README.md).
 
 These files are planning artifacts. They describe the work; they are not the
 implementation itself.

@@ -1,57 +1,77 @@
 # Epics
 
-<!--toc:start-->
+Epics group related work items when the scope is larger than a single
+execution pass.
 
-- [Epics](#epics)
-  - [Metadata](#metadata)
-  - [Current Epics](#current-epics)
-    - [`deployment-management`](#deployment-management)
-    - [`vm-image`](#vm-image)
-    - [`dev-env`](#dev-env)
-    - [`system-gui`](#system-gui)
-    - [`homepage`](#homepage)
-    - [`assistant`](#assistant)
-<!--toc:end-->
+Use an epic when you need to coordinate:
 
-This directory defines the high-level initiatives represented by work item files
-in `docs/work-items`.
+- multiple work items against one outcome
+- staged extraction from source material
+- cross-cutting methodology changes
 
-Each epic groups a sequence of work item documents that belong to the same
-larger change effort.
+Epics should summarize intent and point to the active work items rather than
+repeat their full detail.
 
-For more information, see <https://docs.gitlab.com/user/group/epics/>.
+## Standard Shape
 
-Epics in this directory default to priority `normal` unless overridden in
-metadata.
+Each epic should use:
 
-Project critical-chain rule:
-
-- work items linked to epics with priority `critical` form the critical chain
-  of the project
-- epics with priority `high` are important but do not automatically place
-  their work items on the critical chain
+- `Status`
+- `Outcome`
+- `Decision Changes`
+- `Main Quests`
+- `Acceptance Criteria`
+- `Metadata`
 
 ## Metadata
 
-Epics may include a `## Metadata` subsection near the top when they need to
-override default epic attributes.
+Epics may include a `## Metadata` section when they need to override planning
+defaults.
 
-- `priority` defaults to `normal` when omitted.
-- Supported explicit `priority` values are `critical`, `high`, and `normal`.
-- `## Metadata` should treat metadata as nested Markdown structure.
-- Each metadata key should be a `###` heading under `## Metadata`.
-- The value should appear as the body content directly under that `###` key
-  heading.
+- `id` is required and must remain stable across renames and moves
+- `child_ids` is required and should list the stable IDs of tracked work items
+- `priority` defaults to `normal`
+- supported explicit values are `critical`, `high`, and `normal`
+- each metadata key should be a `###` heading under `## Metadata`
 
 Example:
 
 ```md
 ## Metadata
 
+### id
+
+deployment-management
+
+### child_ids
+
+- deployment-management-01
+- deployment-management-02
+
 ### priority
 
 critical
 ```
+
+## Status Convention
+
+Epics should use short prose values such as:
+
+- `Planned`
+- `Doing`
+- `Done`
+
+## Migration
+
+Older Archie planning documents that predate stable IDs should add a stable
+`id` to each epic and a `child_ids` list for the tracked work items that epic
+owns. Keep those IDs stable even if files are renamed or moved.
+
+## Critical Chain
+
+Work items linked to epics with priority `critical` are on the project's
+critical chain by default. Epics with priority `high` are important, but do
+not automatically place every linked work item on the critical chain.
 
 ## Current Epics
 

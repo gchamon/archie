@@ -1,22 +1,11 @@
-# Work Item 1: Bootstrap The Archie Dev Env
-
-<!--toc:start-->
-
-- [Work Item 1: Bootstrap The Archie Dev Env](#work-item-1-bootstrap-the-archie-dev-env)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-  - [Implementation Notes](#implementation-notes)
-<!--toc:end-->
+# Bootstrap The Archie Dev Env
 
 Define and implement the base dev-env VM workflow for Archie development
 using an Incus-managed Arch Linux virtual machine provisioned with cloud-init.
 
 ## Status
 
-Completed
+Done
 
 ## Outcome
 
@@ -25,7 +14,7 @@ from a cloud-init-bootstrapped Arch guest, then launch disposable Archie test
 instances from that image with a small launch-time cloud-init payload for
 guest-side repo acquisition.
 
-## Decision changes
+## Decision Changes
 
 - This work replaces the old `vm-image` emphasis on unattended image artifacts
   with a dev-env emphasis.
@@ -44,7 +33,7 @@ guest-side repo acquisition.
   cloud-init payload for per-instance guest setup such as dropping a repo pull
   helper script into the Archie user home.
 
-## Main quests
+## Main Quests
 
 - Define the reproducibility contract for the VM bootstrap flow, including:
   - base image source and versioning strategy
@@ -81,7 +70,7 @@ guest-side repo acquisition.
 - Define failure boundaries so provisioning issues can be distinguished from
   later Archie deployment or session startup issues.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - A fresh Incus VM can be provisioned from a repo-documented workflow with no
   manual guest setup required before first login.
@@ -91,6 +80,12 @@ guest-side repo acquisition.
 - Logs and metadata are sufficient to diagnose bootstrap failures separately
   from later Archie issues.
 - The environment is practical for repeated manual Archie testing and teardown.
+
+## Metadata
+
+### id
+
+dev-env-01
 
 ## Implementation Notes
 

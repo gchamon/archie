@@ -1,33 +1,13 @@
-# Work Item 2: Restructure The Repo For Deployment Management
-
-<!--toc:start-->
-
-- [Work Item 2: Restructure The Repo For Deployment Management](#work-item-2-restructure-the-repo-for-deployment-management)
-  - [Status](#status)
-  - [Decisions](#decisions)
-  - [Outcome](#outcome)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-    - [1. Build the Stow package layout](#1-build-the-stow-package-layout)
-    - [2. Move tracked files into the correct packages](#2-move-tracked-files-into-the-correct-packages)
-    - [3. Preserve runtime behavior](#3-preserve-runtime-behavior)
-    - [4. Rehearse migration from the old deployment model](#4-rehearse-migration-from-the-old-deployment-model)
-  - [Manual Testing](#manual-testing)
-    - [Clean Deployment](#clean-deployment)
-    - [Migration Rehearsal](#migration-rehearsal)
-    - [Migration Rollback](#migration-rollback)
-    - [Verification](#verification)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Restructure The Repo For Deployment Management
 
 Reorganize the repository so the deployment model from Work Item 1 is real and
 executable.
 
 ## Status
 
-Complete.
+Done.
 
-## Decisions
+## Decision Changes
 
 This work item implements the deployment-management decisions accepted in
 [Work Item 1](deployment-management-01-design.md).
@@ -85,7 +65,7 @@ Not included:
 - Rewriting the user-facing deployment guides in full.
 - Adding CI or automated deployment validation.
 
-## Main quests
+## Main Quests
 
 ### 1. Build the Stow package layout
 
@@ -345,7 +325,7 @@ ls -l "$HOME/.local/lib/zsh"
 ls -l /etc/xkb-customizations /usr/share/xkeyboard-config-2/symbols/us
 ```
 
-## Exit Criteria
+## Acceptance Criteria
 
 - The repo contains the final `deployment-packages/` layout and package
   inventory described in this work item.
@@ -357,3 +337,9 @@ ls -l /etc/xkb-customizations /usr/share/xkeyboard-config-2/symbols/us
 - A clean-machine deployment path has been exercised manually.
 - Migration from the old copied deployment method has been rehearsed manually,
   and the required conflict-cleanup steps are known.
+
+## Metadata
+
+### id
+
+deployment-management-02

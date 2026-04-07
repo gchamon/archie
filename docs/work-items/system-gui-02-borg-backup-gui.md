@@ -1,16 +1,4 @@
-# Work Item 2: Design A Borg Backup GUI And Decide Its Repository Boundary
-
-<!--toc:start-->
-
-- [Work Item 2: Design A Borg Backup GUI And Decide Its Repository Boundary](#work-item-2-design-a-borg-backup-gui-and-decide-its-repository-boundary)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Dependencies](#dependencies)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Design A Borg Backup GUI And Decide Its Repository Boundary
 
 Define the backup GUI track for Archie around the existing Borg workflow, while
 explicitly deciding whether the resulting implementation belongs in Archie or
@@ -27,7 +15,7 @@ decision record for whether it should be implemented here as Archie-owned code
 or upstreamed as a reusable module in
 `https://github.com/gchamon/borg-automated-backups`.
 
-## Decision changes
+## Decision Changes
 
 - The backup GUI belongs to the `system-gui` epic because it is part of the
   intended Archie user experience even if implementation later moves to another
@@ -69,7 +57,7 @@ Not included:
   operations.
 - Cross-machine backup orchestration beyond Archie’s current supported setup.
 
-## Main quests
+## Main Quests
 
 - Inventory the current Archie backup flow, including:
   - backup creation
@@ -94,7 +82,7 @@ Not included:
 - Define how the GUI should present historical backup information, in-progress
   runs, and actionable failure states without hiding important Borg details.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie has a planned backup GUI scope that is specific enough to implement
   without rediscovering the basic user flows.
@@ -102,3 +90,9 @@ Not included:
   `borg-automated-backups` is made explicitly with reasons.
 - The work item identifies the backend capabilities and safety constraints the
   implementation must satisfy before GUI coding begins.
+
+## Metadata
+
+### id
+
+system-gui-02

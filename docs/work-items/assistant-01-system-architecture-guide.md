@@ -1,15 +1,4 @@
-# Work Item 1: Create A System Architecture Guide For The Assistant
-
-<!--toc:start-->
-
-- [Work Item 1: Create A System Architecture Guide For The Assistant](#work-item-1-create-a-system-architecture-guide-for-the-assistant)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Create A System Architecture Guide For The Assistant
 
 Create the architecture documentation baseline the assistant will need before
 it can reliably guide users through how Archie is structured and operated.
@@ -24,7 +13,7 @@ Archie has a user-comprehensible system architecture guide that explains the
 major components, ownership boundaries, and operational flows of the current
 system in a form that both humans and assistant tooling can consume.
 
-## Decision changes
+## Decision Changes
 
 - Existing architecture material is not yet sufficient for the assistant on
   its own. The current docs are useful, but they are fragmented across distro
@@ -56,7 +45,7 @@ Not included:
 - Distro-ISO planning beyond the amount needed to distinguish it from the
   current Archie deployment model.
 
-## Main quests
+## Main Quests
 
 - Define the intended audience and reading modes for the architecture guide,
   including:
@@ -76,10 +65,16 @@ Not included:
 - Record known blind spots where architecture documentation is still thin and
   should remain out of scope until later work justifies expanding it.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie has a clear architecture guide suitable for use by the assistant.
 - The guide is explicit enough that assistant topics do not have to guess how
   the system is organized.
 - The work item links the guide cleanly to existing user, development, and ADR
   documentation instead of creating disconnected duplicate docs.
+
+## Metadata
+
+### id
+
+assistant-01

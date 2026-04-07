@@ -1,50 +1,50 @@
-# Work Item: QEMU Image
+# QEMU Image
 
-<!--toc:start-->
+## Status
 
-- [Work Item: QEMU Image](#work-item-qemu-image)
-  - [Goal](#goal)
-  - [Scope](#scope)
-  - [Out of Scope](#out-of-scope)
-  - [Inputs](#inputs)
-  - [Deliverables](#deliverables)
-  - [Acceptance Criteria](#acceptance-criteria)
-  - [Dependencies](#dependencies)
-<!--toc:end-->
+Done
 
-## Goal
-Build a repeatable pipeline that produces an executable Archie QCOW2 image for manual inspection.
+## Outcome
 
-## Scope
-- Automate image creation using:
-  - official Arch cloud QCOW2 base image,
-  - cloud-init seed artifacts,
-  - archinstall automation payload.
-- Standardize QEMU invocation (UEFI, disk layout, CPU/memory defaults, networking).
-- Produce versioned output images and build metadata.
-- Provide a one-command local run path for manual validation.
+Archie should have a repeatable historical pipeline that produces an executable
+QCOW2 image for manual inspection in QEMU.
 
-## Out of Scope
-- Full CI test gating.
-- Multi-hypervisor support.
-- Release-grade distribution of images.
+## Decision Changes
 
-## Inputs
-- Cloud-init artifacts from the `CLOUDINIT` work item.
-- Archinstall automation from the `ARCHINSTALL` work item.
-
-## Deliverables
-- Build script/pipeline that outputs Archie QCOW2 images.
-- Runtime script to boot produced image in QEMU for manual inspection.
-- Build manifest containing source commit, base image version, and parameters used.
-- Troubleshooting notes for common boot/provisioning failures.
-
-## Acceptance Criteria
-- Pipeline builds an Archie QCOW2 image from scratch without interactive steps.
-- Produced image boots in QEMU and reaches expected desktop/login baseline.
-- Build metadata makes image provenance reproducible.
-- Manual inspection workflow is documented and executable.
+- The VM-image pipeline should combine the Arch cloud QCOW2 base image,
+  cloud-init seed artifacts, and `archinstall` automation payload into one
+  repeatable QEMU build flow.
+- QEMU invocation should be standardized enough to keep the manual validation
+  path consistent.
+- Build outputs should preserve provenance through explicit manifests and
+  troubleshooting notes.
 
 ## Dependencies
-- `docs/work-items/vm-image-01-archinstall.md` and
-  `docs/work-items/vm-image-02-cloudinit.md`.
+
+- [`vm-image-01-archinstall.md`](./vm-image-01-archinstall.md)
+- [`vm-image-02-cloudinit.md`](./vm-image-02-cloudinit.md)
+
+## Main Quests
+
+- Automate image creation using the official Arch cloud QCOW2 base image,
+  cloud-init seed artifacts, and `archinstall` automation payload.
+- Standardize QEMU invocation, including UEFI, disk layout, CPU and memory
+  defaults, and networking.
+- Produce versioned output images and build metadata.
+- Provide a one-command local run path for manual validation.
+- Document troubleshooting notes for common boot and provisioning failures.
+
+## Acceptance Criteria
+
+- The pipeline builds an Archie QCOW2 image from scratch without interactive
+  steps.
+- The produced image boots in QEMU and reaches the expected desktop or login
+  baseline.
+- Build metadata makes image provenance reproducible.
+- The manual inspection workflow is documented and executable.
+
+## Metadata
+
+### id
+
+vm-image-03

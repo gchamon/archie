@@ -1,16 +1,4 @@
-# Work Item 5: Add Uninstall Automation For Archie Deployment
-
-<!--toc:start-->
-
-- [Work Item 5: Add Uninstall Automation For Archie Deployment](#work-item-5-add-uninstall-automation-for-archie-deployment)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Dependencies](#dependencies)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Add Uninstall Automation For Archie Deployment
 
 Carry the deferred uninstall helper work into its own tracked stage now that
 the install flow has landed separately as `scripts/install.sh`.
@@ -25,7 +13,7 @@ Archie has a dedicated, tracked plan for uninstall automation that can be
 implemented independently from the install flow while staying aligned with the
 canonical migration and rollback guides.
 
-## Decision changes
+## Decision Changes
 
 - The uninstall helper is no longer tracked as part of the completed
   quickstart/install work item. It is now its own follow-up stage under the
@@ -76,7 +64,7 @@ Not included:
 - Full implementation of package-state snapshots unless the restore-focused
   uninstall phase proves stable first.
 
-## Main quests
+## Main Quests
 
 - Define the uninstall helper interface, including:
   - repo-local execution as `./scripts/uninstall.sh`
@@ -104,7 +92,7 @@ Not included:
   - restore verification against a test deployment
   - failure handling when backup roots are partial or missing
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie has a dedicated work item for uninstall automation that is no longer
   buried inside the completed install-flow work item.
@@ -113,3 +101,9 @@ Not included:
   removal boundaries.
 - The work item keeps uninstall design aligned with the current install helper,
   Stow deployment model, and migration documentation.
+
+## Metadata
+
+### id
+
+deployment-management-05

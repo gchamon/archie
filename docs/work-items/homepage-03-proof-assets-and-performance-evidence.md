@@ -1,16 +1,4 @@
-# Work Item 3: Create Proof Assets And Performance Evidence For Homepage Claims
-
-<!--toc:start-->
-
-- [Work Item 3: Create Proof Assets And Performance Evidence For Homepage Claims](#work-item-3-create-proof-assets-and-performance-evidence-for-homepage-claims)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Dependencies](#dependencies)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Create Proof Assets And Performance Evidence For Homepage Claims
 
 Create the supporting screenshots, workload examples, and benchmark evidence
 needed for stronger homepage claims about Archie’s responsiveness and overhead.
@@ -25,7 +13,7 @@ Archie has a reproducible set of proof assets and measurement guidance that can
 support homepage language about responsiveness, practical overhead, and
 real-world multitasking behavior.
 
-## Decision changes
+## Decision Changes
 
 - This work item exists to prevent homepage messaging from drifting into
   unverified marketing language.
@@ -55,7 +43,7 @@ Not included:
   necessary.
 - Competitive performance shootouts beyond what the homepage needs.
 
-## Main quests
+## Main Quests
 
 - Decide the minimum benchmark set needed to support homepage messaging, such
   as:
@@ -71,7 +59,7 @@ Not included:
 - Decide which measured results are stable enough for public homepage use and
   which should remain internal reference only.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie has a repeatable proof workflow for homepage screenshots and core
   measurements.
@@ -79,3 +67,9 @@ Not included:
   evidence.
 - Future homepage revisions can refresh the supporting assets without
   re-deciding the proof strategy.
+
+## Metadata
+
+### id
+
+homepage-03

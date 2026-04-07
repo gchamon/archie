@@ -1,16 +1,4 @@
-# Work Item 2: Design The Help Topics Applet And Kitty TUI Flow
-
-<!--toc:start-->
-
-- [Work Item 2: Design The Help Topics Applet And Kitty TUI Flow](#work-item-2-design-the-help-topics-applet-and-kitty-tui-flow)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Dependencies](#dependencies)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Design The Help Topics Applet And Kitty TUI Flow
 
 Define the first Archie assistant interface as a lightweight GUI applet that
 lists help topics and opens a Kitty terminal into a dedicated assistant TUI for
@@ -26,7 +14,7 @@ Archie has a concrete interface and execution plan for an assistant that begins
 with a graphical topic chooser and hands off into a terminal-native assistant
 experience suitable for keyboard-first usage.
 
-## Decision changes
+## Decision Changes
 
 - The assistant should begin as a GUI applet, not a full desktop shell.
 - The GUI applet’s primary job is topic discovery and launch, while the deeper
@@ -63,7 +51,7 @@ Not included:
   work.
 - Broad in-app editing of the documentation corpus.
 
-## Main quests
+## Main Quests
 
 - Define the launch surface for the assistant applet, including where Archie
   users are expected to access it from.
@@ -83,10 +71,16 @@ Not included:
 - Identify documentation gaps discovered while shaping the topic set, including
   whether Archie needs a separate work item for shell-helper documentation.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie has a clear design for the assistant’s GUI-to-Kitty handoff.
 - The initial topic map is explicit enough to implement without rediscovering
   the basic user experience.
 - Any documentation gaps that block the assistant topic set are recorded as
   explicit follow-up work instead of being left implicit.
+
+## Metadata
+
+### id
+
+assistant-02

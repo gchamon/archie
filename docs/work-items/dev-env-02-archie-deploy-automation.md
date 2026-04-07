@@ -1,14 +1,4 @@
-# Work Item 2: Automate Archie Deployment Inside The Dev Env VM
-
-<!--toc:start-->
-
-- [Work Item 2: Automate Archie Deployment Inside The Dev Env VM](#work-item-2-automate-archie-deployment-inside-the-dev-env-vm)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Automate Archie Deployment Inside The Dev Env VM
 
 Turn the validated manual Archie installation and deployment flow into a
 repo-owned automation path that runs inside the dev-env VM environment.
@@ -23,7 +13,7 @@ After the manual VM workflow is proven useful, Archie can be applied inside the
 reproducible guest through a documented automation entrypoint that follows the
 real Stow-based deployment model used by the project.
 
-## Decision changes
+## Decision Changes
 
 - This work item starts only after the manual Archie workflow in work item 1 is
   validated enough to serve as the source of truth for automation.
@@ -40,7 +30,7 @@ real Stow-based deployment model used by the project.
   per-instance guest setup, currently used to write `~/pull-archie-repo.sh` for
   the Archie user.
 
-## Main quests
+## Main Quests
 
 - Capture the validated manual Archie deployment flow from work item 1 and turn
   it into an explicit automation contract.
@@ -67,7 +57,7 @@ real Stow-based deployment model used by the project.
 - Document the manual follow-up expectations that remain intentionally out of
   scope if the automation should not guess machine-specific values.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie can be deployed inside the dev-env VM through a repo-owned documented
   automation path.
@@ -77,3 +67,9 @@ real Stow-based deployment model used by the project.
   deployment, and session startup failures.
 - The automation reuses the dev-env assumptions from work item 1 without
   introducing a separate runtime model.
+
+## Metadata
+
+### id
+
+dev-env-02

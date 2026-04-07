@@ -1,15 +1,4 @@
-# Work Item 1: Design A Power And Peripherals Control GUI
-
-<!--toc:start-->
-
-- [Work Item 1: Design A Power And Peripherals Control GUI](#work-item-1-design-a-power-and-peripherals-control-gui)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Design A Power And Peripherals Control GUI
 
 Define the first Archie GUI as a focused control surface for power management
 and peripherals whose behavior directly affects power usage.
@@ -25,7 +14,7 @@ power-related controls such as screen state, backlight, and other attached
 peripherals that draw power, without yet overcommitting to implementation
 details that depend on the chosen desktop integration approach.
 
-## Decision changes
+## Decision Changes
 
 - This GUI is intended as the first work item under the `system-gui` epic.
 - The GUI should optimize for real machine controls Archie already uses instead
@@ -59,7 +48,7 @@ Not included:
 - Broad system-settings coverage unrelated to power or power-adjacent
   peripherals.
 
-## Main quests
+## Main Quests
 
 - Define the primary user flows the GUI must handle, including at least:
   - display brightness changes
@@ -81,7 +70,7 @@ Not included:
   - whether the GUI should be launched directly, from Rofi, or from another
     Archie entrypoint
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie has a clear first-stage design for a power and peripherals GUI that
   can be implemented without reopening its basic scope.
@@ -89,3 +78,9 @@ Not included:
   rather than abstract settings categories.
 - The work item identifies the missing helper scripts or backend contracts that
   must exist before GUI implementation begins.
+
+## Metadata
+
+### id
+
+system-gui-01

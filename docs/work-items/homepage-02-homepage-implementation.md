@@ -1,16 +1,4 @@
-# Work Item 2: Implement The First Archie Homepage
-
-<!--toc:start-->
-
-- [Work Item 2: Implement The First Archie Homepage](#work-item-2-implement-the-first-archie-homepage)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Dependencies](#dependencies)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Implement The First Archie Homepage
 
 Implement the first Archie homepage using the approved product positioning and
 site structure from the earlier planning stage.
@@ -25,7 +13,7 @@ Archie has a polished first homepage that presents the project as a coherent
 product, routes users toward installation and deeper documentation, and uses
 visual and textual proof that matches the actual system.
 
-## Decision changes
+## Decision Changes
 
 - This work item is implementation-first and should follow the positioning
   decisions from Work Item 1 instead of redefining them.
@@ -57,7 +45,7 @@ Not included:
 - Automated telemetry, analytics, or marketing automation unless later work
   explicitly adds them.
 
-## Main quests
+## Main Quests
 
 - Implement the homepage structure defined in Work Item 1.
 - Translate the approved positioning into concise product-facing copy that
@@ -71,7 +59,7 @@ Not included:
 - Verify the page’s responsive behavior, readability, and visual hierarchy
   across representative desktop and mobile sizes.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie has a working first homepage with production-ready messaging and
   visuals.
@@ -79,3 +67,9 @@ Not included:
   canonical technical documentation.
 - The implemented claims, screenshots, and calls to action match Archie’s
   real capabilities and supported workflows.
+
+## Metadata
+
+### id
+
+homepage-02

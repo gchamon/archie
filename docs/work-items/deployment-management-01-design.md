@@ -1,28 +1,23 @@
-# Milestone 1: Design The Deployment Management Model
-
-<!--toc:start-->
-
-- [Milestone 1: Design The Deployment Management Model](#milestone-1-design-the-deployment-management-model)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Design The Deployment Management Model
 
 Define the target deployment model before changing the repo structure or the
 docs.
 
 ## Status
 
-Complete. The accepted deployment-management decisions are carried forward into
-Milestone 2 for implementation.
+Done
+
+### Comments
+
+The accepted deployment-management decisions are carried forward into
+Work Item 2 for implementation.
 
 ## Outcome
 
 A decision-complete Stow layout for Archie, including package boundaries,
 deployment targets, and migration behavior from the old `rsync`-based setup.
 
-## Main quests
+## Main Quests
 
 - Decide the Stow package layout for:
   - home-level files under `~`
@@ -39,8 +34,14 @@ deployment targets, and migration behavior from the old `rsync`-based setup.
 - Define what remains outside Stow management, such as machine-specific files
   derived from `.dist` templates.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - The target Stow commands are known.
 - The target directory layout is known.
 - The migration behavior is clear enough to document without caveats.
+
+## Metadata
+
+### id
+
+deployment-management-01

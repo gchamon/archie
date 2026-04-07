@@ -1,15 +1,44 @@
-# `system-gui`
+# System GUI
 
-This epic covers first-party graphical interfaces for Archie system operations.
-It starts with a control surface for power and power-adjacent peripherals such
-as displays and backlights, then expands into a backup GUI around the Borg
-workflow used by Archie.
+## Status
 
-The backup track may land either as Archie-owned code in this repository or as
-a reusable module in `borg-automated-backups`, but the planning work belongs to
-this epic until that boundary is decided.
+Planned
 
-## Work items
+## Outcome
 
-- [system-gui-01-power-and-peripherals-control](../work-items/system-gui-01-power-and-peripherals-control.md)
-- [system-gui-02-borg-backup-gui](../work-items/system-gui-02-borg-backup-gui.md)
+Archie should gain first-party graphical interfaces for system operations,
+starting with a compact power-and-peripherals control surface and extending to
+a Borg-oriented backup GUI once its repository boundary and safety model are
+clear.
+
+## Decision Changes
+
+- The first graphical work in Archie should focus on real system operations
+  Archie already owns rather than on a generic settings shell.
+- Power and power-adjacent peripherals form the first GUI problem space.
+- The backup-GUI track remains under this epic until the implementation
+  boundary between Archie and `borg-automated-backups` is decided.
+
+## Main Quests
+
+- Define the first-stage power and peripherals control GUI.
+- Define the backup GUI scope, ownership boundary, and safety model.
+
+## Acceptance Criteria
+
+- The epic communicates why these GUI tracks belong together as system
+  operations work.
+- The epic records the unresolved repository-boundary question for the backup
+  track.
+- The epic exposes a stable `id` and explicit `child_ids`.
+
+## Metadata
+
+### id
+
+system-gui
+
+### child_ids
+
+- system-gui-01
+- system-gui-02

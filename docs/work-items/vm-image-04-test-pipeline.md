@@ -1,54 +1,50 @@
-# Work Item: Test Pipeline
+# Test Pipeline
 
-<!--toc:start-->
+## Status
 
-- [Work Item: Test Pipeline](#work-item-test-pipeline)
-  - [Goal](#goal)
-  - [Scope](#scope)
-  - [Initial Test Scenarios](#initial-test-scenarios)
-  - [Out of Scope](#out-of-scope)
-  - [Inputs](#inputs)
-  - [Deliverables](#deliverables)
-  - [Acceptance Criteria](#acceptance-criteria)
-  - [Dependencies](#dependencies)
-<!--toc:end-->
+Done
 
-## Goal
-Define and implement a simple automated validation pipeline for Archie VM images.
+## Outcome
 
-## Scope
-- Create smoke test scenarios for produced QEMU images.
-- Add unattended boot/install validation and post-boot health checks.
-- Define pass/fail gates and reporting artifacts.
-- Establish baseline reliability threshold for this phase.
+Archie should have a simple automated validation layer for the historical
+VM-image pipeline that can run smoke tests against freshly built QEMU images.
 
-## Initial Test Scenarios
-- Scenario 1: image boots successfully to expected system state.
-- Scenario 2: Archie core processes/services are present (session, bar, notification stack).
-- Scenario 3: networking is available after boot.
-- Scenario 4: selected package groups are present; excluded groups are absent.
-- Scenario 5: provisioning artifacts/logs are archived on failure.
+## Decision Changes
 
-## Out of Scope
-- Full end-to-end UI testing.
-- Hardware-specific GPU validation on physical devices.
-- Performance benchmarking.
-
-## Inputs
-- Image build outputs from the `QEMU_IMAGE` work item.
-- Installer and provisioning logs from earlier work items.
-
-## Deliverables
-- Test runner scripts for smoke scenarios.
-- Machine-readable test report format (pass/fail + key diagnostics).
-- CI/CD integration path for scheduled or on-demand execution.
-- Documentation of test matrix and known blind spots.
-
-## Acceptance Criteria
-- Pipeline can execute smoke tests against freshly built QEMU image automatically.
-- Results are deterministic enough to enforce a promotion gate.
-- Minimum gate for this phase: 2 consecutive successful unattended runs.
-- Failures provide actionable logs for root-cause analysis.
+- The first automated validation layer should focus on smoke-test coverage
+  rather than full end-to-end UI testing.
+- Validation should check boot success, core Archie process presence,
+  networking, package expectations, and failure-log capture.
+- The initial phase should establish a lightweight promotion gate instead of a
+  heavier benchmarking or hardware-validation program.
 
 ## Dependencies
-- `docs/work-items/vm-image-03-qemu-image.md`.
+
+- [`vm-image-03-qemu-image.md`](./vm-image-03-qemu-image.md)
+
+## Main Quests
+
+- Create smoke-test scenarios for produced QEMU images.
+- Add unattended boot and install validation plus post-boot health checks.
+- Define pass or fail gates and reporting artifacts.
+- Establish the baseline reliability threshold for this phase.
+- Preserve the initial test scenarios around boot success, core
+  processes or services, networking, package presence, and failure-log
+  archival.
+- Document the test runner scripts, machine-readable reports, integration path,
+  and known blind spots.
+
+## Acceptance Criteria
+
+- The pipeline can execute smoke tests against a freshly built QEMU image
+  automatically.
+- Results are deterministic enough to enforce a promotion gate.
+- The minimum gate for this phase is two consecutive successful unattended
+  runs.
+- Failures provide actionable logs for root-cause analysis.
+
+## Metadata
+
+### id
+
+vm-image-04

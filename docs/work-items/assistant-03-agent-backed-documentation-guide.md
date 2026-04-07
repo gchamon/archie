@@ -1,16 +1,4 @@
-# Work Item 3: Add Agent-Backed Documentation Guidance To The Assistant
-
-<!--toc:start-->
-
-- [Work Item 3: Add Agent-Backed Documentation Guidance To The Assistant](#work-item-3-add-agent-backed-documentation-guidance-to-the-assistant)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Dependencies](#dependencies)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Add Agent-Backed Documentation Guidance To The Assistant
 
 Define how the Archie assistant can optionally load a user-configured coding
 agent and constrain it into a documentation and architecture guide role inside
@@ -26,7 +14,7 @@ Archie has an explicit plan for optional agent-backed assistance that can use
 tools such as Codex, Claude, Gemini, or OpenCode as interactive guides without
 making the assistant depend on any single provider.
 
-## Decision changes
+## Decision Changes
 
 - Agent support is optional and should layer on top of the documented
   assistant, not replace the non-agent topic browser.
@@ -62,7 +50,7 @@ Not included:
 - Full multi-agent orchestration.
 - Provider-specific deep integrations that exceed the shared assistant contract.
 
-## Main quests
+## Main Quests
 
 - Define the local configuration model for supported agents, including:
   - provider identity
@@ -85,10 +73,16 @@ Not included:
 - Define the minimum no-agent fallback behavior so the assistant remains useful
   even when no coding agent is configured.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie has an explicit agent-integration contract for assistant mode.
 - The assistant can support multiple user-selected agents through a shared
   behavior model instead of per-provider ad hoc logic.
 - Safety and fallback behavior are defined well enough that agent-backed mode
   does not undermine the documentation-first assistant experience.
+
+## Metadata
+
+### id
+
+assistant-03

@@ -1,15 +1,4 @@
-# Work Item 1: Define Homepage Product Positioning And Site Structure
-
-<!--toc:start-->
-
-- [Work Item 1: Define Homepage Product Positioning And Site Structure](#work-item-1-define-homepage-product-positioning-and-site-structure)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Define Homepage Product Positioning And Site Structure
 
 Define how Archie should be presented on a homepage as a product, including the
 core message, proof strategy, target audience, and the structure of the first
@@ -25,7 +14,7 @@ Archie has a decision-complete homepage brief that explains what the site is
 trying to communicate, who it is for, what evidence supports its main claims,
 and which sections the first homepage must include.
 
-## Decision changes
+## Decision Changes
 
 - This work item starts the `homepage` epic.
 - The homepage should present Archie as a productized desktop experience, not
@@ -55,7 +44,7 @@ Not included:
 - Full brand system or logo redesign unless needed to unblock homepage design.
 - Broader documentation restructuring outside what the homepage links to.
 
-## Main quests
+## Main Quests
 
 - Define the primary user segments the homepage should address, including which
   visitors are first priority:
@@ -84,7 +73,7 @@ Not included:
 - Define acceptance criteria for messaging accuracy so the page does not
   overstate performance, simplicity, or hardware support.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - Archie has a clear homepage brief with a defined audience, message, and site
   structure.
@@ -92,3 +81,9 @@ Not included:
   supporting evidence first.
 - An implementation-stage work item can build the homepage without reopening
   product-positioning decisions.
+
+## Metadata
+
+### id
+
+homepage-01

@@ -1,23 +1,18 @@
-# Milestone 3: Rewrite The Deployment Documentation
-
-<!--toc:start-->
-
-- [Milestone 3: Rewrite The Deployment Documentation](#milestone-3-rewrite-the-deployment-documentation)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Main quests](#main-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Rewrite The Deployment Documentation
 
 Update the written guides after the Stow layout has been implemented and
 validated.
+
+## Status
+
+Done
 
 ## Outcome
 
 The docs describe the real Stow-based deployment flow, including migration from
 the old `rsync` method.
 
-## Decision changes
+## Decision Changes
 
 - The shell library package is `local` targeting `$HOME/.local`, with tracked
   files deployed under `~/.local/lib/zsh/`.
@@ -33,7 +28,7 @@ the old `rsync` method.
   steps are generated from the Stow package contents rather than from hardcoded
   file lists.
 
-## Main quests
+## Main Quests
 
 - Add `stow` to the required package lists where appropriate.
 - Replace the main Archie deployment instructions that currently use `rsync`
@@ -57,7 +52,7 @@ the old `rsync` method.
 - Update internal repo guidance such as `CLAUDE.md` so agent-facing deployment
   instructions match the new model.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - No primary deployment doc tells users to deploy Archie with `rsync`.
 - The migration path from the old deployment model is documented clearly.
@@ -65,3 +60,9 @@ the old `rsync` method.
   templates are created in a Stow deployment without treating the templates as
   copied files.
 - Internal and user-facing docs agree on the deployment model.
+
+## Metadata
+
+### id
+
+deployment-management-03

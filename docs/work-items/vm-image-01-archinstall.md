@@ -1,48 +1,52 @@
-# Work Item: Archinstall
+# Archinstall
 
-<!--toc:start-->
+## Status
 
-- [Work Item: Archinstall](#work-item-archinstall)
-  - [Goal](#goal)
-  - [Scope](#scope)
-  - [Out of Scope](#out-of-scope)
-  - [Inputs](#inputs)
-  - [Deliverables](#deliverables)
-  - [Acceptance Criteria](#acceptance-criteria)
-  - [Dependencies](#dependencies)
-<!--toc:end-->
+Done
 
-## Goal
-Build the canonical Python automation entrypoint that controls the `archinstall` SDK for unattended Archie installation.
+## Outcome
 
-## Scope
-- Create a Python installer controller for a VM-first Archie profile.
-- Define installer inputs (target disk, hostname, user, bundles, encryption flag).
-- Implement package selection flow for official repos plus selected AUR.
-- Implement post-install deployment of Archie config (Hyprland, Waybar, Zsh, cronjobs baseline).
-- Produce installer logs and machine-readable run metadata.
+Archie should have the canonical Python automation entrypoint that controls the
+`archinstall` SDK for unattended installation in the historical VM-image
+pipeline.
 
-## Out of Scope
-- Custom ISO generation.
-- Calamares integration.
-- Hardware-specific tuning for Nitro 5 (deferred until after VM baseline stability).
+## Decision Changes
 
-## Inputs
-- Archie repository as source of truth for desktop config.
-- Archinstall Python SDK.
-- Package manifests curated for this phase.
-
-## Deliverables
-- Python installer module and executable entry script.
-- Installer configuration schema file (documented keys and defaults).
-- Post-install orchestration script(s) invoked by installer flow.
-- Work item documentation mapping manual guide steps to automated steps.
-
-## Acceptance Criteria
-- Unattended install can complete using the defined schema on a target virtual disk.
-- First boot reaches a usable Archie desktop session baseline.
-- Logs and metadata are generated for each run.
-- Installer flow is deterministic enough to be consumed by the cloud-init work item.
+- The historical VM-image pipeline should begin with a Python installer
+  controller around the `archinstall` SDK.
+- The installer should define explicit inputs for the target disk, hostname,
+  user, selected bundles, and encryption behavior.
+- Post-install deployment of Archie configuration should remain part of the
+  installer flow so later VM-image stages can build on a consistent baseline.
 
 ## Dependencies
-- None (first work item in this phase).
+
+- None. This is the first work item in the historical VM-image sequence.
+
+## Main Quests
+
+- Create a Python installer controller for a VM-first Archie profile.
+- Define installer inputs for the target disk, hostname, user, bundles, and
+  encryption flag.
+- Implement package selection flow for official repositories plus selected AUR
+  packages.
+- Implement post-install deployment of Archie config, including Hyprland,
+  Waybar, Zsh, and the cronjobs baseline.
+- Produce installer logs and machine-readable run metadata.
+- Document the configuration schema, defaults, and manual-to-automated step
+  mapping for the installer flow.
+
+## Acceptance Criteria
+
+- Unattended install can complete using the defined schema on a target virtual
+  disk.
+- First boot reaches a usable Archie desktop-session baseline.
+- Logs and metadata are generated for each run.
+- The installer flow is deterministic enough to be consumed by the cloud-init
+  work item.
+
+## Metadata
+
+### id
+
+vm-image-01

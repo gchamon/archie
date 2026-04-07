@@ -1,23 +1,4 @@
-# Work Item 4: Add Derived Quickstart And Uninstall Automation
-
-<!--toc:start-->
-
-- [Work Item 4: Add Derived Quickstart And Uninstall Automation](#work-item-4-add-derived-quickstart-and-uninstall-automation)
-  - [Status](#status)
-  - [Outcome](#outcome)
-  - [Decision changes](#decision-changes)
-  - [Dependencies](#dependencies)
-  - [Scope Notes](#scope-notes)
-  - [Main quests](#main-quests)
-    - [1. Define the quickstart boundary](#1-define-the-quickstart-boundary)
-    - [2. Define the automation artifacts](#2-define-the-automation-artifacts)
-    - [3. Define the executable interfaces](#3-define-the-executable-interfaces)
-    - [4. Define the uninstall phases](#4-define-the-uninstall-phases)
-    - [5. Define the derivation contract](#5-define-the-derivation-contract)
-    - [6. Leave implementation intent explicit](#6-leave-implementation-intent-explicit)
-    - [Side-quests](#side-quests)
-  - [Exit Criteria](#exit-criteria)
-<!--toc:end-->
+# Add Derived Quickstart And Uninstall Automation
 
 Define and document derived helper automation around the canonical deployment
 and migration guides: a fast onboarding path and a staged uninstall helper that
@@ -26,7 +7,7 @@ installs.
 
 ## Status
 
-Complete
+Done
 
 Post-delivery notice: `scripts/quickstart.sh` was renamed to
 `scripts/install.sh` after this work item was delivered. Historical references
@@ -38,7 +19,7 @@ Archie has a short onboarding path for first-time deployment and a staged
 uninstall helper plan, both clearly derived from the canonical user guides
 rather than replacing them.
 
-## Decision changes
+## Decision Changes
 
 - `docs/user/GUIDE.md` remains the canonical source of truth for deployment
   instructions.
@@ -178,7 +159,7 @@ Not included:
 - Writing the new agent brief under `docs/agents/`.
 - Adding CI or lint automation for the quickstart workflow.
 
-## Main quests
+## Main Quests
 
 ### 1. Define the quickstart boundary
 
@@ -376,7 +357,7 @@ Not included:
   automation outcomes. It should improve maintenance of derived docs and work
   items without redefining the primary outcome of this work item.
 
-## Exit Criteria
+## Acceptance Criteria
 
 - A reader can identify `docs/user/GUIDE.md` as the canonical deployment reference
   and `docs/user/QUICKSTART.md` as the fast path.
@@ -399,3 +380,9 @@ Not included:
   decisions.
 - The work item explicitly defines the Markdown TOC automation side-quest and
   its implementation contract.
+
+## Metadata
+
+### id
+
+deployment-management-04

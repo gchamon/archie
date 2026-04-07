@@ -1,18 +1,51 @@
-# `assistant`
+# Assistant
 
-This epic covers an Archie assistant experience that starts as a lightweight
-GUI applet listing help topics, then hands off into a Kitty-hosted TUI for
-interactive guidance about the system. The assistant should help users explore
-keyboard shortcuts, important shell helpers, and Archie architecture and
-documentation without forcing them to search the repository manually.
+## Status
 
-The epic also covers optional integration with user-configured coding agents
-such as Codex, Claude, Gemini, or OpenCode, where Archie can load a constrained
-assistant-oriented configuration so those agents behave like interactive guides
-for the documented system.
+Planned
 
-## Work items
+## Outcome
 
-- [assistant-01-system-architecture-guide](../work-items/assistant-01-system-architecture-guide.md)
-- [assistant-02-help-topics-applet-and-kitty-tui](../work-items/assistant-02-help-topics-applet-and-kitty-tui.md)
-- [assistant-03-agent-backed-documentation-guide](../work-items/assistant-03-agent-backed-documentation-guide.md)
+Archie should gain an assistant experience that starts with a lightweight GUI
+topic picker, hands off into a Kitty-hosted TUI for deeper guidance, and can
+optionally layer in constrained coding-agent support without replacing the
+documentation-first workflow.
+
+## Decision Changes
+
+- The assistant should begin as a documentation and guidance surface, not as a
+  broad automation shell.
+- The first user journey should start from a lightweight GUI topic picker and
+  continue inside a terminal-native interface that fits Archie’s
+  keyboard-first workflow.
+- Optional coding-agent integrations should remain constrained by Archie’s
+  local documentation and architecture material instead of defining the
+  assistant experience on their own.
+
+## Main Quests
+
+- Establish the architecture guide the assistant needs as a reliable local
+  knowledge base.
+- Define the GUI-to-Kitty handoff, topic taxonomy, and TUI behavior contract.
+- Define the optional agent-backed mode so it remains documentation-first and
+  provider-agnostic.
+
+## Acceptance Criteria
+
+- Contributors can identify the staged assistant plan without reading every
+  child work item in full.
+- The epic records the intended documentation-first boundary for assistant
+  behavior.
+- The epic exposes a stable `id` and explicit `child_ids` for synchronization.
+
+## Metadata
+
+### id
+
+assistant
+
+### child_ids
+
+- assistant-01
+- assistant-02
+- assistant-03
