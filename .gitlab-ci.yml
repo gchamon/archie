@@ -5,3 +5,9 @@ include:
   - component: gitlab.com/gabriel.chamon/ci-components/github-mirror@v1
     inputs:
       job_stage: mirror
+  - component: gitlab.com/gabriel.chamon/ci-components/orisun-gitlab@v1
+    inputs:
+      job_name: sync_orisun_gitlab
+      job_stage: deploy
+      mode: sync
+      image_tag: epic-orisun-gitlab
