@@ -34,6 +34,10 @@ defaults.
 - supported explicit values are `critical`, `high`, and `normal`
 - each metadata key should be a `###` heading under `## Metadata`
 
+GitLab sync treats `child_ids` as the source of truth for epic membership.
+When Archie runs in a personal namespace, epic proxy issues should link their
+child work items through managed `relates_to` issue links.
+
 Example:
 
 ```md

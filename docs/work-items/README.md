@@ -86,6 +86,9 @@ language:
 - `OKR` corresponds to GitLab OKRs
 - `Test case` corresponds to GitLab test cases
 
+Epic membership is declared from the epic side through `child_ids`; work items
+do not carry a separate parent-epic metadata field.
+
 ## Status Convention
 
 If a work item includes `## Status`, use short prose values such as:
