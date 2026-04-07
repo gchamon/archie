@@ -5,7 +5,7 @@ executable.
 
 ## Status
 
-Done.
+Done
 
 ## Decision Changes
 
