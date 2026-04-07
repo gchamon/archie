@@ -109,3 +109,9 @@ not automatically place every linked work item on the critical chain.
 - Definition: [assistant.md](./assistant.md)
 - Scope: An Archie assistant experience spanning GUI, TUI, and optional coding
   agent integration.
+
+### `immutability`
+
+- Definition: [immutability.md](./immutability.md)
+- Scope: Evaluation of immutable or image-style system management for Archie,
+  starting with an `arkdep` proof of concept in an isolated VM.
