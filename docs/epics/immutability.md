@@ -11,6 +11,11 @@ an `arkdep`-managed base system is a practical and maintainable way to handle
 system dependencies, updates, and rollback without disrupting the current host
 workflow.
 
+
+## Work items
+
+- [immutability-01-arkdep-evaluation-and-poc](/docs/work-items/immutability-01-arkdep-evaluation-and-poc.md)
+
 ## Decision Changes
 
 - `immutability` is the canonical epic name for Archie work around immutable or

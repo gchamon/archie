@@ -10,6 +10,13 @@ Archie should have a repeatable development-environment workflow around an
 Incus-managed Arch guest that can bootstrap the VM, deploy Archie into it, and
 run the minimum runtime and smoke checks needed to keep iteration practical.
 
+
+## Work items
+
+- [dev-env-01-bootstrap](/docs/work-items/dev-env-01-bootstrap.md)
+- [dev-env-02-archie-deploy-automation](/docs/work-items/dev-env-02-archie-deploy-automation.md)
+- [dev-env-03-runtime-and-smoke-tests](/docs/work-items/dev-env-03-runtime-and-smoke-tests.md)
+
 ## Decision Changes
 
 - `dev-env` is the canonical name for the repeatable development-environment

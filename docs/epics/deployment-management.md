@@ -10,6 +10,15 @@ Archie should use a durable deployment-management model that separates tracked
 configuration into clear Stow-owned package roots, preserves runtime paths
 after deployment, and documents both clean install and migration behavior.
 
+
+## Work items
+
+- [deployment-management-01-design](/docs/work-items/deployment-management-01-design.md)
+- [deployment-management-02-restructure](/docs/work-items/deployment-management-02-restructure.md)
+- [deployment-management-03-documentation](/docs/work-items/deployment-management-03-documentation.md)
+- [deployment-management-04-quickstart-automation](/docs/work-items/deployment-management-04-quickstart-automation.md)
+- [deployment-management-05-uninstall-automation](/docs/work-items/deployment-management-05-uninstall-automation.md)
+
 ## Decision Changes
 
 - GNU Stow is the accepted deployment mechanism for Archie’s tracked home, XDG,

@@ -10,6 +10,13 @@ Archie should have a public-facing homepage that presents the system as a
 coherent product, explains its value proposition and visual identity, and
 backs any stronger performance claims with explicit proof assets.
 
+
+## Work items
+
+- [homepage-01-product-positioning-and-site-structure](/docs/work-items/homepage-01-product-positioning-and-site-structure.md)
+- [homepage-02-homepage-implementation](/docs/work-items/homepage-02-homepage-implementation.md)
+- [homepage-03-proof-assets-and-performance-evidence](/docs/work-items/homepage-03-proof-assets-and-performance-evidence.md)
+
 ## Decision Changes
 
 - The homepage effort should market Archie as a product rather than as a

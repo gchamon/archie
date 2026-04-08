@@ -11,6 +11,14 @@ pipeline that covered `archinstall` automation, cloud-init provisioning, QEMU
 image creation, and automated validation, even though new VM-focused work now
 centers on the `dev-env` epic instead.
 
+
+## Work items
+
+- [vm-image-01-archinstall](/docs/work-items/vm-image-01-archinstall.md)
+- [vm-image-02-cloudinit](/docs/work-items/vm-image-02-cloudinit.md)
+- [vm-image-03-qemu-image](/docs/work-items/vm-image-03-qemu-image.md)
+- [vm-image-04-test-pipeline](/docs/work-items/vm-image-04-test-pipeline.md)
+
 ## Decision Changes
 
 - The `vm-image` epic remains useful as historical planning context even though

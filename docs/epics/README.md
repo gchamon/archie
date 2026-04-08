@@ -12,12 +12,17 @@ Use an epic when you need to coordinate:
 Epics should summarize intent and point to the active work items rather than
 repeat their full detail.
 
+Use a `## Work items` section to link the active child work items with
+repository-root-relative Markdown paths such as
+`/docs/work-items/example-work-item.md`.
+
 ## Standard Shape
 
 Each epic should use:
 
 - `Status`
 - `Outcome`
+- `Work items`
 - `Decision Changes`
 - `Main Quests`
 - `Acceptance Criteria`

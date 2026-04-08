@@ -11,6 +11,13 @@ topic picker, hands off into a Kitty-hosted TUI for deeper guidance, and can
 optionally layer in constrained coding-agent support without replacing the
 documentation-first workflow.
 
+
+## Work items
+
+- [assistant-01-system-architecture-guide](/docs/work-items/assistant-01-system-architecture-guide.md)
+- [assistant-02-help-topics-applet-and-kitty-tui](/docs/work-items/assistant-02-help-topics-applet-and-kitty-tui.md)
+- [assistant-03-agent-backed-documentation-guide](/docs/work-items/assistant-03-agent-backed-documentation-guide.md)
+
 ## Decision Changes
 
 - The assistant should begin as a documentation and guidance surface, not as a

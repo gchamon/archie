@@ -11,6 +11,12 @@ starting with a compact power-and-peripherals control surface and extending to
 a Borg-oriented backup GUI once its repository boundary and safety model are
 clear.
 
+
+## Work items
+
+- [system-gui-01-power-and-peripherals-control](/docs/work-items/system-gui-01-power-and-peripherals-control.md)
+- [system-gui-02-borg-backup-gui](/docs/work-items/system-gui-02-borg-backup-gui.md)
+
 ## Decision Changes
 
 - The first graphical work in Archie should focus on real system operations
