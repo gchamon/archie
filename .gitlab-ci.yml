@@ -1,8 +1,10 @@
 stages:
+  - test
   - mirror
   - deploy
 
 include:
+  - component: $CI_SERVER_FQDN/to-be-continuous/gitleaks/gitlab-ci-gitleaks@2.10.0
   - component: gitlab.com/gabriel.chamon/ci-components/github-mirror@v1
     inputs:
       job_stage: mirror
