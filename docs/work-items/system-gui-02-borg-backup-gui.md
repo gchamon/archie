@@ -6,6 +6,12 @@ in `borg-automated-backups`.
 
 ## Status
 
+<!--
+Use a short prose status for the current state of the work item.
+Supported values are `backlog`, `planned`, `doing`, `done`, `cancelled`, and `abandoned`.
+`killed` is reserved for GitLab graveyard history when a managed work item is removed from the repository.
+-->
+
 Planned
 
 ## Outcome
