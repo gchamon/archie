@@ -8,6 +8,7 @@
   - [`commands-git.sh`](#commands-gitsh)
   - [`commands-system.sh`](#commands-systemsh)
   - [`commands-devtools.sh`](#commands-devtoolssh)
+  - [`commands-agents.sh`](#commands-agentssh)
   - [`commands-pacman.sh`](#commands-pacmansh)
   - [`overrides.dist.sh`](#overridesdistsh)
 <!--toc:end-->
@@ -18,7 +19,7 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 
 | Name | Kind | Description |
 | --- | --- | --- |
-| `commands.sh` | Loader | Sources the command modules in a fixed order: core, git, system, devtools, pacman. |
+| `commands.sh` | Loader | Sources the command modules in a fixed order: core, agents, git, system, devtools, pacman. |
 
 ## `commands-core.sh`
 
@@ -127,6 +128,14 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `decode_jwt` | Function | Decodes a JWT from a file or string and prints header/payload JSON. |
 | `elixir-new-module` | Function | Scaffolds an Elixir module and matching test file. |
 | `docker-run-in-cwd` | Function | Starts a disposable container with the current directory mounted at `/app`. |
+
+## `commands-agents.sh`
+
+| Name | Kind | Description |
+| --- | --- | --- |
+| `omp:openai` | Alias | Configures `omp` with OpenAI model tiers (smol: gpt-5.4-nano, slow/plan: gpt-5.4-pro, default: gpt-5.4). |
+| `omp:anthropic` | Alias | Configures `omp` with Anthropic model tiers (smol: claude-haiku-4-5, slow/plan: claude-opus-4-6, default: claude-sonnet-4-6). |
+| `omp:google` | Alias | Configures `omp` with Google model tiers (smol: gemini-3.1-flash-lite-preview, slow/plan: gemini-3.1-pro-preview, default: gemini-3-flash-preview). |
 
 ## `commands-pacman.sh`
 
