@@ -15,6 +15,8 @@ alias lsh="l -sHi"
 alias lt='ls --tree'
 alias ltb='lt | bat'
 
+alias kitten:emoji='kitten unicode-input | wl-copy'
+
 new_where() {
   ll $(which $1)
 }

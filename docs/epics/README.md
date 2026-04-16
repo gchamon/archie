@@ -124,3 +124,10 @@ not automatically place every linked work item on the critical chain.
 - Definition: [immutability.md](./immutability.md)
 - Scope: Evaluation of immutable or image-style system management for Archie,
   starting with an `arkdep` proof of concept in an isolated VM.
+
+
+### `infrastructure`
+
+- Definition: [infrastructure.md](./infrastructure.md)
+- Scope: Repository tooling for enforcing and maintaining consistency between
+  source code and its documentation.

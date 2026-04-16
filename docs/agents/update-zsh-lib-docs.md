@@ -1,0 +1,1 @@
+using the code in deployment-packages/local/lib/zsh/ update the documentation in the deployment-packages/local/lib/zsh/README.md, preserving the current file conventions and patterns. If removing an entry from the documentation, instead of deleting it, move it to a subsection `## Deprecated` so we document these phase-outs
