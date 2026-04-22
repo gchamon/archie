@@ -2,7 +2,7 @@
 
 ## Status
 
-Done
+Doing
 
 ## Outcome
 
@@ -18,6 +18,7 @@ after deployment, and documents both clean install and migration behavior.
 - [deployment-management-03-documentation](/docs/work-items/deployment-management-03-documentation.md)
 - [deployment-management-04-quickstart-automation](/docs/work-items/deployment-management-04-quickstart-automation.md)
 - [deployment-management-05-uninstall-automation](/docs/work-items/deployment-management-05-uninstall-automation.md)
+- [deployment-management-06-flat-packages-manifest](/docs/work-items/deployment-management-06-flat-packages-manifest.md)
 
 ## Decision Changes
 
@@ -28,6 +29,8 @@ after deployment, and documents both clean install and migration behavior.
   documentation.
 - The completed implementation sequence should remain documented because later
   automation work depends on the same deployment boundaries.
+- Re-opened to plan a manifest-driven flat-package layout that decouples
+  package directory names from their stow target roots.
 
 ## Main Quests
 
@@ -56,6 +59,7 @@ deployment-management
 - deployment-management-03
 - deployment-management-04
 - deployment-management-05
+- deployment-management-06
 
 ### priority
 
