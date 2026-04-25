@@ -9,9 +9,6 @@ default:
 
 include:
   - component: $CI_SERVER_FQDN/to-be-continuous/gitleaks/gitlab-ci-gitleaks@2.10.0
-  - component: gitlab.com/gabriel.chamon/ci-components/github-mirror@v1
-    inputs:
-      job_stage: mirror
   - component: gitlab.com/gabriel.chamon/ci-components/orisun-gitlab@v1
     inputs:
       job_name: sync_issues
