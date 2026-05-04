@@ -76,6 +76,44 @@ ccopy() {
   cat $1 | wl-copy
 }
 
+cliphist:squash() {
+  local count="${1:-}"
+  if [[ ! "$count" =~ '^[1-9][0-9]*$' ]]; then
+    echo "Usage: cliphist:squash <positive-count>" >&2
+    return 1
+  fi
+
+  local output_file
+  local entry_file
+  output_file="$(mktemp)"
+  entry_file="$(mktemp)"
+
+  {
+    local copied_entries=0
+    local input
+    cliphist list | head -n "$count" |
+      while read -r input; do
+        cliphist decode "$input" >"$entry_file"
+
+        local mime_type="$(file --mime-type -b "$entry_file")"
+        if [[ "$mime_type" == text/* || "$mime_type" == "application/json" || "$mime_type" == "application/xml" ]]; then
+          cat "$entry_file" >>"$output_file"
+          echo >>"$output_file"
+          ((copied_entries++))
+        fi
+      done
+
+    if ((copied_entries == 0)); then
+      echo "cliphist:squash: no text clipboard entries found" >&2
+      return 1
+    fi
+
+    wl-copy <"$output_file"
+  } always {
+    rm -f "$output_file" "$entry_file"
+  }
+}
+
 urlencode() {
   jq -rn --arg x $1 '$x|@uri'
 }
