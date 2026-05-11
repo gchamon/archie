@@ -2,3 +2,4 @@ docs/codex-sessions/**/*.jsonl
 .state/
 .env.sh
 .codex
+.state
