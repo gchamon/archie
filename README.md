@@ -64,11 +64,12 @@ canonical.
 Use the [migration guide](docs/user/MIGRATING.md) when upgrading from Archie v2 to
 Archie v3.
 
-### [Keyboard shortcuts](docs/user/KEYBOARD_SHORTCUTS.md)
+### Manuals
 
-[Keyboard shortcuts](docs/user/KEYBOARD_SHORTCUTS.md) documents all the possible keyboard
-shortcuts. The information is extracted from hyprland configuration using
-[Google's Gemini LLM](https/gemini.google.com).
+- [Keyboard shortcuts](docs/user/KEYBOARD_SHORTCUTS.md) documents all the possible
+  keyboard shortcuts.
+- [Custom shell commands](deployment-packages/local/lib/zsh/README.md) documents
+  the zsh aliases and functions deployed under `~/.local/lib/zsh/`.
 
 ### [Keyboard customizations](docs/user/KEYBOARD_CUSTOMIZATIONS.md)
 

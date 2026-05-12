@@ -30,6 +30,7 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `vim` | Alias | Runs the editor from `$VIM_BIN`, or `/usr/bin/vim` when `VIM_BIN` is unset. |
 | `where` | Alias | Shortcut to `new_where`. |
 | `icat` | Alias | Runs Kitty image display. |
+| `trim` | Alias | Trims whitespace by splitting input through `xargs -n1 echo`. |
 | `l` | Alias | `ls -l`. |
 | `la` | Alias | `ls -a`. |
 | `lla` | Alias | `ls -la`. |

@@ -6,6 +6,7 @@ alias sudo="sudo "
 alias vim="${VIM_BIN:-/usr/bin/vim} "
 alias where='new_where '
 alias icat="kitten icat "
+alias trim="xargs -n1 echo "
 
 alias l='ls -l'
 alias la='ls -a'

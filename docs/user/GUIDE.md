@@ -252,6 +252,9 @@ The Stow deployment already manages:
 - `~/.p10k-portable.zsh` from the `home` package
 - `~/.local/lib/zsh/*` from the `local` package
 
+See the [custom shell commands reference](../../deployment-packages/local/lib/zsh/README.md)
+for the bundled zsh aliases and functions deployed there.
+
 If you want machine-specific zsh customizations, create
 `~/.local/lib/zsh/overrides.sh` from the deployed template:
 
