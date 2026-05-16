@@ -84,6 +84,11 @@ generally applicable outside my personal environment. It's there for my
 personal disaster recovery drills, but could inspire others looking for backup
 strategies.
 
+### [Bug reports](bug-reports/README.md)
+
+[Bug reports](bug-reports/README.md) tracks local notes for upstream bugs that
+affect Archie and are useful to keep with the system documentation.
+
 ### [Contributing](CONTRIBUTING.md)
 
 [This document](CONTRIBUTING.md) explains how to maintain Archie and where to
