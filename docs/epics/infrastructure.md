@@ -14,6 +14,7 @@ discovered by readers encountering stale content.
 ## Work items
 
 - [infrastructure-01-automated-documentation-maintenance](/docs/work-items/infrastructure-01-automated-documentation-maintenance.md)
+- [infrastructure-02-archlinux-archive-downgrade-cli](/docs/work-items/infrastructure-02-archlinux-archive-downgrade-cli.md)
 
 ## Decision Changes
 
@@ -23,6 +24,8 @@ _None yet._
 
 - Design and implement automated tooling that detects drift between shell
   library source files and their co-located READMEs.
+- Design and implement a repository-owned Archie CLI command that resolves Arch
+  Linux Archive package URLs for coordinated package downgrades.
 
 ## Acceptance Criteria
 
@@ -39,6 +42,7 @@ infrastructure
 ### child_ids
 
 - infrastructure-01
+- infrastructure-02
 
 ### priority
 
