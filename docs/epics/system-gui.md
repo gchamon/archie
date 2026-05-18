@@ -16,6 +16,7 @@ clear.
 
 - [system-gui-01-power-and-peripherals-control](/docs/work-items/system-gui-01-power-and-peripherals-control.md)
 - [system-gui-02-borg-backup-gui](/docs/work-items/system-gui-02-borg-backup-gui.md)
+- [system-gui-03-monitor-output-widget](/docs/work-items/system-gui-03-monitor-output-widget.md)
 
 ## Decision Changes
 
@@ -24,11 +25,15 @@ clear.
 - Power and power-adjacent peripherals form the first GUI problem space.
 - The backup-GUI track remains under this epic until the implementation
   boundary between Archie and `borg-automated-backups` is decided.
+- Monitor output enable and disable behavior is split into a focused Waybar
+  widget work item with confirmation and rollback requirements.
 
 ## Main Quests
 
 - Define the first-stage power and peripherals control GUI.
 - Define the backup GUI scope, ownership boundary, and safety model.
+- Build a monitor output widget that gives Archie a safe first graphical
+  display-control surface.
 
 ## Acceptance Criteria
 
@@ -48,3 +53,4 @@ system-gui
 
 - system-gui-01
 - system-gui-02
+- system-gui-03
