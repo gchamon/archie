@@ -25,10 +25,11 @@
     - [4.2 Nvidia](#42-nvidia)
       - [Bumblebee](#bumblebee)
     - [4.3 Hibernate on lid close](#43-hibernate-on-lid-close)
+    - [4.4 Confirm before shutdown on power button press](#44-confirm-before-shutdown-on-power-button-press)
       - [External monitor frozen after return from sleep](#external-monitor-frozen-after-return-from-sleep)
-    - [4.4 Keyring](#44-keyring)
-    - [4.5 Systemd Services](#45-systemd-services)
-    - [4.6 Cronjobs](#46-cronjobs)
+    - [4.5 Keyring](#45-keyring)
+    - [4.6 Systemd Services](#46-systemd-services)
+    - [4.7 Cronjobs](#47-cronjobs)
 <!--toc:end-->
 
 This guide provides step-by-step instructions for deploying Hyprland to an Arch
@@ -167,7 +168,6 @@ Optional `/etc`-target packages are deployed separately when needed:
 
 ```bash
 sudo stow --dir deployment-packages --target /etc sddm-theme
-sudo stow --dir deployment-packages --target /etc lid-close
 sudo stow --dir deployment-packages --target /etc nvidia
 ```
 
@@ -175,6 +175,18 @@ The optional `nvidia` package is intended only for systems that use Nvidia. It
 currently deploys both `/etc/modprobe.d/nvidia.conf` for `nvidia_drm` modeset
 and `/etc/dkms/nvidia.conf` with `parallel_jobs=2` to reduce CPU pressure
 during Nvidia DKMS rebuilds at the cost of longer update times.
+
+Logind drop-ins are copied instead of Stow-deployed because
+`systemd-logind.service` runs with `ProtectHome=yes` and cannot read `/etc`
+symlinks that point back into this repository under `$HOME`:
+
+```bash
+sudo rm -f /etc/systemd/logind.conf.d/lid-close.conf
+sudo rm -f /etc/systemd/logind.conf.d/power-button-confirm.conf
+sudo install -Dm644 copy-deployed-files/etc/systemd/logind.conf.d/lid-close.conf /etc/systemd/logind.conf.d/lid-close.conf
+sudo install -Dm644 copy-deployed-files/etc/systemd/logind.conf.d/power-button-confirm.conf /etc/systemd/logind.conf.d/power-button-confirm.conf
+sudo systemctl kill -s HUP systemd-logind.service
+```
 
 ### 2.2 System specific configuration
 
@@ -444,8 +456,31 @@ events](https://wiki.archlinux.org/title/Power_management#ACPI_events).
 To make it so that every lid close event will put the machine in hybrid sleep:
 
 ```bash
-sudo stow --dir deployment-packages --target /etc lid-close
+sudo rm -f /etc/systemd/logind.conf.d/lid-close.conf
+sudo install -Dm644 copy-deployed-files/etc/systemd/logind.conf.d/lid-close.conf /etc/systemd/logind.conf.d/lid-close.conf
+sudo systemctl kill -s HUP systemd-logind.service
 ```
+
+### 4.4 Confirm before shutdown on power button press
+
+By default, systemd-logind powers off the machine immediately when the physical
+power button is pressed. Archie can instead let Hyprland handle the key and
+open the same confirmation prompt used by `SUPER + SHIFT + M`:
+
+```bash
+sudo rm -f /etc/systemd/logind.conf.d/power-button-confirm.conf
+sudo install -Dm644 copy-deployed-files/etc/systemd/logind.conf.d/power-button-confirm.conf /etc/systemd/logind.conf.d/power-button-confirm.conf
+sudo systemctl kill -s HUP systemd-logind.service
+hyprctl reload
+```
+
+The copied logind drop-in installs `HandlePowerKey=ignore`, and Hyprland binds
+`XF86PowerOff` to `~/.config/hypr/scripts/confirm-before-exit.sh poweroff`.
+This file must be a real file under `/etc`, not a Stow symlink into `$HOME`,
+because `systemd-logind.service` runs with `ProtectHome=yes`. This confirmation
+is intended for unlocked Hyprland sessions. If the key does not trigger the
+prompt on your hardware, use `wev` to confirm the emitted key symbol or
+keycode.
 
 #### External monitor frozen after return from sleep
 
@@ -462,7 +497,7 @@ In any case, until a better solution is found, the workaround is to execute
 `hyprctl reload` to bring the second screen back to life. In my case I have to
 run it twice, so it picks up the right resolution for the screen.
 
-### 4.4 Keyring
+### 4.5 Keyring
 
 This enables the system to store password for commonly used credentials that
 are password protected, like ssh keys.
@@ -471,7 +506,7 @@ are password protected, like ssh keys.
 yay -S gnome-keyring seahorse
 ```
 
-### 4.5 Systemd Services
+### 4.6 Systemd Services
 
 Enable and start the following services:
 
@@ -489,7 +524,7 @@ for service in bluetooth; do
 done
 ```
 
-### 4.6 Cronjobs
+### 4.7 Cronjobs
 
 Cronjobs are deployed by the `etc` Stow package:
 

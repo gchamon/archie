@@ -83,7 +83,7 @@ The helper runs the common first-run path from the canonical guide:
 - installs the base packages and bootstraps `yay`
 - clones Archie when the script was launched from the GitLab raw URL
 - backs up pre-existing deployment targets that would conflict with Archie
-  Stow packages into `~/archie-pre-stow-backup` and
+  Stow packages or copy-managed files into `~/archie-pre-stow-backup` and
   `/root/archie-pre-stow-backup`
   while skipping paths already managed by Stow symlink trees
 - installs the common Archie package set
@@ -94,7 +94,9 @@ The helper runs the common first-run path from the canonical guide:
 - installs the zsh, theming, and keyring packages
 - deploys `p10k-lean` as the default Powerlevel10k theme
 - deploys the SDDM `slice` theme by default through a separate Stow package
-- deploys the lid-close systemd override by default through a separate Stow package
+- deploys the lid-close systemd override by default as a real copied file
+- deploys the power-button confirmation systemd override by default through a
+  real copied file
 - optionally deploys the Nvidia system overrides through a separate Stow
   package, including `nvidia_drm` modeset and Nvidia-only DKMS throttling with
   `parallel_jobs=2`
@@ -119,6 +121,7 @@ The quickstart intentionally makes a few fixed choices:
 - if `yay` is installed but `yay-bin` is missing, quickstart normalizes the system back to `yay-bin`
 - SDDM theme deployment is enabled by default; set `ARCHIE_ENABLE_SDDM_THEME=0` to disable it
 - lid-close override deployment is enabled by default; set `ARCHIE_ENABLE_LID_CLOSE=0` to disable it
+- power-button confirmation is enabled by default; set `ARCHIE_ENABLE_POWER_BUTTON_CONFIRM=0` to disable it
 - Nvidia system override deployment is disabled by default; set `ARCHIE_ENABLE_NVIDIA=1` to enable it
 - keyboard customizations are disabled by default; set `ARCHIE_ENABLE_XKB_CUSTOMIZATIONS=1` to deploy the `xkb` package
 - package installs run non-interactively
@@ -137,5 +140,6 @@ After the quickstart completes, use [`docs/user/GUIDE.md`](./GUIDE.md) for:
 - Nvidia setup
 - boot and backlight tuning
 - lid-close power behavior
+- power-button confirmation behavior
 - service customization
 - any manual review of `device.conf`, `hyprpaper.conf`, or `overrides.sh`

@@ -25,7 +25,12 @@ are now managed through Stow packages:
 - `~/.config/gtk-4.0/settings.ini`
 - `/etc/sddm.conf.d/theme.conf`
 - `/etc/modprobe.d/nvidia.conf`
+
+Several logind drop-ins are now managed as real copied files instead of Stow
+symlinks because `systemd-logind.service` runs with `ProtectHome=yes`:
+
 - `/etc/systemd/logind.conf.d/lid-close.conf`
+- `/etc/systemd/logind.conf.d/power-button-confirm.conf`
 
 The files that remain machine-specific and still stay outside Stow management
 do not change in this migration:
@@ -65,20 +70,29 @@ fi
 if sudo test -e /etc/systemd/logind.conf.d/lid-close.conf && ! sudo test -L /etc/systemd/logind.conf.d/lid-close.conf; then
   sudo mv /etc/systemd/logind.conf.d/lid-close.conf /root/archie-pre-stow-backup/systemd/logind.conf.d/lid-close.conf
 fi
+
+if sudo test -e /etc/systemd/logind.conf.d/power-button-confirm.conf && ! sudo test -L /etc/systemd/logind.conf.d/power-button-confirm.conf; then
+  sudo mv /etc/systemd/logind.conf.d/power-button-confirm.conf /root/archie-pre-stow-backup/systemd/logind.conf.d/power-button-confirm.conf
+fi
 ```
 
-Then redeploy the new Stow-managed files:
+Then redeploy the new Stow-managed and copy-managed files:
 
 ```bash
 stow --dir deployment-packages --target "$HOME/.config" config
 sudo stow --dir deployment-packages --target /etc sddm-theme
-sudo stow --dir deployment-packages --target /etc lid-close
 sudo stow --dir deployment-packages --target /etc nvidia
+sudo rm -f /etc/systemd/logind.conf.d/lid-close.conf
+sudo rm -f /etc/systemd/logind.conf.d/power-button-confirm.conf
+sudo install -Dm644 copy-deployed-files/etc/systemd/logind.conf.d/lid-close.conf /etc/systemd/logind.conf.d/lid-close.conf
+sudo install -Dm644 copy-deployed-files/etc/systemd/logind.conf.d/power-button-confirm.conf /etc/systemd/logind.conf.d/power-button-confirm.conf
+sudo systemctl kill -s HUP systemd-logind.service
 ```
 
 `config` now provides the GTK settings files in addition to the Qt defaults.
-`sddm-theme` and `lid-close` are the new default-on `/etc` packages. `nvidia`
-is opt-in and should only be redeployed on systems that want Archie's Nvidia
+`sddm-theme` is a new default-on `/etc` Stow package. `lid-close` and
+`power-button-confirm` are default-on copied logind drop-ins. `nvidia` is
+opt-in and should only be redeployed on systems that want Archie's Nvidia
 override.
 
 You can also reuse `./scripts/install.sh` to perform this migration. It now
@@ -87,6 +101,7 @@ backs up conflicting Stow targets into `~/archie-pre-stow-backup` and
 
 - `ARCHIE_ENABLE_SDDM_THEME`
 - `ARCHIE_ENABLE_LID_CLOSE`
+- `ARCHIE_ENABLE_POWER_BUTTON_CONFIRM`
 - `ARCHIE_ENABLE_NVIDIA`
 
 ## v2 to v3

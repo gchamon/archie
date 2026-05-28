@@ -107,6 +107,7 @@ apply_quickstart_env_defaults() {
     ARCHIE_CHECKOUT_DIR_NAME="${ARCHIE_CHECKOUT_DIR_NAME:-$HOME/archie}"
     ARCHIE_ENABLE_SDDM_THEME="${ARCHIE_ENABLE_SDDM_THEME:-1}"
     ARCHIE_ENABLE_LID_CLOSE="${ARCHIE_ENABLE_LID_CLOSE:-1}"
+    ARCHIE_ENABLE_POWER_BUTTON_CONFIRM="${ARCHIE_ENABLE_POWER_BUTTON_CONFIRM:-1}"
     ARCHIE_ENABLE_NVIDIA="${ARCHIE_ENABLE_NVIDIA:-0}"
     ARCHIE_ENABLE_XKB_CUSTOMIZATIONS="${ARCHIE_ENABLE_XKB_CUSTOMIZATIONS:-0}"
     DEFAULT_P10K_PACKAGE="${ARCHIE_P10K_PACKAGE:-p10k-lean}"
@@ -407,6 +408,39 @@ backup_stow_conflicts_sudo() {
     done < <(find "$package_dir" -type f -print0)
 }
 
+backup_copy_deployed_target_sudo() {
+    local source_path="$1"
+    local deployed_path="$2"
+    local backup_root="$3"
+    local backup_relative_path="${deployed_path#/}"
+    local backup_path=""
+
+    if [[ ! -e "$deployed_path" && ! -L "$deployed_path" ]]; then
+        return
+    fi
+
+    if cmp -s "$source_path" "$deployed_path"; then
+        return
+    fi
+
+    if [[ "$deployed_path" == /etc/* ]]; then
+        backup_relative_path="${deployed_path#/etc/}"
+    fi
+
+    backup_path="$backup_root/$backup_relative_path"
+    run_sudo_cmd mkdir -p "$(dirname "$backup_path")"
+    run_sudo_cmd mv "$deployed_path" "$backup_path"
+    ((BACKED_UP_SYSTEM_PATHS += 1))
+}
+
+backup_copy_deployed_file_sudo() {
+    local relative_path="$1"
+    local source_path="$REPO_ROOT/copy-deployed-files/$relative_path"
+    local deployed_path="/$relative_path"
+
+    backup_copy_deployed_target_sudo "$source_path" "$deployed_path" "$SYSTEM_STOW_BACKUP_ROOT"
+}
+
 backup_existing_stow_targets() {
     log_step "Back up conflicting deployment targets"
     log_info "User backup root: $USER_STOW_BACKUP_ROOT"
@@ -428,9 +462,15 @@ backup_existing_stow_targets() {
     fi
 
     if quickstart_bool_enabled "$ARCHIE_ENABLE_LID_CLOSE"; then
-        backup_stow_conflicts_sudo lid-close /etc "$SYSTEM_STOW_BACKUP_ROOT"
+        backup_copy_deployed_file_sudo etc/systemd/logind.conf.d/lid-close.conf
     else
         log_info "Skipping lid-close backup; set ARCHIE_ENABLE_LID_CLOSE=1 to enable it again"
+    fi
+
+    if quickstart_bool_enabled "$ARCHIE_ENABLE_POWER_BUTTON_CONFIRM"; then
+        backup_copy_deployed_file_sudo etc/systemd/logind.conf.d/power-button-confirm.conf
+    else
+        log_info "Skipping power-button confirmation backup; set ARCHIE_ENABLE_POWER_BUTTON_CONFIRM=1 to enable it again"
     fi
 
     if quickstart_bool_enabled "$ARCHIE_ENABLE_NVIDIA"; then
@@ -450,7 +490,7 @@ backup_existing_stow_targets() {
         return
     fi
 
-    log_info "Moved $BACKED_UP_USER_PATHS user path(s) and $BACKED_UP_SYSTEM_PATHS system path(s) aside before stow"
+    log_info "Moved $BACKED_UP_USER_PATHS user path(s) and $BACKED_UP_SYSTEM_PATHS system path(s) aside before deployment"
 }
 
 deploy_p10k_default() {
@@ -473,6 +513,49 @@ deploy_p10k_default() {
     stow_package "$HOME" "$DEFAULT_P10K_PACKAGE"
 }
 
+deploy_copy_deployed_file_sudo() {
+    local relative_path="$1"
+    local source_path="$REPO_ROOT/copy-deployed-files/$relative_path"
+    local deployed_path="/$relative_path"
+
+    run_sudo_cmd mkdir -p "$(dirname "$deployed_path")"
+    run_sudo_cmd rm -f "$deployed_path"
+    run_sudo_cmd install -m 0644 "$source_path" "$deployed_path"
+}
+
+reload_logind_if_active() {
+    if ! sudo systemctl is-active --quiet systemd-logind.service; then
+        log_info "systemd-logind is not active; skipping logind reload"
+        return
+    fi
+
+    run_sudo_cmd systemctl kill -s HUP systemd-logind.service
+}
+
+deploy_copy_deployed_files() {
+    local deployed_logind_file=0
+
+    log_step "Deploy copy-managed system files"
+
+    if quickstart_bool_enabled "$ARCHIE_ENABLE_LID_CLOSE"; then
+        deploy_copy_deployed_file_sudo etc/systemd/logind.conf.d/lid-close.conf
+        deployed_logind_file=1
+    else
+        log_info "Skipping lid-close deployment; set ARCHIE_ENABLE_LID_CLOSE=1 to enable it again"
+    fi
+
+    if quickstart_bool_enabled "$ARCHIE_ENABLE_POWER_BUTTON_CONFIRM"; then
+        deploy_copy_deployed_file_sudo etc/systemd/logind.conf.d/power-button-confirm.conf
+        deployed_logind_file=1
+    else
+        log_info "Skipping power-button confirmation deployment; set ARCHIE_ENABLE_POWER_BUTTON_CONFIRM=1 to enable it again"
+    fi
+
+    if (( deployed_logind_file == 1 )); then
+        reload_logind_if_active
+    fi
+}
+
 deploy_stow_packages() {
     log_step "Deploy Archie with Stow"
     stow_package "$HOME" home
@@ -484,12 +567,6 @@ deploy_stow_packages() {
         stow_package_sudo /etc sddm-theme
     else
         log_info "Skipping SDDM theme deployment; set ARCHIE_ENABLE_SDDM_THEME=1 to enable it again"
-    fi
-
-    if quickstart_bool_enabled "$ARCHIE_ENABLE_LID_CLOSE"; then
-        stow_package_sudo /etc lid-close
-    else
-        log_info "Skipping lid-close deployment; set ARCHIE_ENABLE_LID_CLOSE=1 to enable it again"
     fi
 
     if quickstart_bool_enabled "$ARCHIE_ENABLE_NVIDIA"; then
@@ -617,6 +694,7 @@ main() {
     install_keyring_packages
     backup_existing_stow_targets
     deploy_stow_packages
+    deploy_copy_deployed_files
     scaffold_local_files
     ensure_required_home_folders
     set_login_shell
