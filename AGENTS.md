@@ -25,6 +25,7 @@
     - [Adding a New Keybinding](#adding-a-new-keybinding)
     - [Creating a New Utility Script](#creating-a-new-utility-script)
     - [Updating Neovim LSP](#updating-neovim-lsp)
+    - [Installing a Neovim Plugin from a URL](#installing-a-neovim-plugin-from-a-url)
     - [Modifying Waybar](#modifying-waybar)
   - [8. Troubleshooting for Agents](#8-troubleshooting-for-agents)
   - [9. External Resources & Rules](#9-external-resources-rules)
@@ -105,10 +106,10 @@ There are no formal unit tests in this repository. Verification is performed by 
 
 ### Neovim (Lua)
 
-- **LazyVim Conventions**: Adhere to the structure defined in `nvim/CLAUDE.md`.
+- **LazyVim Conventions**: Adhere to the structure defined in `deployment-packages/config/nvim/README.md`.
 - **Plugin Specs**: Return a table from files in `lua/plugins/*.lua`.
 - **Global `vim`**: Use the `vim` global for all Neovim API calls.
-- **Configuration Style**: Prefer explicit declarations over loops or other flow control for static Neovim configuration in `nvim/` when the expanded form stays readable.
+- **Configuration Style**: Prefer explicit declarations over loops or other flow control for static Neovim configuration in `deployment-packages/config/nvim/` when the expanded form stays readable.
 - **Formatting**: Use `ruff` for Python and `stylua` for Lua (if available via Mason).
 - **Indentation**: 2 spaces for Lua, but respect `ftplugin` overrides (e.g., 4 spaces for Shell/JS).
 
@@ -139,7 +140,7 @@ There are no formal unit tests in this repository. Verification is performed by 
   - `local/`: Shell library deployed under `$HOME/.local/lib/zsh`.
   - `etc/`: System files deployed under `/etc`.
   - `xkb/`: Active keyboard overrides deployed under `/usr/share/xkeyboard-config-2`.
-- `nvim/`: LazyVim-based Neovim configuration.
+- `deployment-packages/config/nvim/`: LazyVim-based Neovim configuration.
   - `lua/config/`: options, keymaps, autocmds.
   - `lua/plugins/`: Plugin specifications.
   - `ftplugin/`: Language-specific overrides.
@@ -152,7 +153,7 @@ There are no formal unit tests in this repository. Verification is performed by 
 - **LSP Management**: Handled by `lazy-lsp.nvim`. Preferred servers are mapped in `lua/plugins/lazy-lsp.lua`.
 - **Python**: Uses `ruff` for linting/formatting and `pyright` for types.
 - **Elixir**: Specialized setup in `lua/plugins/elixir-tools.lua`.
-- **Adding Plugins**: Create a new file in `lua/plugins/` returning a table. Avoid modifying `lua/config/lazy.lua` unless changing bootstrap logic.
+- **Adding Plugins**: Create a new file in `deployment-packages/config/nvim/lua/plugins/` returning a table. Avoid modifying `deployment-packages/config/nvim/lua/config/lazy.lua` unless changing bootstrap logic.
 
 ### UI Customization (Waybar & Rofi)
 
@@ -211,9 +212,18 @@ When preparing a release:
 
 ### Updating Neovim LSP
 
-1. Modify `lua/plugins/lazy-lsp.lua` or `lua/plugins/lspconfig.lua`.
+1. Modify `deployment-packages/config/nvim/lua/plugins/lazy-lsp.lua` or `deployment-packages/config/nvim/lua/plugins/lspconfig.lua`.
 2. If adding a new language, check if it needs a specific `ftplugin` for indentation.
 3. Run `:Lazy sync` and `:checkhealth` inside Neovim to verify.
+
+### Installing a Neovim Plugin from a URL
+
+1. Read the plugin project's README from the provided URL, and inspect its install instructions, configuration examples, runtime dependencies, version requirements, and any post-install commands.
+2. Briefly search the web for possible vulnerabilities and known issues before selecting the package. Check the upstream issue tracker, release notes or changelog, security advisories, and recent community reports for terms like `vulnerability`, `CVE`, `security`, `breaking change`, `data loss`, `crash`, and `Neovim <current-major-version>`.
+3. Prefer well-maintained packages with recent commits, tagged releases or clear compatibility notes, and documented Lazy.nvim setup. Avoid archived, unmaintained, or suspicious repositories unless the user explicitly accepts the risk.
+4. Add the plugin to the managed Neovim stack under `deployment-packages/config/nvim/lua/plugins/` as a dedicated Lazy.nvim plugin spec returning a Lua table. Keep the spec minimal and explicit, and place plugin-specific keymaps, opts, dependencies, build steps, or config in that file.
+5. If the plugin needs an LSP, formatter, parser, filetype override, or external executable, update the matching file under `deployment-packages/config/nvim/lua/plugins/`, `deployment-packages/config/nvim/lua/config/`, or `deployment-packages/config/nvim/ftplugin/` instead of adding ad hoc setup elsewhere.
+6. Run `:Lazy sync` and then `:checkhealth` inside Neovim when possible. If a headless check is practical, use it to catch Lua syntax errors before asking the user to reload Neovim.
 
 ### Modifying Waybar
 
@@ -230,7 +240,7 @@ When preparing a release:
 
 ## 9. External Resources & Rules
 
-- **Neovim**: Refer to `nvim/CLAUDE.md` for plugin-specific architecture.
+- **Neovim**: Refer to `deployment-packages/config/nvim/README.md` for LazyVim configuration details.
 - **Hyprland Wiki**: [https://wiki.hyprland.org/](https://wiki.hyprland.org/)
 - **Arch Wiki**: The primary source of truth for system-level packages.
 

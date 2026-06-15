@@ -76,43 +76,63 @@ ccopy() {
   cat $1 | wl-copy
 }
 
-cliphist:squash() {
+_cliphist:squash() {
+  local order="$1"
+  shift
+
   local count="${1:-}"
   if [[ ! "$count" =~ '^[1-9][0-9]*$' ]]; then
-    echo "Usage: cliphist:squash <positive-count>" >&2
+    echo "Usage: cliphist:squash-${order} <positive-count>" >&2
     return 1
   fi
 
   local output_file
   local entry_file
+  local list_file
   output_file="$(mktemp)"
   entry_file="$(mktemp)"
+  list_file="$(mktemp)"
 
   {
     local copied_entries=0
     local input
-    cliphist list | head -n "$count" |
-      while read -r input; do
-        cliphist decode "$input" >"$entry_file"
+    cliphist list | head -n "$count" >"$list_file"
+    if [[ "$order" == fifo ]]; then
+      tac "$list_file" >"${list_file}.ordered"
+      mv "${list_file}.ordered" "$list_file"
+    fi
 
-        local mime_type="$(file --mime-type -b "$entry_file")"
-        if [[ "$mime_type" == text/* || "$mime_type" == "application/json" || "$mime_type" == "application/xml" ]]; then
-          cat "$entry_file" >>"$output_file"
-          echo >>"$output_file"
-          ((copied_entries++))
-        fi
-      done
+    while read -r input; do
+      cliphist decode "$input" >"$entry_file"
+
+      local mime_type="$(file --mime-type -b "$entry_file")"
+      if [[ "$mime_type" == text/* || "$mime_type" == "application/json" || "$mime_type" == "application/xml" ]]; then
+        cat "$entry_file" >>"$output_file"
+        echo >>"$output_file"
+        ((copied_entries++))
+      fi
+    done <"$list_file"
 
     if ((copied_entries == 0)); then
-      echo "cliphist:squash: no text clipboard entries found" >&2
+      echo "cliphist:squash-${order}: no text clipboard entries found" >&2
       return 1
     fi
 
     wl-copy <"$output_file"
   } always {
-    rm -f "$output_file" "$entry_file"
+    rm -f "$output_file" "$entry_file" "$list_file" "${list_file}.ordered"
   }
 }
+
+cliphist:squash-fifo() {
+  _cliphist:squash fifo "$@"
+}
+
+cliphist:squash-lifo() {
+  _cliphist:squash lifo "$@"
+}
+
+alias cliphist:squash=cliphist:squash-fifo
 
 urlencode() {
   jq -rn --arg x $1 '$x|@uri'

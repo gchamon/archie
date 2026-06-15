@@ -122,7 +122,9 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `terraform-bulk` | Function | Runs a command for each Terraform state entry matching a regex. |
 | `cclip` | Function | Copies a file into the X11 clipboard. |
 | `ccopy` | Function | Copies a file into the Wayland clipboard. |
-| `cliphist:squash` | Function | Copies the latest text clipboard history entries into one new Wayland clipboard entry. |
+| `cliphist:squash-fifo` | Function | Copies the latest text clipboard history entries into one new Wayland clipboard entry, ordered oldest to newest. |
+| `cliphist:squash-lifo` | Function | Copies the latest text clipboard history entries into one new Wayland clipboard entry, ordered newest to oldest. |
+| `cliphist:squash` | Alias | Compatibility alias for `cliphist:squash-fifo`. |
 | `urlencode` | Function | URL-encodes a string with `jq`. |
 | `urldecode` | Function | URL-decodes a string. |
 | `beautify-clipboard` | Function | Pretty-prints JSON from the clipboard back into the clipboard. |
