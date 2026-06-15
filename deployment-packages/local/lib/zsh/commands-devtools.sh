@@ -10,6 +10,16 @@ alias docker-swarm-remote='docker -H ssh://${DOCKER_SWARM_REMOTE_HOST} '
 alias docker-swarm-remote-deploy='docker-swarm stack deploy -c docker-compose.yml $(basename $PWD)'
 alias docker-swarm-remote-rm='docker-swarm stack rm $(basename $PWD)'
 alias docker-swarm-remote-redeploy='docker-swarm-rm && docker-swarm-deploy'
+alias vim:lazy-sync='nvim --headless -n -i NONE "+Lazy! sync" +qa'
+alias vim:update='vim:lazy-sync'
+alias vim:lazy-install='nvim --headless -n -i NONE "+Lazy! install" +qa'
+alias vim:lazy-check='nvim --headless -n -i NONE "+Lazy! check" +qa'
+alias vim:lazy-update='nvim --headless -n -i NONE "+Lazy! update" +qa'
+alias vim:lazy-restore='nvim --headless -n -i NONE "+Lazy! restore" +qa'
+alias vim:lazy-clean='nvim --headless -n -i NONE "+Lazy! clean" +qa'
+alias vim:lazy-health='nvim --headless -n -i NONE "+Lazy health" +qa'
+alias vim:health='nvim --headless -n -i NONE "+checkhealth" +qa'
+alias vim:smoke='nvim --headless -n -i NONE "+qa"'
 
 # Aider seems to be working from aider-venv package
 # But it's outdated...
@@ -264,4 +274,168 @@ docker-run-in-cwd() {
     --name docker-run-in-cwd-$container_id \
     $extra_args \
     $image "$cmd"
+}
+
+_vim:require-args() {
+  local command_name="$1"
+  local usage="$2"
+  shift 2
+
+  if (( $# == 0 )); then
+    echo "Usage: ${command_name} ${usage}" >&2
+    return 1
+  fi
+}
+
+_vim:require-file() {
+  local command_name="$1"
+  local file_path="${2:-}"
+
+  if [[ -z "$file_path" ]]; then
+    echo "Usage: ${command_name} <path>" >&2
+    return 1
+  fi
+
+  if [[ ! -f "$file_path" ]]; then
+    echo "${command_name}: file not found: $file_path" >&2
+    return 1
+  fi
+}
+
+_vim:require-filetype() {
+  local command_name="$1"
+  local filetype="${2:-}"
+
+  if [[ -z "$filetype" ]]; then
+    echo "Usage: ${command_name} <filetype> [path...]" >&2
+    return 1
+  fi
+
+  if [[ ! "$filetype" =~ '^[A-Za-z0-9_.+-]+$' ]]; then
+    echo "${command_name}: invalid filetype: $filetype" >&2
+    return 1
+  fi
+}
+
+_vim:lua-string-list() {
+  local lua_args=""
+  local arg
+  local escaped
+
+  for arg in "$@"; do
+    escaped="${arg//\\/\\\\}"
+    escaped="${escaped//\"/\\\"}"
+    lua_args="${lua_args}\"${escaped}\","
+  done
+
+  printf "{%s}" "$lua_args"
+}
+
+_vim:nvim() {
+  local runtime_dir="${NVIM_ADMIN_RUNTIME_DIR:-${TMPDIR:-/tmp}/nvim-admin-${UID}}"
+  mkdir -p "$runtime_dir/state" "$runtime_dir/cache"
+  XDG_STATE_HOME="$runtime_dir/state" XDG_CACHE_HOME="$runtime_dir/cache" nvim --headless -n -i NONE "$@"
+}
+
+vim:filetype() {
+  local filetype="${1:-}"
+  _vim:require-filetype vim:filetype "$filetype" || return 1
+  shift
+
+  if (( $# == 0 )) && [[ ! -t 0 ]]; then
+    nvim -c "setlocal filetype=${filetype}" -
+    return
+  fi
+
+  nvim -c "setlocal filetype=${filetype}" -- "$@"
+}
+
+alias vim:ft=vim:filetype
+
+_vim:admin() {
+  local command_name="$1"
+  local helper_path="${ZSHLIB:-$HOME/.local/lib/zsh}/nvim-admin.lua"
+  shift
+
+  NVIM_ADMIN_LUA="$helper_path" _vim:nvim "$@" -c "lua dofile(vim.env.NVIM_ADMIN_LUA).run('${command_name}')" -c qall
+}
+
+vim:mason-update() {
+  _vim:nvim -c "MasonUpdate" -c qall
+}
+
+vim:mason-install() {
+  _vim:require-args vim:mason-install "<package...>" "$@" || return 1
+  _vim:nvim -c "MasonInstall $*" -c qall
+}
+
+vim:mason-uninstall() {
+  _vim:require-args vim:mason-uninstall "<package...>" "$@" || return 1
+  _vim:nvim -c "MasonUninstall $*" -c qall
+}
+
+vim:lsp-install() {
+  _vim:require-args vim:lsp-install "<server...>" "$@" || return 1
+  _vim:nvim -c "LspInstall $*" -c qall
+}
+
+vim:lsp-uninstall() {
+  _vim:require-args vim:lsp-uninstall "<server...>" "$@" || return 1
+  _vim:nvim -c "LspUninstall $*" -c qall
+}
+
+vim:ts-update() {
+  local parsers
+  parsers="$(_vim:lua-string-list "$@")"
+  _vim:nvim -c "lua require('nvim-treesitter').update(${parsers}, { summary = true }):await()" -c qall
+}
+
+vim:ts-install() {
+  _vim:require-args vim:ts-install "<parser...>" "$@" || return 1
+  local parsers
+  parsers="$(_vim:lua-string-list "$@")"
+  _vim:nvim -c "lua require('nvim-treesitter').install(${parsers}, { summary = true }):await()" -c qall
+}
+
+vim:ts-uninstall() {
+  _vim:require-args vim:ts-uninstall "<parser...>" "$@" || return 1
+  local parsers
+  parsers="$(_vim:lua-string-list "$@")"
+  _vim:nvim -c "lua require('nvim-treesitter').uninstall(${parsers}, { summary = true }):await()" -c qall
+}
+
+vim:lazy-list() {
+  _vim:admin lazy_list
+}
+
+vim:mason-list() {
+  _vim:admin mason_list
+}
+
+vim:lsp-list() {
+  _vim:admin lsp_list
+}
+
+vim:ts-list() {
+  _vim:admin ts_list
+}
+
+vim:file-lsps() {
+  _vim:require-file vim:file-lsps "$1" || return 1
+  NVIM_DEBUG_FILE="$1" _vim:admin file_lsps
+}
+
+vim:file-parsers() {
+  _vim:require-file vim:file-parsers "$1" || return 1
+  NVIM_DEBUG_FILE="$1" _vim:admin file_parsers
+}
+
+vim:file-plugins() {
+  _vim:require-file vim:file-plugins "$1" || return 1
+  NVIM_DEBUG_FILE="$1" _vim:admin file_plugins
+}
+
+vim:file-debug() {
+  _vim:require-file vim:file-debug "$1" || return 1
+  NVIM_DEBUG_FILE="$1" _vim:admin file_debug
 }

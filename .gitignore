@@ -22,6 +22,9 @@ downloads/
 eggs/
 .eggs/
 lib/
+!deployment-packages/local/lib/
+!deployment-packages/local/lib/zsh/
+!deployment-packages/local/lib/zsh/nvim-admin.lua
 lib64/
 parts/
 sdist/

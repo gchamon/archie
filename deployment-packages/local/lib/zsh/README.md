@@ -112,6 +112,16 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `docker-swarm-remote-deploy` | Alias | Deploys the current directory as a swarm stack. |
 | `docker-swarm-remote-rm` | Alias | Removes the current directory swarm stack. |
 | `docker-swarm-remote-redeploy` | Alias | Removes then redeploys the current directory swarm stack. |
+| `vim:lazy-sync` | Alias | Runs Lazy.nvim install, clean, and update headlessly. |
+| `vim:update` | Alias | Compatibility alias for `vim:lazy-sync`. |
+| `vim:lazy-install` | Alias | Installs missing Lazy.nvim plugins headlessly. |
+| `vim:lazy-check` | Alias | Checks Lazy.nvim plugin updates headlessly. |
+| `vim:lazy-update` | Alias | Updates Lazy.nvim plugins and the lockfile headlessly. |
+| `vim:lazy-restore` | Alias | Restores Lazy.nvim plugins from the lockfile headlessly. |
+| `vim:lazy-clean` | Alias | Removes unused Lazy.nvim plugins headlessly. |
+| `vim:lazy-health` | Alias | Runs Lazy.nvim health checks headlessly. |
+| `vim:health` | Alias | Runs Neovim health checks headlessly. |
+| `vim:smoke` | Alias | Starts and exits Neovim headlessly to catch startup errors. |
 | `aider` | Alias | Runs `aider` inside a prepared Docker container. |
 | `aider-update` | Alias | Rebuilds the local `aider` image after cleanup. |
 | `aider-build` | Function | Builds the local `aider-chat` image. |
@@ -135,6 +145,25 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `decode_jwt` | Function | Decodes a JWT from a file or string and prints header/payload JSON. |
 | `elixir-new-module` | Function | Scaffolds an Elixir module and matching test file. |
 | `docker-run-in-cwd` | Function | Starts a disposable container with the current directory mounted at `/app`. |
+| `nvim-admin.lua` | Helper | Provides the Lua report functions used by the `vim:*` Neovim admin helpers. |
+| `vim:filetype` | Function | Opens files or stdin in Neovim with an explicit filetype override. |
+| `vim:ft` | Alias | Short alias for `vim:filetype`. |
+| `vim:mason-update` | Function | Updates Mason registries headlessly. |
+| `vim:mason-install` | Function | Installs one or more Mason packages headlessly. |
+| `vim:mason-uninstall` | Function | Uninstalls one or more Mason packages headlessly. |
+| `vim:lsp-install` | Function | Installs one or more LSP servers by `nvim-lspconfig` server name. |
+| `vim:lsp-uninstall` | Function | Uninstalls one or more LSP servers by `nvim-lspconfig` server name. |
+| `vim:ts-update` | Function | Updates all installed Treesitter parsers, or only the provided parsers. |
+| `vim:ts-install` | Function | Installs one or more Treesitter parsers. |
+| `vim:ts-uninstall` | Function | Uninstalls one or more Treesitter parsers. |
+| `vim:lazy-list` | Function | Lists Lazy.nvim plugins with installed, loaded, and update state. |
+| `vim:mason-list` | Function | Lists installed Mason packages. |
+| `vim:lsp-list` | Function | Lists known LSP server configs and their filetypes. |
+| `vim:ts-list` | Function | Lists installed Treesitter parsers. |
+| `vim:file-lsps` | Function | Reports active LSP clients after opening a file headlessly. |
+| `vim:file-parsers` | Function | Reports filetype, Treesitter language, parser, and query availability for a file. |
+| `vim:file-plugins` | Function | Reports Lazy.nvim plugins loaded after opening a file. |
+| `vim:file-debug` | Function | Prints a combined file-specific Neovim debug report. |
 
 ## `commands-agents.sh`
 
