@@ -18,6 +18,8 @@ clear.
 - [system-gui-02-borg-backup-gui](/docs/work-items/system-gui-02-borg-backup-gui.md)
 - [system-gui-03-monitor-output-widget](/docs/work-items/system-gui-03-monitor-output-widget.md)
 - [system-gui-04-lid-close-policy-widget](/docs/work-items/system-gui-04-lid-close-policy-widget.md)
+- [system-gui-05-desktop-controls-and-applet](/docs/work-items/system-gui-05-desktop-controls-and-applet.md)
+- [system-gui-06-waybar-power-and-theme-controls](/docs/work-items/system-gui-06-waybar-power-and-theme-controls.md)
 
 ## Decision Changes
 
@@ -31,6 +33,11 @@ clear.
 - Lid close policy is split into a focused work item backed by the `archie
   system` CLI because it changes privileged logind policy rather than monitor
   layout.
+- The delivered GTK control window and tray applet are tracked retroactively as
+  the first concrete desktop surface for the Archie system controls.
+- Waybar theme and power profile controls are tracked separately because they
+  add managed assets and CLI state transitions that can be reused outside the
+  GUI.
 
 ## Main Quests
 
@@ -40,6 +47,9 @@ clear.
   display-control surface.
 - Build a lid close policy control that exposes Archie’s hibernate and
   OLED-safe screen-off-then-lock mode.
+- Build the GTK desktop controls and tray applet for Archie-owned system
+  settings.
+- Add managed Waybar theme switching and power profile controls.
 
 ## Acceptance Criteria
 
@@ -61,3 +71,5 @@ system-gui
 - system-gui-02
 - system-gui-03
 - system-gui-04
+- system-gui-05
+- system-gui-06
