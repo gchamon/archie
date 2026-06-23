@@ -41,7 +41,7 @@
     },
 
     "custom/screenshare_detector": {
-        "format": "<span foreground=\"#f38ba8\"> {} </span>",
+        "format": "<span foreground=\"#f7768e\"> {} </span>",
         "exec": "pw-dump | jq -r 'map(.info?.props?) | map(select(.[\"node.name\"]? == \"xdg-desktop-portal-hyprland\")) | map(.[\"stream.is-live\"]? == true | \"⏺ LIVE\") | .[]?'",
         "interval": 5
     },

@@ -1,0 +1,28 @@
+# Maintainer: Gabriel Chamon <gchamon@tuta.io>
+
+pkgname=archie-cli
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Repository-owned maintenance CLI for Archie"
+arch=(any)
+url="https://gitlab.com/gabriel.chamon/archie"
+license=(MIT)
+depends=("python>=3.14")
+makedepends=(python-installer uv)
+provides=(archie)
+conflicts=(archie)
+source=()
+sha256sums=()
+
+build() {
+    cd "$startdir/../.."
+    uv build --wheel --out-dir "$srcdir/dist"
+}
+
+package() {
+    cd "$startdir/../.."
+    python -m installer --destdir="$pkgdir" "$srcdir"/dist/*.whl
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 docs/user/KEYBOARD_SHORTCUTS.md "$pkgdir/usr/share/doc/$pkgname/KEYBOARD_SHORTCUTS.md"
+    install -Dm644 packaging/archie-cli/_archie "$pkgdir/usr/share/zsh/site-functions/_archie"
+}

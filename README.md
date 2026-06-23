@@ -18,7 +18,13 @@ contributions to this repository.
 
 Credits to
 [cjbassi](https://github.com/cjbassi/config/tree/master/.config/waybar) for the
-[waybar](https://github.com/Alexays/Waybar) theme.
+default [waybar](https://github.com/Alexays/Waybar) theme.
+
+Credits to [sejjy/mechabar](https://github.com/sejjy/mechabar) for the
+mechabar waybar theme (Catppuccin Mocha color palette).
+
+Credits to [cebem1nt/dotfiles](https://github.com/cebem1nt/dotfiles) for the
+tokyonight waybar theme (Tokyo Night dark color palette).
 
 Credits to [catppuccin/dunst](https://github.com/catppuccin/dunst) for the
 [dunst](https://github.com/dunst-project/dunst) theme.

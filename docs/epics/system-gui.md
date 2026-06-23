@@ -17,6 +17,7 @@ clear.
 - [system-gui-01-power-and-peripherals-control](/docs/work-items/system-gui-01-power-and-peripherals-control.md)
 - [system-gui-02-borg-backup-gui](/docs/work-items/system-gui-02-borg-backup-gui.md)
 - [system-gui-03-monitor-output-widget](/docs/work-items/system-gui-03-monitor-output-widget.md)
+- [system-gui-04-lid-close-policy-widget](/docs/work-items/system-gui-04-lid-close-policy-widget.md)
 
 ## Decision Changes
 
@@ -27,6 +28,9 @@ clear.
   boundary between Archie and `borg-automated-backups` is decided.
 - Monitor output enable and disable behavior is split into a focused Waybar
   widget work item with confirmation and rollback requirements.
+- Lid close policy is split into a focused work item backed by the `archie
+  system` CLI because it changes privileged logind policy rather than monitor
+  layout.
 
 ## Main Quests
 
@@ -34,6 +38,8 @@ clear.
 - Define the backup GUI scope, ownership boundary, and safety model.
 - Build a monitor output widget that gives Archie a safe first graphical
   display-control surface.
+- Build a lid close policy control that exposes Archie’s hibernate and
+  OLED-safe screen-off-then-lock mode.
 
 ## Acceptance Criteria
 
@@ -54,3 +60,4 @@ system-gui
 - system-gui-01
 - system-gui-02
 - system-gui-03
+- system-gui-04

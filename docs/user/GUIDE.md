@@ -76,11 +76,21 @@ yay -Scc
 
 ### 1.3 Install Essential Packages with Yay
 
-Install the following packages using `yay`:
+First, build and install the `archie-cli` local package from the repo:
+
+```bash
+cd packaging/archie-cli
+makepkg -si --noconfirm
+cd ../..
+```
+
+Then install the remaining packages using `yay`:
 
 ```bash
 yay -S --needed \
   acpi \
+  power-profiles-daemon \
+  ttf-cascadia-code-nerd \
   bc \
   bind \
   blueman \
@@ -453,7 +463,55 @@ By default, systemd handles ACPI events via default rules which are documented
 in archlinux's [Power management > ACPI
 events](https://wiki.archlinux.org/title/Power_management#ACPI_events).
 
-To make it so that every lid close event will put the machine in hybrid sleep:
+Archie exposes three managed lid close behaviors through its CLI:
+
+- `hibernate`: write Archie’s current `systemd-logind` hybrid sleep policy.
+- `lock`: make `systemd-logind` ignore lid close events so Hyprland can turn
+  displays off immediately on close and lock the session after reopening.
+- `none`: make `systemd-logind` ignore lid close events and leave Hyprland lid
+  close/open hooks as no-ops.
+
+To inspect the current managed behavior:
+
+```bash
+archie system get lid-close-behavior
+```
+
+To make every lid close event put the machine in Archie’s hibernate behavior:
+
+```bash
+archie system set lid-close-behavior hibernate
+```
+
+The `hibernate` value intentionally maps to the existing `hybrid-sleep`
+logind action.
+
+To make lid close turn displays off without sleeping and lock after reopening:
+
+```bash
+archie system set lid-close-behavior lock
+hyprctl reload
+```
+
+To disable Archie-managed lid close behavior altogether:
+
+```bash
+archie system set lid-close-behavior none
+hyprctl reload
+```
+
+In `lock` mode, `systemd-logind` ignores the lid event. The Hyprland lid switch
+binding runs `~/.config/hypr/scripts/handle-lid-event.sh close` when the lid
+closes and `~/.config/hypr/scripts/handle-lid-event.sh open` when it opens.
+When the lid closes in `lock` mode, the helper turns displays off immediately
+to protect OLED panels. When the lid opens, it turns displays back on and then
+starts `hyprlock`. In `hibernate` mode, the same helper starts `hyprlock`
+before logind handles the sleep action, so resume should require unlocking.
+In `none` mode, the helper records the lid event and leaves the session and
+display state unchanged. The helper writes diagnostics to
+`/tmp/handle-lid-event.log`.
+
+To manually restore the copied drop-in without the CLI:
 
 ```bash
 sudo rm -f /etc/systemd/logind.conf.d/lid-close.conf
@@ -518,7 +576,7 @@ for service in gcr-ssh-agent; do
 done
 
 # System services
-for service in bluetooth; do
+for service in bluetooth power-profiles-daemon; do
   sudo systemctl enable $service
   sudo systemctl start $service
 done

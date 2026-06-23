@@ -1,0 +1,57 @@
+.archie-lid-segments button {
+    border-radius: 0;
+    margin-left: -1px;
+    min-height: 30px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+.archie-lid-segments button:first-child {
+    margin-left: 0;
+}
+
+.archie-lid-segments button.archie-segment-left {
+    border-top-left-radius: 999px;
+    border-bottom-left-radius: 999px;
+}
+
+.archie-lid-segments button.archie-segment-right {
+    border-top-right-radius: 999px;
+    border-bottom-right-radius: 999px;
+}
+
+.archie-lid-segments button:checked {
+    font-weight: 700;
+}
+
+.archie-message-scroller {
+    border: 1px solid alpha(currentColor, 0.35);
+    border-radius: 6px;
+    padding: 0;
+}
+
+.archie-message-view {
+    padding: 8px;
+}
+
+.archie-shortcuts-heading {
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
+.archie-shortcuts-grid {
+    margin-bottom: 10px;
+}
+
+.archie-shortcuts-header {
+    font-weight: 700;
+}
+
+.archie-shortcuts-cell {
+    font-size: 12px;
+}
+
+.archie-shortcuts-error {
+    color: #f38ba8;
+}

@@ -80,7 +80,8 @@
 | `SUPER + CTRL + ALT + R`     | `exec, hyprctl reload`                       | Reloads the Hyprland configuration.               |
 | `SUPER + CTRL + S`           | `exec, hyprctl dispatch dpms toggle`         | Toggles connected displays on or off using DPMS.  |
 | `SUPER + L`                  | `exec, hyprlock`                              | Locks the screen using hyprlock.                   |
-| `Lid Switch`                 | `exec, hyprlock`                              | Locks the screen when the laptop lid is closed.    |
+| `Lid Switch close`           | `exec, ~/.config/hypr/scripts/handle-lid-event.sh close` | Locks before hibernate, turns displays off in `lock` lid mode, or no-ops in `none` lid mode. |
+| `Lid Switch open`            | `exec, ~/.config/hypr/scripts/handle-lid-event.sh open` | Turns displays on and locks in `lock` lid mode, or no-ops in `none` lid mode. |
 
 ## Brightness Control
 

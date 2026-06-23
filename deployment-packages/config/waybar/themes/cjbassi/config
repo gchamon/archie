@@ -6,21 +6,56 @@
 
     "modules-left": [
         "hyprland/workspaces",
+        "custom/right-arrow-dark",
+        "custom/right-arrow-light",
         "cpu",
-        "memory"
+        "custom/right-arrow-dark",
+        "custom/right-arrow-light",
+        "memory",
+        "custom/right-arrow-dark"
     ],
     "modules-center": [
+        "custom/left-arrow-dark",
         "clock#1",
+        "custom/left-arrow-light",
+        "custom/left-arrow-dark",
         "clock#2",
-        "clock#3"
+        "custom/right-arrow-dark",
+        "custom/right-arrow-light",
+        "clock#3",
+        "custom/right-arrow-dark"
     ],
     "modules-right": [
         "custom/screenshare_detector",
+        "custom/left-arrow-dark",
         "pulseaudio",
+        "custom/left-arrow-light",
+        "custom/left-arrow-dark",
         "battery",
+        "custom/left-arrow-light",
+        "custom/left-arrow-dark",
         "disk",
+        "custom/left-arrow-light",
+        "custom/left-arrow-dark",
         "tray"
     ],
+
+    "custom/left-arrow-dark": {
+        "format": "",
+        "tooltip": false
+    },
+    "custom/left-arrow-light": {
+        "format": "",
+        "tooltip": false
+    },
+    "custom/right-arrow-dark": {
+        "format": "",
+        "tooltip": false
+    },
+    "custom/right-arrow-light": {
+        "format": "",
+        "tooltip": false
+    },
 
     "hyprland/workspaces": {
         "disable-scroll": true,
@@ -41,7 +76,7 @@
     },
 
     "custom/screenshare_detector": {
-        "format": "<span foreground=\"#f38ba8\"> {} </span>",
+        "format": "<span foreground=\"red\"> {} </span>",
         "exec": "pw-dump | jq -r 'map(.info?.props?) | map(select(.[\"node.name\"]? == \"xdg-desktop-portal-hyprland\")) | map(.[\"stream.is-live\"]? == true | \"⏺ LIVE\") | .[]?'",
         "interval": 5
     },

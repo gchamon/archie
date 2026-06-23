@@ -1,0 +1,78 @@
+#compdef archie
+
+_archie() {
+  local -a commands actions settings behaviors global_options downgrade_options
+
+  commands=(
+    'downgrade:Resolve Arch Linux Archive package URLs for pacman -U'
+    'system:Manage Archie-owned system policy'
+  )
+  actions=(
+    'get:Read an Archie-owned system setting'
+    'set:Change an Archie-owned system setting'
+  )
+  settings=(
+    'lid-close-behavior:Manage lid close behavior'
+  )
+  behaviors=(
+    'hibernate:Use systemd-logind hybrid-sleep'
+    'lock:Lock after reopening'
+    'none:Ignore lid close events'
+  )
+  global_options=(
+    '--help:show help and exit'
+    '--help-all:show all commands hierarchically and exit'
+  )
+  downgrade_options=(
+    '--help:show help and exit'
+    '--to:target time: YYYY-MM-DD, 7d, or 4h'
+    '--archive-url:archive root URL'
+    '--execute:run the resolved downgrade with pacman'
+    '--noconfirm:pass --noconfirm to pacman'
+  )
+
+  if [[ "$words[CURRENT]" == -* ]]; then
+    case "$words[2]" in
+      downgrade)
+        _describe -t options 'downgrade option' downgrade_options
+        ;;
+      *)
+        _describe -t options 'archie option' global_options
+        ;;
+    esac
+    return
+  fi
+
+  case "$CURRENT:$words[2]:$words[3]:$words[4]" in
+    2:*)
+      _describe -t commands 'archie command' commands
+      ;;
+    3:system:*)
+      _describe -t actions 'system action' actions
+      ;;
+    4:system:get:*)
+      _describe -t settings 'system setting' settings
+      ;;
+    4:system:set:*)
+      _describe -t settings 'system setting' settings
+      ;;
+    5:system:set:lid-close-behavior)
+      _describe -t behaviors 'lid close behavior' behaviors
+      ;;
+    *:downgrade:*)
+      _archie_pacman_packages
+      ;;
+  esac
+}
+
+_archie_pacman_packages() {
+  if (( $+functions[_pacman_completions_all_packages] )); then
+    _pacman_completions_all_packages
+  elif (( $+functions[_pacman] )); then
+    _pacman
+  else
+    _files
+  fi
+}
+
+_archie "$@"

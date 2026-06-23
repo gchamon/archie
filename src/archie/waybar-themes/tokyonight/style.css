@@ -1,0 +1,103 @@
+/* Tokyo Night dark palette */
+@define-color module-bg  rgba(8, 8, 11, 0.92);
+@define-color bar-bg     rgba(15, 15, 26, 0.95);
+@define-color fg         #acb0d0;
+@define-color inactive   #787c99;
+@define-color red        #f7768e;
+@define-color blue       #7aa2f7;
+@define-color yellow     #e0af68;
+@define-color green      #41a6b5;
+@define-color purple     #9d7cd8;
+@define-color cyan       #2ac3de;
+@define-color orange     #ff9e64;
+
+* {
+    font-size: 20px;
+    font-family: "MesloLGM Nerd Font", monospace;
+    font-weight: 700;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+window#waybar {
+    background: transparent;
+    color: @fg;
+}
+
+#workspaces,
+#cpu,
+#memory,
+#clock,
+#pulseaudio,
+#battery,
+#disk,
+#tray,
+#custom-screenshare_detector {
+    background: @module-bg;
+    padding: 1px 7px;
+    margin: 3px 2px;
+    border-radius: 6px;
+}
+
+#workspaces button {
+    padding: 0 4px;
+    color: @inactive;
+    border-radius: 4px;
+}
+
+#workspaces button.active {
+    color: @blue;
+}
+
+#workspaces button:hover {
+    background: rgba(122, 162, 247, 0.15);
+    color: @fg;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+#cpu {
+    color: @purple;
+}
+
+#memory {
+    color: @cyan;
+}
+
+#pulseaudio {
+    color: @blue;
+}
+
+#battery {
+    color: @green;
+}
+
+#battery.warning {
+    color: @yellow;
+}
+
+#battery.critical {
+    color: @red;
+}
+
+#disk {
+    color: @orange;
+}
+
+#clock {
+    color: @fg;
+}
+
+#tray {
+    padding: 1px 6px;
+}
+
+tooltip {
+    background: @module-bg;
+    border: 1px solid @inactive;
+    border-radius: 6px;
+    color: @fg;
+}

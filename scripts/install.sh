@@ -10,6 +10,8 @@ RAW_SCRIPT_URL="https://gitlab.com/gabriel.chamon/archie/-/raw/main/scripts/inst
 
 ESSENTIAL_PACKAGES=(
     acpi
+    power-profiles-daemon
+    ttf-cascadia-code-nerd
     bc
     bind
     blueman
@@ -245,6 +247,19 @@ bootstrap_yay() {
     run_cmd rm -rf "$yay_build_dir"
     run_yay_install yay-bin
     run_cmd yay -Scc --noconfirm
+}
+
+install_archie_cli() {
+    log_step "Install archie-cli from local package"
+
+    if package_is_installed archie-cli; then
+        log_info "archie-cli is already installed; reinstalling to pick up latest build"
+    fi
+
+    (
+        cd "$REPO_ROOT/packaging/archie-cli"
+        run_cmd makepkg -si --noconfirm
+    )
 }
 
 install_yay_packages() {
@@ -668,6 +683,11 @@ apply_gtk_theme() {
     log_info "If the running session does not pick up the theme, open GTK Settings from rofi and confirm $GTK_THEME."
 }
 
+enable_system_services() {
+    log_step "Enable system services"
+    run_sudo_cmd systemctl enable --now power-profiles-daemon.service
+}
+
 print_manual_follow_up() {
     log_step "Manual follow-up still required"
     log_info "Review $DEVICE_CONF_PATH for monitor geometry and AQ_DRM_DEVICES."
@@ -687,6 +707,7 @@ main() {
     install_base_packages
     bootstrap_checkout_if_needed
     bootstrap_yay
+    install_archie_cli
     install_yay_packages
     install_zsh_packages
     install_theme_packages
@@ -697,6 +718,7 @@ main() {
     deploy_copy_deployed_files
     scaffold_local_files
     ensure_required_home_folders
+    enable_system_services
     set_login_shell
     apply_gtk_theme
     print_manual_follow_up
