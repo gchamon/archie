@@ -205,7 +205,10 @@ def run_system_get(
             print(detect_waybar_theme(waybar_theme_state_path))
             return 0
         case _:
-            print(f"archie system get: unsupported setting: {args.setting}", file=sys.stderr)
+            print(
+                f"archie system get: unsupported setting: {args.setting}",
+                file=sys.stderr,
+            )
             return 2
 
 
@@ -222,9 +225,14 @@ def run_system_set(
     match args.setting:
         case "lid-close-behavior":
             if args.value not in LID_CLOSE_CONTENT_BY_MODE:
-                print(f"archie system set: unsupported lid-close-behavior: {args.value}", file=sys.stderr)
+                print(
+                    f"archie system set: unsupported lid-close-behavior: {args.value}",
+                    file=sys.stderr,
+                )
                 return 2
-            install_code = install_lid_close_behavior(args.value, lid_close_conf_path, executor=execute)
+            install_code = install_lid_close_behavior(
+                args.value, lid_close_conf_path, executor=execute
+            )
             if install_code != 0:
                 return install_code
             return reload_logind_if_active(executor=execute)
@@ -242,11 +250,15 @@ def run_system_set(
                 waybar_style_path=waybar_style_path,
             )
         case _:
-            print(f"archie system set: unsupported setting: {args.setting}", file=sys.stderr)
+            print(
+                f"archie system set: unsupported setting: {args.setting}",
+                file=sys.stderr,
+            )
             return 2
 
 
 # --- lid-close-behavior ---
+
 
 def detect_lid_close_behavior(lid_close_conf_path: Path = LID_CLOSE_CONF_PATH) -> str:
     try:
@@ -292,17 +304,23 @@ def install_lid_close_behavior(
         temp_path = Path(temp_file.name)
 
     try:
-        install_parent_code = execute(["sudo", "mkdir", "-p", str(lid_close_conf_path.parent)])
+        install_parent_code = execute(
+            ["sudo", "mkdir", "-p", str(lid_close_conf_path.parent)]
+        )
         if install_parent_code != 0:
             return install_parent_code
-        return execute(["sudo", "install", "-m", "0644", str(temp_path), str(lid_close_conf_path)])
+        return execute(
+            ["sudo", "install", "-m", "0644", str(temp_path), str(lid_close_conf_path)]
+        )
     finally:
         temp_path.unlink(missing_ok=True)
 
 
 def reload_logind_if_active(*, executor: Executor | None = None) -> int:
     execute = executor or execute_command
-    active_code = execute(["sudo", "systemctl", "is-active", "--quiet", "systemd-logind.service"])
+    active_code = execute(
+        ["sudo", "systemctl", "is-active", "--quiet", "systemd-logind.service"]
+    )
     if active_code != 0:
         return 0
     return execute(["sudo", "systemctl", "kill", "-s", "HUP", "systemd-logind.service"])
@@ -310,10 +328,13 @@ def reload_logind_if_active(*, executor: Executor | None = None) -> int:
 
 # --- notifications ---
 
+
 def detect_notifications_state() -> str:
     result = subprocess.run(
         ["dunstctl", "is-paused"],
-        check=False, capture_output=True, text=True,
+        check=False,
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         return UNKNOWN_MODE
@@ -328,38 +349,82 @@ def set_notifications(value: str, *, executor: Executor | None = None) -> int:
 
 # --- kdeconnect ---
 
+
 def detect_kdeconnect_state() -> str:
     result = subprocess.run(
         ["pgrep", "-x", "kdeconnectd"],
-        check=False, capture_output=True,
+        check=False,
+        capture_output=True,
     )
     return ON_VALUE if result.returncode == 0 else OFF_VALUE
 
 
+KDECONNECT_AUTOSTART_UNIT = "app-org.kde.kdeconnect.daemon@autostart.service"
+# kdeconnectd also runs as a transient D-Bus-activated unit whose name carries a
+# volatile bus-name instance (e.g. dbus-:1.2-org.kde.kdeconnect@2.service); match
+# it by glob so a plain pkill is not undone by systemd/D-Bus reactivating it.
+KDECONNECT_DBUS_UNIT_GLOB = "dbus-*org.kde.kdeconnect*.service"
+
+
 def set_kdeconnect(value: str) -> int:
     if value == OFF_VALUE:
-        subprocess.run(["pkill", "-f", "/usr/lib/kdeconnectd"], check=False)
-        subprocess.run(["pkill", "-f", "/usr/bin/kdeconnect-indicator"], check=False)
+        # kdeconnectd is systemd/D-Bus managed; killing the process alone is
+        # undone by reactivation. Stop both the autostart and the transient
+        # D-Bus-activated units so it actually stays down.
+        subprocess.run(
+            ["systemctl", "--user", "stop", KDECONNECT_AUTOSTART_UNIT, KDECONNECT_DBUS_UNIT_GLOB],
+            check=False,
+        )
+        # The tray indicator is a plain app, not a unit. pkill -x cannot be used:
+        # comm is truncated to 15 chars so "kdeconnect-indicator" never matches by
+        # name; match the basename whether launched bare or by full path.
+        subprocess.run(["pkill", "-f", r"(^|/)kdeconnect-indicator( |$)"], check=False)
         return 0
-    subprocess.Popen(["/usr/lib/kdeconnectd"])
-    subprocess.Popen(["/usr/bin/kdeconnect-indicator"])
+    subprocess.run(
+        ["systemctl", "--user", "start", KDECONNECT_AUTOSTART_UNIT],
+        check=False,
+    )
+    _spawn_detached(["kdeconnect-indicator"])
     return 0
 
 
+def _spawn_detached(command: list[str]) -> None:
+    """Launch a long-lived app fully detached from this process.
+
+    Without redirecting std streams the child inherits the caller's pipes; when
+    the caller is launched with capture_output (as the GUI does), subprocess.run
+    blocks until every writer to those pipes closes, which never happens for a
+    long-lived app. start_new_session puts the child in its own session so it is
+    not tied to the caller's lifetime.
+    """
+    subprocess.Popen(
+        command,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+
 # --- power-profile ---
+
 
 def detect_power_profile() -> int:
     try:
         result = subprocess.run(
             ["powerprofilesctl", "get"],
-            check=False, capture_output=True, text=True,
+            check=False,
+            capture_output=True,
+            text=True,
         )
     except FileNotFoundError:
         print("unavailable", file=sys.stderr)
         print(UNKNOWN_MODE)
         return 0
     if result.returncode != 0:
-        print(f"archie system get power-profile: {result.stderr.strip()}", file=sys.stderr)
+        print(
+            f"archie system get power-profile: {result.stderr.strip()}", file=sys.stderr
+        )
         return result.returncode
     print(result.stdout.strip())
     return 0
@@ -369,9 +434,14 @@ def set_power_profile(value: str, *, executor: Executor | None = None) -> int:
     if executor is not None:
         return executor(["powerprofilesctl", "set", value])
     try:
-        return subprocess.run(["powerprofilesctl", "set", value], check=False).returncode
+        return subprocess.run(
+            ["powerprofilesctl", "set", value], check=False
+        ).returncode
     except FileNotFoundError:
-        print("archie system set power-profile: powerprofilesctl not found", file=sys.stderr)
+        print(
+            "archie system set power-profile: powerprofilesctl not found",
+            file=sys.stderr,
+        )
         return 1
 
 
@@ -388,7 +458,9 @@ def detect_waybar_theme(waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH)
 
 
 def _read_waybar_theme_resource(theme: str, filename: str) -> str | None:
-    resource = importlib.resources.files("archie").joinpath(WAYBAR_THEMES_RESOURCE, theme, filename)
+    resource = importlib.resources.files("archie").joinpath(
+        WAYBAR_THEMES_RESOURCE, theme, filename
+    )
     if not resource.is_file():
         return None
     return resource.read_text(encoding="utf-8")
@@ -419,6 +491,7 @@ def set_waybar_theme(
 
 
 # --- shared ---
+
 
 def execute_command(command: list[str]) -> int:
     return subprocess.run(command, check=False).returncode
