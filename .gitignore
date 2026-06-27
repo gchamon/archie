@@ -4,6 +4,9 @@ docs/codex-sessions/**/*.jsonl
 .env.sh
 .codex
 .state
+deployment-packages/config/waybar/style.css
+deployment-packages/config/waybar/config
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -228,3 +231,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
