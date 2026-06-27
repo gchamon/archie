@@ -241,7 +241,7 @@ bootstrap_yay() {
 
     (
         cd "$yay_build_dir/yay-bin"
-        run_cmd makepkg -si --noconfirm
+        run_cmd  makepkg -Cfsi --noconfirm
     )
 
     run_cmd rm -rf "$yay_build_dir"
@@ -258,7 +258,7 @@ install_archie_cli() {
 
     (
         cd "$REPO_ROOT/packaging/archie-cli"
-        run_cmd makepkg -si --noconfirm
+        run_cmd  makepkg -Cfsi --noconfirm
     )
 }
 
