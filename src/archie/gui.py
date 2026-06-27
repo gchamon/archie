@@ -24,6 +24,11 @@ KEYBOARD_SHORTCUTS_PATHS = [
     Path(__file__).resolve().parents[2] / "docs/user/KEYBOARD_SHORTCUTS.md",
     Path("/usr/share/doc/archie-cli/KEYBOARD_SHORTCUTS.md"),
 ]
+SHELL_COMMANDS_PATHS = [
+    Path.cwd() / "deployment-packages/local/lib/zsh/README.md",
+    Path(__file__).resolve().parents[2] / "deployment-packages/local/lib/zsh/README.md",
+    Path("/usr/share/doc/archie-cli/ZSH_COMMANDS.md"),
+]
 
 
 def add_gui_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -77,8 +82,7 @@ class ArchieControlsWindow:
         self.monitors: list[MonitorOutput] = []
         self.pending_snapshot: list[MonitorOutput] | None = None
         self.pending_timeout_id: int | None = None
-        self.keyboard_shortcuts_markdown = ""
-        self.keyboard_shortcuts_content = None
+        self.documentation_tabs: dict[str, tuple[str, object]] = {}
         self.monitor_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.lid_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.lid_box.add_css_class("archie-lid-segments")
@@ -135,7 +139,22 @@ class ArchieControlsWindow:
         notebook = Gtk.Notebook()
         notebook.set_tab_pos(Gtk.PositionType.TOP)
         notebook.append_page(self.build_system_settings_tab(), Gtk.Label(label="System settings"))
-        notebook.append_page(self.build_keyboard_shortcuts_tab(), Gtk.Label(label="Keyboard shortcuts"))
+        notebook.append_page(
+            self.build_documentation_table_tab(
+                tab_id="keyboard-shortcuts",
+                search_placeholder="Search keyboard shortcuts",
+                read_markdown=read_keyboard_shortcuts_markdown,
+            ),
+            Gtk.Label(label="Keyboard shortcuts"),
+        )
+        notebook.append_page(
+            self.build_documentation_table_tab(
+                tab_id="shell-commands",
+                search_placeholder="Search shell commands",
+                read_markdown=read_shell_commands_markdown,
+            ),
+            Gtk.Label(label="Shell commands"),
+        )
         return notebook
 
     def build_system_settings_tab(self):
@@ -188,7 +207,7 @@ class ArchieControlsWindow:
 
         return root
 
-    def build_keyboard_shortcuts_tab(self):
+    def build_documentation_table_tab(self, tab_id: str, search_placeholder: str, read_markdown):
         Gtk = self.Gtk
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         root.set_margin_top(12)
@@ -197,8 +216,8 @@ class ArchieControlsWindow:
         root.set_margin_end(12)
 
         search_entry = Gtk.SearchEntry()
-        search_entry.set_placeholder_text("Search keyboard shortcuts")
-        search_entry.connect("search-changed", self.on_shortcuts_search_changed)
+        search_entry.set_placeholder_text(search_placeholder)
+        search_entry.connect("search-changed", self.on_documentation_search_changed, tab_id)
         root.append(search_entry)
 
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
@@ -206,17 +225,17 @@ class ArchieControlsWindow:
         content.set_margin_bottom(2)
         content.set_margin_start(2)
         content.set_margin_end(2)
-        self.keyboard_shortcuts_content = content
 
         try:
-            self.keyboard_shortcuts_markdown = read_keyboard_shortcuts_markdown()
+            markdown = read_markdown()
         except FileNotFoundError as error:
             label = Gtk.Label(label=str(error))
             label.set_xalign(0)
             label.add_css_class("archie-shortcuts-error")
             content.append(label)
         else:
-            self.render_keyboard_shortcuts(self.keyboard_shortcuts_markdown, content, "")
+            self.documentation_tabs[tab_id] = (markdown, content)
+            self.render_documentation_tables(markdown, content, "")
 
         scroller = Gtk.ScrolledWindow()
         scroller.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
@@ -225,7 +244,7 @@ class ArchieControlsWindow:
         root.append(scroller)
         return root
 
-    def render_keyboard_shortcuts(self, markdown: str, content, query: str) -> None:
+    def render_documentation_tables(self, markdown: str, content, query: str) -> None:
         query = query.casefold().strip()
         lines = markdown.splitlines()
         index = 0
@@ -246,16 +265,16 @@ class ArchieControlsWindow:
                 while index < len(lines) and lines[index].startswith("|"):
                     table_lines.append(lines[index])
                     index += 1
-                self.render_shortcut_table(table_lines, content, query)
+                self.render_documentation_table(table_lines, content, query)
                 continue
             index += 1
 
-    def render_shortcut_table(self, table_lines: Sequence[str], content, query: str) -> None:
+    def render_documentation_table(self, table_lines: Sequence[str], content, query: str) -> None:
         rows = parse_markdown_table(table_lines)
         if not rows:
             return
         header = rows[0]
-        body = filter_shortcut_rows(rows[1:], query)
+        body = filter_documentation_rows(rows[1:], query)
         if not body:
             return
         grid = self.Gtk.Grid(column_spacing=10, row_spacing=6)
@@ -274,15 +293,13 @@ class ArchieControlsWindow:
                 grid.attach(label, column_index, row_index, 1, 1)
         content.append(grid)
 
-    def on_shortcuts_search_changed(self, search_entry) -> None:
-        if self.keyboard_shortcuts_content is None:
+    def on_documentation_search_changed(self, search_entry, tab_id: str) -> None:
+        tab_state = self.documentation_tabs.get(tab_id)
+        if tab_state is None:
             return
-        self.clear_box(self.keyboard_shortcuts_content)
-        self.render_keyboard_shortcuts(
-            self.keyboard_shortcuts_markdown,
-            self.keyboard_shortcuts_content,
-            search_entry.get_text(),
-        )
+        markdown, content = tab_state
+        self.clear_box(content)
+        self.render_documentation_tables(markdown, content, search_entry.get_text())
 
     def refresh(self) -> None:
         self.clear_box(self.monitor_box)
@@ -582,11 +599,19 @@ def run_cli(command: Sequence[str]) -> subprocess.CompletedProcess[str]:
 
 
 def read_keyboard_shortcuts_markdown() -> str:
-    for path in KEYBOARD_SHORTCUTS_PATHS:
+    return read_first_existing_markdown(KEYBOARD_SHORTCUTS_PATHS, "KEYBOARD_SHORTCUTS.md")
+
+
+def read_shell_commands_markdown() -> str:
+    return read_first_existing_markdown(SHELL_COMMANDS_PATHS, "ZSH_COMMANDS.md")
+
+
+def read_first_existing_markdown(paths: Sequence[Path], label: str) -> str:
+    for path in paths:
         if path.exists():
             return path.read_text(encoding="utf-8")
-    paths = ", ".join(str(path) for path in KEYBOARD_SHORTCUTS_PATHS)
-    raise FileNotFoundError(f"Could not find KEYBOARD_SHORTCUTS.md in: {paths}")
+    rendered_paths = ", ".join(str(path) for path in paths)
+    raise FileNotFoundError(f"Could not find {label} in: {rendered_paths}")
 
 
 def parse_markdown_table(table_lines: Sequence[str]) -> list[list[str]]:
@@ -608,7 +633,7 @@ def is_markdown_separator(cell: str) -> bool:
     return bool(stripped) and all(character in ":-" for character in stripped)
 
 
-def filter_shortcut_rows(rows: Sequence[Sequence[str]], query: str) -> list[Sequence[str]]:
+def filter_documentation_rows(rows: Sequence[Sequence[str]], query: str) -> list[Sequence[str]]:
     normalized_query = query.casefold().strip()
     if not normalized_query:
         return list(rows)
@@ -617,3 +642,6 @@ def filter_shortcut_rows(rows: Sequence[Sequence[str]], query: str) -> list[Sequ
         for row in rows
         if normalized_query in " ".join(row).casefold()
     ]
+
+
+filter_shortcut_rows = filter_documentation_rows

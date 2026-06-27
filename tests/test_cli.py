@@ -3,7 +3,7 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 
 from archie.cli import main
-from archie.gui import filter_shortcut_rows, parse_markdown_table
+from archie.gui import filter_documentation_rows, filter_shortcut_rows, parse_markdown_table
 
 
 class CliExposureTest(unittest.TestCase):
@@ -41,3 +41,26 @@ class KeyboardShortcutMarkdownTest(unittest.TestCase):
 
         self.assertEqual(filter_shortcut_rows(rows, "ROFI"), [rows[1]])
         self.assertEqual(filter_shortcut_rows(rows, ""), rows)
+
+
+class ShellCommandMarkdownTest(unittest.TestCase):
+    def test_parse_zsh_command_table_removes_separator_and_code_ticks(self) -> None:
+        rows = parse_markdown_table([
+            "| Name | Kind | Description |",
+            "| --- | --- | --- |",
+            "| `gp` | Alias | Uses `ggpush` as the default push command. |",
+        ])
+
+        self.assertEqual(rows, [
+            ["Name", "Kind", "Description"],
+            ["gp", "Alias", "Uses ggpush as the default push command."],
+        ])
+
+    def test_filter_documentation_rows_matches_zsh_command_columns(self) -> None:
+        rows = [
+            ["gp", "Alias", "Uses ggpush as the default push command."],
+            ["git:stash-commit", "Function", "Turns commits into a stash entry."],
+        ]
+
+        self.assertEqual(filter_documentation_rows(rows, "function"), [rows[1]])
+        self.assertEqual(filter_documentation_rows(rows, "GGPUSH"), [rows[0]])

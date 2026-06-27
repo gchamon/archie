@@ -198,6 +198,18 @@ sudo install -Dm644 copy-deployed-files/etc/systemd/logind.conf.d/power-button-c
 sudo systemctl kill -s HUP systemd-logind.service
 ```
 
+Waybar's active `config` and `style.css` are also copied instead of
+Stow-deployed because Archie rewrites them when switching themes:
+
+```bash
+install -Dm644 copy-deployed-files/home/.config/waybar/config "$HOME/.config/waybar/config"
+install -Dm644 copy-deployed-files/home/.config/waybar/style.css "$HOME/.config/waybar/style.css"
+```
+
+Tracked Waybar theme sources remain in the repository, but the live files under
+`~/.config/waybar/` are real mutable files so changing the theme does not dirty
+the checked-out Stow package.
+
 ### 2.2 System specific configuration
 
 Some files aren't managed by Stow because they are machine-specific local files.

@@ -4,6 +4,8 @@ docs/codex-sessions/**/*.jsonl
 .env.sh
 .codex
 .state
+deployment-packages/config/waybar/config
+deployment-packages/config/waybar/style.css
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
