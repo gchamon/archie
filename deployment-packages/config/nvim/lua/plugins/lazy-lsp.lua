@@ -26,6 +26,9 @@ return {
         "basedpyright", -- too verbose
       },
       preferred_servers = {
+        cs = { "csharp_ls" },
+        -- Godot provides the GDScript language server on 127.0.0.1:6005.
+        gdscript = { "gdscript" },
         markdown = { "marksman" },
         python = { "ruff", "pyright" },
         terraform = { "terraformls" },

@@ -67,7 +67,7 @@ sudo pacman -S --needed git base-devel
 ```bash
 git clone https://aur.archlinux.org/yay-bin.git
 cd yay-bin
-makepkg -si
+ makepkg -Cfsi
 cd ..
 rm -rf yay-bin
 yay -S yay
@@ -80,7 +80,7 @@ First, build and install the `archie-cli` local package from the repo:
 
 ```bash
 cd packaging/archie-cli
-makepkg -si --noconfirm
+ makepkg -Cfsi --noconfirm
 cd ../..
 ```
 
