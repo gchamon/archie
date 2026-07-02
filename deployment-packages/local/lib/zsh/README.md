@@ -66,6 +66,7 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `git:create-mr-dev` | Function | Opens a GitLab merge request page targeting the develop branch. |
 | `git:create-pr-dev` | Function | Opens a GitHub compare page targeting the develop branch. |
 | `git:download` | Function | Downloads a sub-tree URL via Subversion checkout. |
+| `git:new` | Function | Initializes a new repo, configures `origin`, creates `README.md`, commits, and pushes. |
 | `gcom` | Alias | Checks out the repo main branch. |
 | `gdtm` | Alias | Opens Git diffs in Meld. |
 | `git_force_checks` | Alias | Creates a fixup commit and force-pushes. |
@@ -85,6 +86,7 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `create-mr-dev` | Alias | Compatibility alias for `git:create-mr-dev`. |
 | `create-pr-dev` | Alias | Compatibility alias for `git:create-pr-dev`. |
 | `gdl` | Alias | Compatibility alias for `git:download`. |
+| `gnew` | Alias | Compatibility alias for `git:new`. |
 
 ## `commands-system.sh`
 

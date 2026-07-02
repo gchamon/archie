@@ -183,6 +183,22 @@ git:download() {
   cd "$CUR_DIR"
 }
 
+git:new() {
+  if [[ -z "$1" ]]; then
+    echo "You must provide a repository name"
+    return -1
+  fi
+
+  local repo_name="$1"
+
+  git init
+  git remote add origin "git@$GIT_ORIGIN_URL:$GIT_ORIGIN_USERNAME/$repo_name.git"
+  touch README.md
+  git add -A
+  git commit -m "initial commit"
+  git push -u origin HEAD
+}
+
 alias gcom='git:checkout-main'
 alias gdtm='git:difftool-meld'
 alias git_force_checks='git:force-checks'
@@ -201,3 +217,4 @@ alias create-mr='git:create-mr'
 alias create-mr-dev='git:create-mr-dev'
 alias create-pr-dev='git:create-pr-dev'
 alias gdl='git:download'
+alias gnew='git:new'
