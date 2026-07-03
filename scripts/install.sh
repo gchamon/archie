@@ -83,6 +83,7 @@ KEYRING_PACKAGES=(
 )
 
 DEFAULT_P10K_PACKAGE="p10k-lean"
+DEFAULT_WAYBAR_THEME="cjbassi"
 GTK_THEME="Adwaita-dark"
 USER_STOW_BACKUP_ROOT="$HOME/archie-pre-stow-backup"
 SYSTEM_STOW_BACKUP_ROOT="/root/archie-pre-stow-backup"
@@ -516,9 +517,6 @@ backup_existing_stow_targets() {
         log_info "Skipping power-button confirmation backup; set ARCHIE_ENABLE_POWER_BUTTON_CONFIRM=1 to enable it again"
     fi
 
-    backup_copy_deployed_file home/.config/waybar/config
-    backup_copy_deployed_file home/.config/waybar/style.css
-
     if quickstart_bool_enabled "$ARCHIE_ENABLE_NVIDIA"; then
         backup_stow_conflicts_sudo nvidia /etc "$SYSTEM_STOW_BACKUP_ROOT"
     else
@@ -569,15 +567,17 @@ deploy_copy_deployed_file_sudo() {
     run_sudo_cmd install -m 0644 "$source_path" "$deployed_path"
 }
 
-deploy_copy_deployed_file() {
-    local relative_path="$1"
-    local source_path="$REPO_ROOT/copy-deployed-files/$relative_path"
-    local home_relative_path="${relative_path#home/}"
-    local deployed_path="$HOME/$home_relative_path"
+seed_default_waybar_theme() {
+    log_step "Seed default Waybar theme"
 
-    run_cmd mkdir -p "$(dirname "$deployed_path")"
-    run_cmd rm -f "$deployed_path"
-    run_cmd install -m 0644 "$source_path" "$deployed_path"
+    if ! command -v archie >/dev/null 2>&1; then
+        log_warn "archie is not available; skipping Waybar theme seeding"
+        return
+    fi
+
+    run_cmd mkdir -p "$HOME/.config/waybar"
+    run_cmd rm -f "$HOME/.config/waybar/config" "$HOME/.config/waybar/style.css"
+    run_cmd archie system set waybar-theme "$DEFAULT_WAYBAR_THEME"
 }
 
 reload_logind_if_active() {
@@ -593,9 +593,6 @@ deploy_copy_deployed_files() {
     local deployed_logind_file=0
 
     log_step "Deploy copy-managed files"
-
-    deploy_copy_deployed_file home/.config/waybar/config
-    deploy_copy_deployed_file home/.config/waybar/style.css
 
     if quickstart_bool_enabled "$ARCHIE_ENABLE_LID_CLOSE"; then
         deploy_copy_deployed_file_sudo etc/systemd/logind.conf.d/lid-close.conf
@@ -760,6 +757,7 @@ main() {
     install_keyring_packages
     backup_existing_stow_targets
     deploy_stow_packages
+    seed_default_waybar_theme
     deploy_copy_deployed_files
     scaffold_local_files
     ensure_required_home_folders

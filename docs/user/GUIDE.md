@@ -198,12 +198,12 @@ sudo install -Dm644 copy-deployed-files/etc/systemd/logind.conf.d/power-button-c
 sudo systemctl kill -s HUP systemd-logind.service
 ```
 
-Waybar's active `config` and `style.css` are also copied instead of
-Stow-deployed because Archie rewrites them when switching themes:
+Waybar's active `config` and `style.css` are seeded by Archie during install
+using the default `cjbassi` theme, which rewrites them as real files because
+Archie changes them when switching themes:
 
 ```bash
-install -Dm644 copy-deployed-files/home/.config/waybar/config "$HOME/.config/waybar/config"
-install -Dm644 copy-deployed-files/home/.config/waybar/style.css "$HOME/.config/waybar/style.css"
+archie system set waybar-theme cjbassi
 ```
 
 Tracked Waybar theme sources remain in the repository, but the live files under
