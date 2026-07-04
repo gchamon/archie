@@ -28,7 +28,9 @@ window#waybar {
 #cpu,
 #battery,
 #disk,
-#tray {
+#tray,
+#custom-share,
+#custom-cam {
   background: #1a1a1a;
 }
 

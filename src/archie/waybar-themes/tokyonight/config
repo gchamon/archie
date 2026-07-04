@@ -15,7 +15,8 @@
         "clock#3"
     ],
     "modules-right": [
-        "custom/screenshare_detector",
+        "custom/share",
+        "custom/cam",
         "pulseaudio",
         "battery",
         "disk",
@@ -40,9 +41,14 @@
         "tooltip": false
     },
 
-    "custom/screenshare_detector": {
+   "custom/share": {
         "format": "<span foreground=\"#f7768e\"> {} </span>",
-        "exec": "pw-dump | jq -r 'map(.info?.props?) | map(select(.[\"node.name\"]? == \"xdg-desktop-portal-hyprland\")) | map(.[\"stream.is-live\"]? == true | \"⏺ LIVE\") | .[]?'",
+        "exec": "~/.config/hypr/scripts/waybar-share-indicator.sh",
+        "interval": 5
+    },
+    "custom/cam": {
+        "format": "<span foreground=\"#f7768e\"> {} </span>",
+        "exec": "~/.config/hypr/scripts/waybar-cam-indicator.sh",
         "interval": 5
     },
     "idle_inhibitor": {

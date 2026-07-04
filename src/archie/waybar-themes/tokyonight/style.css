@@ -35,7 +35,8 @@ window#waybar {
 #battery,
 #disk,
 #tray,
-#custom-screenshare_detector {
+#custom-share,
+#custom-cam {
     background: @module-bg;
     padding: 1px 7px;
     margin: 3px 2px;
