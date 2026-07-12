@@ -6,7 +6,7 @@ instead of PipeWire’s generic live-stream property.
 
 ## Status
 
-In Progress
+doing
 
 ## Outcome
 
