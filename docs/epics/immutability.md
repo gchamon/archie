@@ -7,14 +7,16 @@ Planned
 ## Outcome
 
 Archie should have a decision-backed immutability track that determines whether
-an `arkdep`-managed base system is a practical and maintainable way to handle
-system dependencies, updates, and rollback without disrupting the current host
+an `arkdep`-managed base system, Fedora Silverblue host target, or fallback
+delayed-update model is a practical and maintainable way to handle system
+dependencies, updates, and rollback without disrupting the current host
 workflow.
 
 
 ## Work items
 
 - [immutability-01-arkdep-evaluation-and-poc](/docs/work-items/immutability-01-arkdep-evaluation-and-poc.md)
+- [immutability-02-fedora-silverblue-feasibility-spike](/docs/work-items/immutability-02-fedora-silverblue-feasibility-spike.md)
 
 ## Decision Changes
 
@@ -24,6 +26,9 @@ workflow.
   it evaluates a new system-management model rather than changing Stow
   ownership boundaries.
 - `arkdep` is the primary implementation candidate to evaluate first.
+- Fedora Silverblue is an exploratory host-target candidate that must be tested
+  as a feasibility spike before Archie commits to any Fedora-specific support
+  path.
 - A disposable VM proof of concept is required before Archie commits to any
   immutability architecture changes on a real workstation.
 - A delayed-update wrapper around Arch Linux Archive package versions remains an
@@ -37,6 +42,8 @@ workflow.
   reproducible image workflow.
 - Decide whether to proceed with an `arkdep` adoption track or fall back to a
   constrained delayed-update manager built around Arch Linux Archive data.
+- Determine whether Fedora Silverblue is feasible as a supported Archie target,
+  experimental host target, deferred track, or rejected target.
 
 ## Acceptance Criteria
 
@@ -54,6 +61,7 @@ immutability
 ### child_ids
 
 - immutability-01
+- immutability-02
 
 ### priority
 
