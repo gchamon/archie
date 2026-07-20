@@ -2,7 +2,9 @@ import argparse
 import importlib.resources
 import signal
 import subprocess
+import threading
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -29,6 +31,15 @@ SHELL_COMMANDS_PATHS = [
     Path(__file__).resolve().parents[2] / "deployment-packages/local/lib/zsh/README.md",
     Path("/usr/share/doc/archie-cli/ZSH_COMMANDS.md"),
 ]
+BRIGHTNESS_DEBOUNCE_MS = 500
+
+
+@dataclass(frozen=True)
+class GuiBrightnessDevice:
+    name: str
+    percent: int
+    current: int
+    maximum: int
 
 
 def add_gui_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -75,14 +86,17 @@ class ArchieControlsWindow:
         import gi
 
         gi.require_version("Gtk", "4.0")
-        from gi.repository import Gtk  # type: ignore[attr-defined]
+        from gi.repository import GLib, Gtk  # type: ignore[attr-defined]
 
         self.Gtk = Gtk
+        self.GLib = GLib
         self.application = application
         self.monitors: list[MonitorOutput] = []
         self.pending_snapshot: list[MonitorOutput] | None = None
         self.pending_timeout_id: int | None = None
+        self.brightness_timeout_ids: dict[str, int] = {}
         self.documentation_tabs: dict[str, tuple[str, object]] = {}
+        self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.monitor_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.lid_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.lid_box.add_css_class("archie-lid-segments")
@@ -166,6 +180,11 @@ class ArchieControlsWindow:
         root.set_margin_end(14)
 
         options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        brightness_label = Gtk.Label(label="Screen brightness:")
+        brightness_label.set_xalign(0)
+        options.append(brightness_label)
+        options.append(self.brightness_box)
+
         monitor_label = Gtk.Label(label="Monitors:")
         monitor_label.set_xalign(0)
         options.append(monitor_label)
@@ -302,12 +321,14 @@ class ArchieControlsWindow:
         self.render_documentation_tables(markdown, content, search_entry.get_text())
 
     def refresh(self) -> None:
+        self.clear_box(self.brightness_box)
         self.clear_box(self.monitor_box)
         self.clear_box(self.lid_box)
         self.clear_box(self.notifications_box)
         self.clear_box(self.kdeconnect_box)
         self.clear_box(self.power_profile_box)
         self.clear_box(self.waybar_theme_box)
+        self.render_brightness()
         try:
             self.monitors = list_monitors()
             self.render_monitors()
@@ -329,6 +350,58 @@ class ArchieControlsWindow:
                 button.add_css_class("flat")
             button.connect("clicked", self.on_monitor_clicked, monitor.name)
             self.monitor_box.append(button)
+
+    def render_brightness(self) -> None:
+        result = get_brightness_devices()
+        if result.returncode != 0:
+            self.render_brightness_unavailable("Brightness unavailable.")
+            self.set_status(f"Brightness error: {result.stderr.strip()}")
+            return
+        devices = parse_brightness_devices(result.stdout)
+        if not devices:
+            self.render_brightness_unavailable("No screen backlight detected.")
+            return
+        for device in devices:
+            self.render_brightness_row(device)
+
+    def render_brightness_unavailable(self, message: str) -> None:
+        label = self.Gtk.Label(label=message)
+        label.set_xalign(0)
+        label.set_sensitive(False)
+        self.brightness_box.append(label)
+
+    def render_brightness_row(self, device: GuiBrightnessDevice) -> None:
+        Gtk = self.Gtk
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        row.add_css_class("archie-brightness-row")
+
+        name_label = Gtk.Label(label=device.name)
+        name_label.set_xalign(0)
+        name_label.set_width_chars(14)
+        row.append(name_label)
+
+        adjustment = Gtk.Adjustment(
+            value=snap_brightness_percent(device.percent),
+            lower=0,
+            upper=100,
+            step_increment=10,
+            page_increment=10,
+            page_size=0,
+        )
+        scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=adjustment)
+        scale.set_hexpand(True)
+        scale.set_digits(0)
+        scale.set_draw_value(False)
+        scale.connect("value-changed", self.on_brightness_changed, device.name)
+        row.append(scale)
+
+        value_label = Gtk.Label(label=f"{snap_brightness_percent(device.percent)}%")
+        value_label.set_width_chars(4)
+        value_label.set_xalign(1)
+        scale.connect("value-changed", self.on_brightness_label_changed, value_label)
+        row.append(value_label)
+
+        self.brightness_box.append(row)
 
     def render_lid_behavior(self) -> None:
         active = get_lid_behavior()
@@ -388,12 +461,21 @@ class ArchieControlsWindow:
         return False
 
     def on_lid_clicked(self, _button, behavior: str) -> None:
-        result = set_lid_behavior(behavior)
+        self.set_box_sensitive(self.lid_box, False)
+        self.set_status(f"Setting lid close behavior to {behavior}...")
+        self.run_cli_async(
+            lambda: set_lid_behavior(behavior),
+            lambda result: self.on_lid_set_done(result, behavior),
+        )
+
+    def on_lid_set_done(self, result: subprocess.CompletedProcess[str], behavior: str) -> bool:
         if result.returncode == 0:
             self.set_status(f"Lid close behavior set to {behavior}.")
         else:
-            self.set_status(f"Failed to set lid close behavior: {result.stderr.strip()}")
-        self.refresh_lid_buttons_only()
+            self.set_status(lid_error_message(result))
+        self.clear_box(self.lid_box)
+        self.render_lid_behavior()
+        return False
 
     def render_toggle_row(self, box, active_value: str, on_clicked) -> None:
         for index, value in enumerate(TOGGLE_VALUES):
@@ -471,6 +553,33 @@ class ArchieControlsWindow:
         self.clear_box(self.waybar_theme_box)
         self.render_waybar_theme()
 
+    def on_brightness_label_changed(self, scale, label) -> None:
+        label.set_label(f"{brightness_scale_value(scale)}%")
+
+    def on_brightness_changed(self, scale, device_name: str) -> None:
+        percent = brightness_scale_value(scale)
+        if round(scale.get_value()) != percent:
+            scale.set_value(percent)
+            return
+        if timeout_id := self.brightness_timeout_ids.pop(device_name, None):
+            self.GLib.source_remove(timeout_id)
+        timeout_id = self.GLib.timeout_add(
+            BRIGHTNESS_DEBOUNCE_MS,
+            self.commit_brightness_change,
+            device_name,
+            percent,
+        )
+        self.brightness_timeout_ids[device_name] = timeout_id
+
+    def commit_brightness_change(self, device_name: str, percent: int) -> bool:
+        self.brightness_timeout_ids.pop(device_name, None)
+        result = run_cli(["archie", "system", "set", "brightness", device_name, str(percent)])
+        if result.returncode == 0:
+            self.set_status(f"Brightness for {device_name} set to {percent}%.")
+        else:
+            self.set_status(f"Failed to set brightness for {device_name}: {result.stderr.strip()}")
+        return False
+
     def refresh_monitor_buttons_only(self) -> None:
         self.clear_box(self.monitor_box)
         self.monitors = list_monitors()
@@ -479,6 +588,20 @@ class ArchieControlsWindow:
     def refresh_lid_buttons_only(self) -> None:
         self.clear_box(self.lid_box)
         self.render_lid_behavior()
+
+    def set_box_sensitive(self, box, sensitive: bool) -> None:
+        child = box.get_first_child()
+        while child is not None:
+            child.set_sensitive(sensitive)
+            child = child.get_next_sibling()
+
+    def run_cli_async(self, run_command, on_complete) -> None:
+        def worker() -> None:
+            result = run_command()
+            self.GLib.idle_add(on_complete, result)
+
+        thread = threading.Thread(target=worker, daemon=True)
+        thread.start()
 
     def _on_message_view_focus_leave(self, _controller) -> None:
         bounds = self.message_buffer.get_selection_bounds()
@@ -558,6 +681,16 @@ def set_lid_behavior(behavior: str) -> subprocess.CompletedProcess[str]:
     return result
 
 
+def lid_error_message(result: subprocess.CompletedProcess[str]) -> str:
+    stderr = result.stderr.strip()
+    if result.returncode in {126, 127} and not stderr:
+        return "Lid close behavior change cancelled."
+    if "dismissed" in stderr.casefold() or "cancel" in stderr.casefold():
+        return "Lid close behavior change cancelled."
+    detail = stderr or f"exit {result.returncode}"
+    return f"Failed to set lid close behavior: {detail}"
+
+
 def get_notifications_state() -> str:
     result = run_cli(["archie", "system", "get", "notifications"])
     if result.returncode != 0:
@@ -584,6 +717,40 @@ def get_waybar_theme() -> str:
     if result.returncode != 0:
         return "unknown"
     return result.stdout.strip()
+
+
+def get_brightness_devices() -> subprocess.CompletedProcess[str]:
+    return run_cli(["archie", "system", "get", "brightness"])
+
+
+def parse_brightness_devices(output: str) -> list[GuiBrightnessDevice]:
+    devices: list[GuiBrightnessDevice] = []
+    for line in output.splitlines():
+        parts = line.split("\t")
+        if len(parts) != 4:
+            continue
+        name, percent, current, maximum = parts
+        try:
+            devices.append(
+                GuiBrightnessDevice(
+                    name=name,
+                    percent=int(percent),
+                    current=int(current),
+                    maximum=int(maximum),
+                )
+            )
+        except ValueError:
+            continue
+    return devices
+
+
+def snap_brightness_percent(percent: int) -> int:
+    clamped = max(0, min(100, percent))
+    return max(0, min(100, ((clamped + 5) // 10) * 10))
+
+
+def brightness_scale_value(scale) -> int:
+    return snap_brightness_percent(round(scale.get_value()))
 
 
 def run_cli(command: Sequence[str]) -> subprocess.CompletedProcess[str]:

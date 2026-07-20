@@ -4,6 +4,7 @@ import importlib.resources
 import subprocess
 import sys
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
@@ -11,6 +12,7 @@ LID_CLOSE_CONF_PATH = Path("/etc/systemd/logind.conf.d/lid-close.conf")
 WAYBAR_THEME_STATE_PATH = Path.home() / ".config/waybar/.archie-theme"
 WAYBAR_CONFIG_PATH = Path.home() / ".config/waybar/config"
 WAYBAR_STYLE_PATH = Path.home() / ".config/waybar/style.css"
+BACKLIGHT_PATH = Path("/sys/class/backlight")
 
 HIBERNATE_MODE = "hibernate"
 LOCK_MODE = "lock"
@@ -52,6 +54,19 @@ HandleLidSwitchExternalPower=ignore
 
 class Executor(Protocol):
     def __call__(self, command: list[str]) -> int: ...
+
+
+@dataclass(frozen=True)
+class BrightnessDevice:
+    name: str
+    current: int
+    maximum: int
+
+    @property
+    def percent(self) -> int:
+        if self.maximum <= 0:
+            return 0
+        return round((self.current / self.maximum) * 100)
 
 
 class CasePreservingConfigParser(configparser.ConfigParser):
@@ -109,6 +124,13 @@ def add_system_parser(
         description="Read the Archie-managed waybar theme.",
     )
     waybar_theme_get_parser.set_defaults(func=run_system_get)
+
+    brightness_get_parser = get_subparsers.add_parser(
+        "brightness",
+        help="Read screen brightness state.",
+        description="Read screen backlight brightness state.",
+    )
+    brightness_get_parser.set_defaults(func=run_system_get)
 
     set_parser = system_subparsers.add_parser(
         "set",
@@ -182,12 +204,22 @@ def add_system_parser(
     )
     waybar_theme_set_parser.set_defaults(func=run_system_set)
 
+    brightness_set_parser = set_subparsers.add_parser(
+        "brightness",
+        help="Change screen brightness.",
+        description="Change screen backlight brightness via brightnessctl.",
+    )
+    brightness_set_parser.add_argument("device", help="Backlight device name.")
+    brightness_set_parser.add_argument("percent", type=int, help="Brightness percentage from 0 to 100.")
+    brightness_set_parser.set_defaults(func=run_system_set)
+
 
 def run_system_get(
     args: argparse.Namespace,
     *,
     lid_close_conf_path: Path = LID_CLOSE_CONF_PATH,
     waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
+    backlight_path: Path = BACKLIGHT_PATH,
 ) -> int:
     match args.setting:
         case "lid-close-behavior":
@@ -204,6 +236,8 @@ def run_system_get(
         case "waybar-theme":
             print(detect_waybar_theme(waybar_theme_state_path))
             return 0
+        case "brightness":
+            return print_brightness_state(backlight_path)
         case _:
             print(
                 f"archie system get: unsupported setting: {args.setting}",
@@ -249,6 +283,8 @@ def run_system_set(
                 waybar_config_path=waybar_config_path,
                 waybar_style_path=waybar_style_path,
             )
+        case "brightness":
+            return set_brightness(args.device, args.percent, executor=execute)
         case _:
             print(
                 f"archie system set: unsupported setting: {args.setting}",
@@ -351,12 +387,11 @@ def set_notifications(value: str, *, executor: Executor | None = None) -> int:
 
 
 def detect_kdeconnect_state() -> str:
-    result = subprocess.run(
-        ["pgrep", "-x", "kdeconnectd"],
-        check=False,
-        capture_output=True,
-    )
-    return ON_VALUE if result.returncode == 0 else OFF_VALUE
+    if is_user_unit_active(KDECONNECT_AUTOSTART_UNIT):
+        return ON_VALUE
+    if is_user_unit_active(KDECONNECT_DBUS_UNIT_GLOB):
+        return ON_VALUE
+    return OFF_VALUE
 
 
 KDECONNECT_AUTOSTART_UNIT = "app-org.kde.kdeconnect.daemon@autostart.service"
@@ -364,6 +399,26 @@ KDECONNECT_AUTOSTART_UNIT = "app-org.kde.kdeconnect.daemon@autostart.service"
 # volatile bus-name instance (e.g. dbus-:1.2-org.kde.kdeconnect@2.service); match
 # it by glob so a plain pkill is not undone by systemd/D-Bus reactivating it.
 KDECONNECT_DBUS_UNIT_GLOB = "dbus-*org.kde.kdeconnect*.service"
+
+
+def is_user_unit_active(unit: str) -> bool:
+    try:
+        result = subprocess.run(
+            ["systemctl", "--user", "is-active", "--quiet", unit],
+            check=False,
+        )
+    except FileNotFoundError:
+        return is_process_running("kdeconnectd")
+    return result.returncode == 0
+
+
+def is_process_running(process_name: str) -> bool:
+    result = subprocess.run(
+        ["pgrep", "-x", process_name],
+        check=False,
+        capture_output=True,
+    )
+    return result.returncode == 0
 
 
 def set_kdeconnect(value: str) -> int:
@@ -443,6 +498,81 @@ def set_power_profile(value: str, *, executor: Executor | None = None) -> int:
             file=sys.stderr,
         )
         return 1
+
+
+# --- brightness ---
+
+
+def print_brightness_state(
+    backlight_path: Path = BACKLIGHT_PATH,
+) -> int:
+    try:
+        devices = detect_brightness_devices(backlight_path)
+    except FileNotFoundError:
+        print("archie system get brightness: no backlight devices found", file=sys.stderr)
+        return 0
+    except RuntimeError as error:
+        print(f"archie system get brightness: {error}", file=sys.stderr)
+        return 1
+    for device in devices:
+        print(format_brightness_device(device))
+    return 0
+
+
+def detect_brightness_devices(
+    backlight_path: Path = BACKLIGHT_PATH,
+) -> list[BrightnessDevice]:
+    device_names = list_backlight_device_names(backlight_path)
+    return [read_brightness_device(device_name) for device_name in device_names]
+
+
+def list_backlight_device_names(backlight_path: Path = BACKLIGHT_PATH) -> list[str]:
+    try:
+        return sorted(path.name for path in backlight_path.iterdir() if path.is_dir())
+    except FileNotFoundError:
+        raise FileNotFoundError("no backlight devices found") from None
+
+
+def read_brightness_device(device_name: str) -> BrightnessDevice:
+    current = run_brightnessctl_get(device_name, "get")
+    maximum = run_brightnessctl_get(device_name, "max")
+    return BrightnessDevice(name=device_name, current=current, maximum=maximum)
+
+
+def run_brightnessctl_get(device_name: str, operation: str) -> int:
+    try:
+        result = subprocess.run(
+            ["brightnessctl", "--device", device_name, operation],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        raise RuntimeError("brightnessctl not found") from None
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or f"brightnessctl {operation} failed for {device_name}")
+    try:
+        return int(result.stdout.strip())
+    except ValueError:
+        raise RuntimeError(f"invalid brightnessctl {operation} output for {device_name}: {result.stdout.strip()}") from None
+
+
+def format_brightness_device(device: BrightnessDevice) -> str:
+    return f"{device.name}\t{device.percent}\t{device.current}\t{device.maximum}"
+
+
+def clamp_brightness_percent(percent: int) -> int:
+    return max(0, min(100, percent))
+
+
+def set_brightness(
+    device_name: str,
+    percent: int,
+    *,
+    executor: Executor | None = None,
+) -> int:
+    execute = executor or execute_command
+    return execute(["brightnessctl", "--device", device_name, "set", f"{clamp_brightness_percent(percent)}%"])
 
 
 # --- waybar-theme ---

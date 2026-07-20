@@ -24,6 +24,10 @@
     font-weight: 700;
 }
 
+.archie-brightness-row {
+    min-height: 32px;
+}
+
 .archie-message-scroller {
     border: 1px solid alpha(currentColor, 0.35);
     border-radius: 6px;

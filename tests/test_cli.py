@@ -3,7 +3,13 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 
 from archie.cli import main
-from archie.gui import filter_documentation_rows, filter_shortcut_rows, parse_markdown_table
+from archie.gui import (
+    filter_documentation_rows,
+    filter_shortcut_rows,
+    parse_brightness_devices,
+    parse_markdown_table,
+    snap_brightness_percent,
+)
 
 
 class CliExposureTest(unittest.TestCase):
@@ -64,3 +70,21 @@ class ShellCommandMarkdownTest(unittest.TestCase):
 
         self.assertEqual(filter_documentation_rows(rows, "function"), [rows[1]])
         self.assertEqual(filter_documentation_rows(rows, "GGPUSH"), [rows[0]])
+
+
+class BrightnessGuiStateTest(unittest.TestCase):
+    def test_parse_brightness_devices_uses_tab_separated_cli_output(self) -> None:
+        devices = parse_brightness_devices("amdgpu_bl1\t71\t181\t255\n")
+
+        self.assertEqual(len(devices), 1)
+        self.assertEqual(devices[0].name, "amdgpu_bl1")
+        self.assertEqual(devices[0].percent, 71)
+        self.assertEqual(devices[0].current, 181)
+        self.assertEqual(devices[0].maximum, 255)
+
+    def test_snap_brightness_percent_uses_ten_percent_steps(self) -> None:
+        self.assertEqual(snap_brightness_percent(-1), 0)
+        self.assertEqual(snap_brightness_percent(14), 10)
+        self.assertEqual(snap_brightness_percent(15), 20)
+        self.assertEqual(snap_brightness_percent(25), 30)
+        self.assertEqual(snap_brightness_percent(103), 100)
