@@ -170,13 +170,13 @@ def add_system_parser(
 
     kdeconnect_set_parser = set_subparsers.add_parser(
         "kdeconnect",
-        help="Start or stop the KDE Connect daemon.",
-        description="Start or stop kdeconnectd and kdeconnect-indicator.",
+        help="Enable or disable KDE Connect backends.",
+        description="Enable or disable KDE Connect backends via kdeconnect-cli.",
     )
     kdeconnect_set_parser.add_argument(
         "value",
         choices=[ON_VALUE, OFF_VALUE],
-        help="Use on to start KDE Connect or off to stop it.",
+        help="Use on to enable KDE Connect backends or off to disable them.",
     )
     kdeconnect_set_parser.set_defaults(func=run_system_set)
 
@@ -387,59 +387,30 @@ def set_notifications(value: str, *, executor: Executor | None = None) -> int:
 
 
 def detect_kdeconnect_state() -> str:
-    if is_user_unit_active(KDECONNECT_AUTOSTART_UNIT):
-        return ON_VALUE
-    if is_user_unit_active(KDECONNECT_DBUS_UNIT_GLOB):
-        return ON_VALUE
+    try:
+        result = subprocess.run(
+            ["kdeconnect-cli", "-b"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0 and "enabled" in result.stdout:
+            return ON_VALUE
+    except FileNotFoundError:
+        pass
     return OFF_VALUE
 
 
-KDECONNECT_AUTOSTART_UNIT = "app-org.kde.kdeconnect.daemon@autostart.service"
-# kdeconnectd also runs as a transient D-Bus-activated unit whose name carries a
-# volatile bus-name instance (e.g. dbus-:1.2-org.kde.kdeconnect@2.service); match
-# it by glob so a plain pkill is not undone by systemd/D-Bus reactivating it.
-KDECONNECT_DBUS_UNIT_GLOB = "dbus-*org.kde.kdeconnect*.service"
-
-
-def is_user_unit_active(unit: str) -> bool:
-    try:
-        result = subprocess.run(
-            ["systemctl", "--user", "is-active", "--quiet", unit],
-            check=False,
-        )
-    except FileNotFoundError:
-        return is_process_running("kdeconnectd")
-    return result.returncode == 0
-
-
-def is_process_running(process_name: str) -> bool:
-    result = subprocess.run(
-        ["pgrep", "-x", process_name],
-        check=False,
-        capture_output=True,
-    )
-    return result.returncode == 0
+KDECONNECT_BACKENDS = ["lan", "bluetooth"]
 
 
 def set_kdeconnect(value: str) -> int:
-    if value == OFF_VALUE:
-        # kdeconnectd is systemd/D-Bus managed; killing the process alone is
-        # undone by reactivation. Stop both the autostart and the transient
-        # D-Bus-activated units so it actually stays down.
+    action = "--enable-backend" if value == ON_VALUE else "--disable-backend"
+    for backend in KDECONNECT_BACKENDS:
         subprocess.run(
-            ["systemctl", "--user", "stop", KDECONNECT_AUTOSTART_UNIT, KDECONNECT_DBUS_UNIT_GLOB],
+            ["kdeconnect-cli", action, backend],
             check=False,
         )
-        # The tray indicator is a plain app, not a unit. pkill -x cannot be used:
-        # comm is truncated to 15 chars so "kdeconnect-indicator" never matches by
-        # name; match the basename whether launched bare or by full path.
-        subprocess.run(["pkill", "-f", r"(^|/)kdeconnect-indicator( |$)"], check=False)
-        return 0
-    subprocess.run(
-        ["systemctl", "--user", "start", KDECONNECT_AUTOSTART_UNIT],
-        check=False,
-    )
-    _spawn_detached(["kdeconnect-indicator"])
     return 0
 
 

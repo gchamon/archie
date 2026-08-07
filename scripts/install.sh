@@ -33,6 +33,7 @@ ESSENTIAL_PACKAGES=(
     kdeconnect
     ksnip
     less
+    linux-lts-headers
     lsd
     man-db
     ncdu
@@ -748,7 +749,7 @@ apply_gtk_theme() {
 
 enable_system_services() {
     log_step "Enable system services"
-    run_sudo_cmd systemctl enable --now power-profiles-daemon.service
+    run_sudo_cmd systemctl enable power-profiles-daemon.service
 }
 
 print_manual_follow_up() {

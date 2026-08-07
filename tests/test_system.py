@@ -19,6 +19,7 @@ from archie.system import (
     clamp_brightness_percent,
     detect_lid_close_behavior,
     detect_kdeconnect_state,
+    set_kdeconnect,
     format_brightness_device,
     install_lid_close_behavior,
     list_backlight_device_names,
@@ -227,24 +228,41 @@ HandleLidSwitchExternalPower=hybrid-sleep
 
 
 class KdeconnectDetectionTest(unittest.TestCase):
-    def test_reports_on_when_autostart_unit_is_active(self) -> None:
+    def test_reports_on_when_backend_is_enabled(self) -> None:
         with patch("archie.system.subprocess.run") as run:
-            run.return_value = subprocess.CompletedProcess([], 0)
+            run.return_value = subprocess.CompletedProcess(
+                [], 0, stdout="Bluetooth|AsyncLinkProvider|enabled\nLAN|LanLinkProvider|enabled\n"
+            )
 
             self.assertEqual(detect_kdeconnect_state(), ON_VALUE)
 
             run.assert_called_once_with(
-                ["systemctl", "--user", "is-active", "--quiet", "app-org.kde.kdeconnect.daemon@autostart.service"],
+                ["kdeconnect-cli", "-b"],
                 check=False,
+                capture_output=True,
+                text=True,
             )
 
-    def test_reports_off_when_units_are_inactive_even_if_stale_process_exists(self) -> None:
+    def test_reports_off_when_backends_are_disabled(self) -> None:
         with patch("archie.system.subprocess.run") as run:
-            run.return_value = subprocess.CompletedProcess([], 3)
+            run.return_value = subprocess.CompletedProcess(
+                [], 0, stdout="Bluetooth|AsyncLinkProvider|disabled\nLAN|LanLinkProvider|disabled\n"
+            )
 
             self.assertEqual(detect_kdeconnect_state(), OFF_VALUE)
 
+    def test_set_kdeconnect_toggles_backends(self) -> None:
+        with patch("archie.system.subprocess.run") as run:
+            self.assertEqual(set_kdeconnect(ON_VALUE), 0)
             self.assertEqual(run.call_count, 2)
+            run.assert_any_call(["kdeconnect-cli", "--enable-backend", "lan"], check=False)
+            run.assert_any_call(["kdeconnect-cli", "--enable-backend", "bluetooth"], check=False)
+
+        with patch("archie.system.subprocess.run") as run:
+            self.assertEqual(set_kdeconnect(OFF_VALUE), 0)
+            self.assertEqual(run.call_count, 2)
+            run.assert_any_call(["kdeconnect-cli", "--disable-backend", "lan"], check=False)
+            run.assert_any_call(["kdeconnect-cli", "--disable-backend", "bluetooth"], check=False)
 
 
 class BrightnessCommandTest(unittest.TestCase):

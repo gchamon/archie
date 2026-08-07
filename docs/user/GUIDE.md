@@ -112,6 +112,7 @@ yay -S --needed \
   kdeconnect \
   ksnip \
   less \
+  linux-lts-headers \
   lsd \
   man-db \
   ncdu \
@@ -139,6 +140,9 @@ yay -S --needed \
 `polkit-kde-agent` provides the graphical authentication agent launched by
 Hyprland. Without it, admin GUI tools such as `gparted` can fail with `No
 authentication agent found`.
+
+`linux-lts-headers` provides the kernel headers needed to build modules and
+DKMS components for an installed `linux-lts` kernel.
 
 ---
 
