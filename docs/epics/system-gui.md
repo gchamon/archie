@@ -20,6 +20,8 @@ clear.
 - [system-gui-04-lid-close-policy-widget](/docs/work-items/system-gui-04-lid-close-policy-widget.md)
 - [system-gui-05-desktop-controls-and-applet](/docs/work-items/system-gui-05-desktop-controls-and-applet.md)
 - [system-gui-06-waybar-power-and-theme-controls](/docs/work-items/system-gui-06-waybar-power-and-theme-controls.md)
+- [system-gui-07-waybar-live-and-share-indicators](/docs/work-items/system-gui-07-waybar-live-and-share-indicators.md)
+- [system-gui-08-shy-mode-notification-privacy](/docs/work-items/system-gui-08-shy-mode-notification-privacy.md)
 
 ## Decision Changes
 
@@ -38,6 +40,9 @@ clear.
 - Waybar theme and power profile controls are tracked separately because they
   add managed assets and CLI state transitions that can be reused outside the
   GUI.
+- Shy mode is a manual privacy automation: it silences Dunst only while a
+  screen share is active, then replays the notifications it suppressed once
+  that share ends.
 
 ## Main Quests
 
@@ -50,6 +55,7 @@ clear.
 - Build the GTK desktop controls and tray applet for Archie-owned system
   settings.
 - Add managed Waybar theme switching and power profile controls.
+- Add a share-aware shy mode with CLI, GUI, and applet controls.
 
 ## Acceptance Criteria
 
@@ -73,3 +79,5 @@ system-gui
 - system-gui-04
 - system-gui-05
 - system-gui-06
+- system-gui-07
+- system-gui-08
