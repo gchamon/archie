@@ -10,6 +10,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from archie.gui import (
+    get_brightness_devices,
+    get_kdeconnect_state,
+    get_lid_behavior,
+    get_notifications_state,
+    get_power_profile,
+    get_waybar_theme,
+    parse_brightness_devices,
+)
+from archie.monitor import list_monitors
+
 logger = logging.getLogger(__name__)
 
 APPLET_ICON_RESOURCE = "assets/applet-icon.png"
@@ -123,6 +134,61 @@ DBUSMENU_XML = """
 """
 
 
+def format_tooltip() -> str:
+    """Return a complete, best-effort snapshot of Archie-controlled settings."""
+    lines = [format_brightness_tooltip(), format_monitors_tooltip()]
+    for label, getter in (
+        ("Lid close", get_lid_behavior),
+        ("Notifications", get_notifications_state),
+        ("KDE Connect", get_kdeconnect_state),
+        ("Power profile", get_power_profile),
+        ("Waybar theme", get_waybar_theme),
+    ):
+        lines.append(f"{label}: {read_tooltip_state(label, getter)}")
+    return "\n".join(lines)
+
+
+def format_brightness_tooltip() -> str:
+    try:
+        result = get_brightness_devices()
+        if result.returncode != 0:
+            return "Brightness: unknown"
+        devices = parse_brightness_devices(result.stdout)
+    except Exception:
+        logger.exception("could not read brightness state for tooltip")
+        return "Brightness: unknown"
+    if not devices:
+        return "Brightness: unavailable"
+    details = ", ".join(f"{device.name} {device.percent}%" for device in devices)
+    return f"Brightness: {details}"
+
+
+def format_monitors_tooltip() -> str:
+    try:
+        monitors = list_monitors()
+    except Exception:
+        logger.exception("could not read monitor state for tooltip")
+        return "Monitors: unknown"
+    if not monitors:
+        return "Monitors: unavailable"
+    details = ", ".join(
+        f"{monitor.name} {monitor.label}: "
+        f"{'enabled' if monitor.enabled else 'disabled'}"
+        f"{' (focused)' if monitor.focused else ''}"
+        for monitor in monitors
+    )
+    return f"Monitors: {details}"
+
+
+def read_tooltip_state(label: str, getter) -> str:
+    try:
+        state = getter().strip()
+    except Exception:
+        logger.exception("could not read %s state for tooltip", label)
+        return "unknown"
+    return state or "unknown"
+
+
 @dataclass
 class ArchieStatusNotifier:
     connection: Any
@@ -176,7 +242,7 @@ class ArchieStatusNotifier:
             "AttentionIconName": GLib.Variant("s", ""),
             "AttentionIconPixmap": GLib.Variant("a(iiay)", []),
             "AttentionMovieName": GLib.Variant("s", ""),
-            "ToolTip": GLib.Variant("(sa(iiay)ss)", ("", [], "Archie Controls", "System settings")),
+            "ToolTip": GLib.Variant("(sa(iiay)ss)", ("", [], "Archie Controls", format_tooltip())),
             "ItemIsMenu": GLib.Variant("b", False),
             "Menu": GLib.Variant("o", DBUSMENU_OBJECT_PATH),
         }

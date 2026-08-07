@@ -84,6 +84,7 @@ KEYRING_PACKAGES=(
 
 DEFAULT_P10K_PACKAGE="p10k-lean"
 DEFAULT_WAYBAR_THEME="cjbassi"
+WAYBAR_THEME_TO_APPLY="$DEFAULT_WAYBAR_THEME"
 GTK_THEME="Adwaita-dark"
 USER_STOW_BACKUP_ROOT="$HOME/archie-pre-stow-backup"
 SYSTEM_STOW_BACKUP_ROOT="/root/archie-pre-stow-backup"
@@ -117,6 +118,26 @@ apply_quickstart_env_defaults() {
     GTK_THEME="${ARCHIE_GTK_THEME:-Adwaita-dark}"
     USER_STOW_BACKUP_ROOT="${ARCHIE_USER_STOW_BACKUP_ROOT:-$HOME/archie-pre-stow-backup}"
     SYSTEM_STOW_BACKUP_ROOT="${ARCHIE_SYSTEM_STOW_BACKUP_ROOT:-/root/archie-pre-stow-backup}"
+}
+
+preserve_existing_waybar_theme() {
+    local theme_state_path="$HOME/.config/waybar/.archie-theme"
+    local existing_theme=""
+
+    if [[ ! -f "$theme_state_path" ]]; then
+        return
+    fi
+
+    existing_theme="$(<"$theme_state_path")"
+    case "$existing_theme" in
+        cjbassi|mechabar|tokyonight)
+            WAYBAR_THEME_TO_APPLY="$existing_theme"
+            log_info "Preserving existing Waybar theme: $WAYBAR_THEME_TO_APPLY"
+            ;;
+        *)
+            log_warn "Ignoring unsupported Waybar theme in $theme_state_path: ${existing_theme:-<empty>}"
+            ;;
+    esac
 }
 
 run_pacman_install() {
@@ -567,8 +588,8 @@ deploy_copy_deployed_file_sudo() {
     run_sudo_cmd install -m 0644 "$source_path" "$deployed_path"
 }
 
-seed_default_waybar_theme() {
-    log_step "Seed default Waybar theme"
+seed_waybar_theme() {
+    log_step "Seed Waybar theme"
 
     if ! command -v archie >/dev/null 2>&1; then
         log_warn "archie is not available; skipping Waybar theme seeding"
@@ -577,7 +598,7 @@ seed_default_waybar_theme() {
 
     run_cmd mkdir -p "$HOME/.config/waybar"
     run_cmd rm -f "$HOME/.config/waybar/config" "$HOME/.config/waybar/style.css"
-    run_cmd archie system set waybar-theme "$DEFAULT_WAYBAR_THEME"
+    run_cmd archie system set waybar-theme "$WAYBAR_THEME_TO_APPLY"
 }
 
 reload_logind_if_active() {
@@ -746,6 +767,7 @@ print_manual_follow_up() {
 main() {
     load_repo_env_file "$REPO_ROOT/.env.sh" 'ARCHIE_*'
     apply_quickstart_env_defaults
+    preserve_existing_waybar_theme
     install_base_packages
     bootstrap_checkout_if_needed
     bootstrap_yay
@@ -757,7 +779,7 @@ main() {
     install_keyring_packages
     backup_existing_stow_targets
     deploy_stow_packages
-    seed_default_waybar_theme
+    seed_waybar_theme
     deploy_copy_deployed_files
     scaffold_local_files
     ensure_required_home_folders
