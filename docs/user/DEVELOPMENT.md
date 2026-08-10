@@ -7,6 +7,7 @@ containerization and virtualization running.
 
 - [Containers and Virtual Machines](#containers-and-virtual-machines)
     - [LazyVim](#lazyvim)
+  - [Python development](#python-development)
   - [Git config](#git-config)
     - [git-delta](#git-delta)
   - [Repository hosting](#repository-hosting)
@@ -40,6 +41,19 @@ It's more convenient to install from nix official scripts than with arch native
 package manager to avoid permission issues in neovim.
 
 In LazyVim, `:LazyExtras` then install `mini-surround`.
+
+## Python development
+
+Run the Python verification suite after implementing changes:
+
+```bash
+uv run pytest
+uv run pyright src tests
+uv run ruff check src tests
+```
+
+The project-managed `uv` environment provides all three tools; do not rely on
+globally installed versions.
 
 ## Git config
 

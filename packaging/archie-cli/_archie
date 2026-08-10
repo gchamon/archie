@@ -1,7 +1,7 @@
 #compdef archie
 
 _archie() {
-  local -a commands actions settings behaviors global_options downgrade_options
+  local -a commands actions get_settings set_settings behaviors global_options status_options downgrade_options
 
   commands=(
     'downgrade:Resolve Arch Linux Archive package URLs for pacman -U'
@@ -9,10 +9,28 @@ _archie() {
   )
   actions=(
     'get:Read an Archie-owned system setting'
+    'status:Summarize current system status'
     'set:Change an Archie-owned system setting'
   )
-  settings=(
+  get_settings=(
+    'lid-close-behavior:Read lid close behavior'
+    'notifications:Read dunst notification state'
+    'shy-mode:Read shy mode notification privacy settings'
+    'share-state:Read screen-share state'
+    'kdeconnect:Read KDE Connect daemon state'
+    'power-profile:Read active power profile'
+    'waybar-theme:Read active Waybar theme'
+    'brightness:Read screen brightness state'
+    'monitors:Read Hyprland monitor state'
+  )
+  set_settings=(
     'lid-close-behavior:Manage lid close behavior'
+    'notifications:Manage dunst notification state'
+    'shy-mode:Manage shy mode notification privacy'
+    'kdeconnect:Manage KDE Connect backends'
+    'power-profile:Manage active power profile'
+    'waybar-theme:Manage active Waybar theme'
+    'brightness:Manage screen brightness'
   )
   behaviors=(
     'hibernate:Use systemd-logind hybrid-sleep'
@@ -22,6 +40,11 @@ _archie() {
   global_options=(
     '--help:show help and exit'
     '--help-all:show all commands hierarchically and exit'
+  )
+  status_options=(
+    '--help:show help and exit'
+    '(-f --format -j --json)'{-f,--format}'[output format]:format:(table json)'
+    '(-f --format -j --json)'{-j,--json}'[render as JSON]'
   )
   downgrade_options=(
     '--help:show help and exit'
@@ -35,6 +58,13 @@ _archie() {
     case "$words[2]" in
       downgrade)
         _describe -t options 'downgrade option' downgrade_options
+        ;;
+      system)
+        if [[ "$words[3]" == status ]]; then
+          _describe -t options 'system status option' status_options
+        else
+          _describe -t options 'archie option' global_options
+        fi
         ;;
       *)
         _describe -t options 'archie option' global_options
@@ -51,10 +81,10 @@ _archie() {
       _describe -t actions 'system action' actions
       ;;
     4:system:get:*)
-      _describe -t settings 'system setting' settings
+      _describe -t settings 'system setting' get_settings
       ;;
     4:system:set:*)
-      _describe -t settings 'system setting' settings
+      _describe -t settings 'system setting' set_settings
       ;;
     5:system:set:lid-close-behavior)
       _describe -t behaviors 'lid close behavior' behaviors

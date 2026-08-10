@@ -47,6 +47,12 @@ cd archie
 ./scripts/install.sh
 ```
 
+To rebuild only the Archie command-line package from an existing checkout:
+
+```bash
+./scripts/install-archie-cli.sh
+```
+
 Quickstart-specific environment variables are documented in
 [`../../.env.dist.sh`](../../.env.dist.sh). Copy it to `.env.sh` in the repo
 root, edit the values you want, and quickstart will load that file

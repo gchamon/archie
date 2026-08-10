@@ -18,6 +18,7 @@ from archie.system import (
     POWER_PROFILES,
     WAYBAR_THEMES,
 )
+from archie.privacy import ShyModeSettings
 
 LID_BEHAVIORS = [HIBERNATE_MODE, LOCK_MODE, NONE_MODE]
 TOGGLE_VALUES = [ON_VALUE, OFF_VALUE]
@@ -104,6 +105,13 @@ class ArchieControlsWindow:
         self.notifications_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.notifications_box.add_css_class("archie-lid-segments")
         self.notifications_box.add_css_class("linked")
+        self.shy_mode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.shy_mode_box.add_css_class("archie-lid-segments")
+        self.shy_mode_box.add_css_class("linked")
+        self.shy_mode_status = Gtk.Label()
+        self.shy_mode_status.set_xalign(0)
+        self.shy_mode_status.set_wrap(True)
+        self.shy_mode_status.set_sensitive(False)
         self.kdeconnect_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.kdeconnect_box.add_css_class("archie-lid-segments")
         self.kdeconnect_box.add_css_class("linked")
@@ -139,7 +147,8 @@ class ArchieControlsWindow:
         self.install_css()
         self.window.set_child(self.build_content())
         self._install_copy_shortcut()
-        self.refresh()
+        self.set_status("Loading system settings…")
+        self.GLib.timeout_add(50, self.refresh)
 
     def present(self) -> None:
         self.window.present()
@@ -199,6 +208,12 @@ class ArchieControlsWindow:
         notifications_label.set_xalign(0)
         options.append(notifications_label)
         options.append(self.notifications_box)
+
+        shy_mode_label = Gtk.Label(label="Shy mode:")
+        shy_mode_label.set_xalign(0)
+        options.append(shy_mode_label)
+        options.append(self.shy_mode_box)
+        options.append(self.shy_mode_status)
 
         kdeconnect_label = Gtk.Label(label="KDE Connect:")
         kdeconnect_label.set_xalign(0)
@@ -320,11 +335,12 @@ class ArchieControlsWindow:
         self.clear_box(content)
         self.render_documentation_tables(markdown, content, search_entry.get_text())
 
-    def refresh(self) -> None:
+    def refresh(self) -> bool:
         self.clear_box(self.brightness_box)
         self.clear_box(self.monitor_box)
         self.clear_box(self.lid_box)
         self.clear_box(self.notifications_box)
+        self.clear_box(self.shy_mode_box)
         self.clear_box(self.kdeconnect_box)
         self.clear_box(self.power_profile_box)
         self.clear_box(self.waybar_theme_box)
@@ -336,9 +352,11 @@ class ArchieControlsWindow:
             self.set_status(f"Monitor error: {error}")
         self.render_lid_behavior()
         self.render_notifications()
+        self.render_shy_mode()
         self.render_kdeconnect()
         self.render_power_profile()
         self.render_waybar_theme()
+        return False
 
     def render_monitors(self) -> None:
         for monitor in self.monitors:
@@ -505,6 +523,15 @@ class ArchieControlsWindow:
         active = get_notifications_state()
         self.render_toggle_row(self.notifications_box, active, self.on_notifications_clicked)
 
+    def render_shy_mode(self) -> None:
+        settings = get_shy_mode_settings()
+        active = ON_VALUE if settings.enabled else OFF_VALUE
+        self.render_toggle_row(self.shy_mode_box, active, self.on_shy_mode_clicked)
+        self.shy_mode_status.set_label(
+            "Pauses notifications during screen sharing; recalls up to "
+            f"{settings.replay_count} at {settings.replay_interval:g}s intervals."
+        )
+
     def render_kdeconnect(self) -> None:
         active = get_kdeconnect_state()
         self.render_toggle_row(self.kdeconnect_box, active, self.on_kdeconnect_clicked)
@@ -525,6 +552,15 @@ class ArchieControlsWindow:
             self.set_status(f"Failed to set notifications: {result.stderr.strip()}")
         self.clear_box(self.notifications_box)
         self.render_notifications()
+
+    def on_shy_mode_clicked(self, _button, value: str) -> None:
+        result = run_cli(["archie", "system", "set", "shy-mode", value])
+        if result.returncode == 0:
+            self.set_status(f"Shy mode set to {value}.")
+        else:
+            self.set_status(f"Failed to set shy mode: {result.stderr.strip()}")
+        self.clear_box(self.shy_mode_box)
+        self.render_shy_mode()
 
     def on_kdeconnect_clicked(self, _button, value: str) -> None:
         result = run_cli(["archie", "system", "set", "kdeconnect", value])
@@ -696,6 +732,25 @@ def get_notifications_state() -> str:
     if result.returncode != 0:
         return "unknown"
     return result.stdout.strip()
+
+
+def get_shy_mode_settings() -> ShyModeSettings:
+    result = run_cli(["archie", "system", "get", "shy-mode"])
+    if result.returncode != 0:
+        return ShyModeSettings()
+    values = dict(
+        line.split(": ", 1)
+        for line in result.stdout.splitlines()
+        if ": " in line
+    )
+    try:
+        return ShyModeSettings(
+            enabled=values.get("enabled") == ON_VALUE,
+            replay_count=int(values["replay-count"]),
+            replay_interval=float(values["replay-interval"].removesuffix("s")),
+        )
+    except (KeyError, ValueError):
+        return ShyModeSettings()
 
 
 def get_kdeconnect_state() -> str:

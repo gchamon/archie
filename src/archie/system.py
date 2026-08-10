@@ -1,12 +1,25 @@
 import argparse
 import configparser
 import importlib.resources
+import json
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Callable, Protocol
+
+from archie.monitor import MonitorOutput, list_monitors_quiet
+
+from archie.privacy import (
+    DEFAULT_DUNST_HISTORY_LIMIT,
+    ShyModeSettings,
+    detect_share_active,
+    format_shy_mode_settings,
+    load_shy_mode_settings,
+    save_shy_mode_settings,
+)
 
 LID_CLOSE_CONF_PATH = Path("/etc/systemd/logind.conf.d/lid-close.conf")
 WAYBAR_THEME_STATE_PATH = Path.home() / ".config/waybar/.archie-theme"
@@ -31,6 +44,18 @@ DEFAULT_THEME = "cjbassi"
 MECHABAR_THEME = "mechabar"
 TOKYONIGHT_THEME = "tokyonight"
 WAYBAR_THEMES = [DEFAULT_THEME, MECHABAR_THEME, TOKYONIGHT_THEME]
+
+SYSTEM_STATUS_SETTINGS = [
+    "lid-close-behavior",
+    "notifications",
+    "shy-mode",
+    "share-state",
+    "kdeconnect",
+    "power-profile",
+    "waybar-theme",
+    "brightness",
+    "monitors",
+]
 
 LID_CLOSE_CONTENT_BY_MODE = {
     HIBERNATE_MODE: """[Login]
@@ -87,50 +112,47 @@ def add_system_parser(
     get_parser = system_subparsers.add_parser(
         "get",
         help="Read an Archie-owned system setting.",
+        description="Read an Archie-owned system setting.",
     )
     get_subparsers = get_parser.add_subparsers(dest="setting", required=True)
+    for setting, help_text, description in (
+        ("lid-close-behavior", "Read lid close behavior.", "Read Archie-managed lid close behavior."),
+        ("notifications", "Read dunst notification state.", "Read whether dunst notifications are on or off."),
+        ("shy-mode", "Read shy mode notification privacy settings.", "Read Archie-managed shy mode and replay settings."),
+        ("share-state", "Read the managed screen-share state.", "Read whether the managed Hyprland portal is sharing a screen."),
+        ("kdeconnect", "Read KDE Connect daemon state.", "Read whether the KDE Connect daemon is running."),
+        ("power-profile", "Read the active power profile.", "Read the active power profile via power-profiles-daemon."),
+        ("waybar-theme", "Read the active waybar theme.", "Read the Archie-managed waybar theme."),
+        ("brightness", "Read screen brightness state.", "Read screen backlight brightness state."),
+    ):
+        setting_parser = get_subparsers.add_parser(
+            setting,
+            help=help_text,
+            description=description,
+        )
+        setting_parser.set_defaults(func=run_system_get)
 
-    lid_get_parser = get_subparsers.add_parser(
-        "lid-close-behavior",
-        help="Read lid close behavior.",
-        description="Read Archie-managed lid close behavior.",
+    status_parser = system_subparsers.add_parser(
+        "status",
+        help="Summarize current system status.",
+        description="Print the same best-effort system summary used by the Archie applet.",
     )
-    lid_get_parser.set_defaults(func=run_system_get)
-
-    notifications_get_parser = get_subparsers.add_parser(
-        "notifications",
-        help="Read dunst notification state.",
-        description="Read whether dunst notifications are on or off.",
+    status_parser.add_argument(
+        "-f",
+        "--format",
+        choices=("table", "json"),
+        default="table",
+        help="Render as a human-readable table or JSON object (default: table).",
     )
-    notifications_get_parser.set_defaults(func=run_system_get)
-
-    kdeconnect_get_parser = get_subparsers.add_parser(
-        "kdeconnect",
-        help="Read KDE Connect daemon state.",
-        description="Read whether the KDE Connect daemon is running.",
+    status_parser.add_argument(
+        "-j",
+        "--json",
+        action="store_const",
+        const="json",
+        dest="format",
+        help="Alias for --format json.",
     )
-    kdeconnect_get_parser.set_defaults(func=run_system_get)
-
-    power_profile_get_parser = get_subparsers.add_parser(
-        "power-profile",
-        help="Read the active power profile.",
-        description="Read the active power profile via power-profiles-daemon.",
-    )
-    power_profile_get_parser.set_defaults(func=run_system_get)
-
-    waybar_theme_get_parser = get_subparsers.add_parser(
-        "waybar-theme",
-        help="Read the active waybar theme.",
-        description="Read the Archie-managed waybar theme.",
-    )
-    waybar_theme_get_parser.set_defaults(func=run_system_get)
-
-    brightness_get_parser = get_subparsers.add_parser(
-        "brightness",
-        help="Read screen brightness state.",
-        description="Read screen backlight brightness state.",
-    )
-    brightness_get_parser.set_defaults(func=run_system_get)
+    status_parser.set_defaults(func=run_system_status)
 
     set_parser = system_subparsers.add_parser(
         "set",
@@ -167,6 +189,31 @@ def add_system_parser(
         help="Use on to resume notifications or off to pause them.",
     )
     notifications_set_parser.set_defaults(func=run_system_set)
+
+    shy_mode_set_parser = set_subparsers.add_parser(
+        "shy-mode",
+        help="Enable or disable shy mode notification privacy.",
+        description="Persist Archie shy mode and its notification replay behavior.",
+    )
+    shy_mode_set_parser.add_argument(
+        "value",
+        choices=[ON_VALUE, OFF_VALUE],
+        help="Use on to guard screen shares or off to disable shy mode.",
+    )
+    shy_mode_set_parser.add_argument(
+        "--replay-count",
+        type=int,
+        choices=range(1, DEFAULT_DUNST_HISTORY_LIMIT + 1),
+        metavar=f"1-{DEFAULT_DUNST_HISTORY_LIMIT}",
+        help="Recall at most this many notifications after sharing ends.",
+    )
+    shy_mode_set_parser.add_argument(
+        "--replay-interval",
+        type=positive_float,
+        metavar="SECONDS",
+        help="Wait this many seconds between recalled notifications.",
+    )
+    shy_mode_set_parser.set_defaults(func=run_system_set)
 
     kdeconnect_set_parser = set_subparsers.add_parser(
         "kdeconnect",
@@ -220,6 +267,7 @@ def run_system_get(
     lid_close_conf_path: Path = LID_CLOSE_CONF_PATH,
     waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
     backlight_path: Path = BACKLIGHT_PATH,
+    shy_mode_path: Path | None = None,
 ) -> int:
     match args.setting:
         case "lid-close-behavior":
@@ -227,6 +275,12 @@ def run_system_get(
             return 0
         case "notifications":
             print(detect_notifications_state())
+            return 0
+        case "shy-mode":
+            print(format_shy_mode_settings(load_shy_mode_settings(shy_mode_path)))
+            return 0
+        case "share-state":
+            print(ON_VALUE if detect_share_active() else OFF_VALUE)
             return 0
         case "kdeconnect":
             print(detect_kdeconnect_state())
@@ -246,6 +300,140 @@ def run_system_get(
             return 2
 
 
+def collect_system_status(
+    *,
+    lid_close_conf_path: Path = LID_CLOSE_CONF_PATH,
+    waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
+    backlight_path: Path = BACKLIGHT_PATH,
+    shy_mode_path: Path | None = None,
+) -> tuple[dict[str, object], dict[str, str]]:
+    readers: dict[str, Callable[[], object]] = {
+        "lid-close-behavior": lambda: detect_lid_close_behavior(lid_close_conf_path),
+        "notifications": detect_notifications_state,
+        "shy-mode": lambda: ON_VALUE if load_shy_mode_settings(shy_mode_path).enabled else OFF_VALUE,
+        "share-state": lambda: ON_VALUE if detect_share_active() else OFF_VALUE,
+        "kdeconnect": detect_kdeconnect_state,
+        "power-profile": read_power_profile,
+        "waybar-theme": lambda: detect_waybar_theme(waybar_theme_state_path),
+        "brightness": lambda: [
+            asdict(device) | {"percent": device.percent}
+            for device in detect_brightness_devices(backlight_path)
+        ],
+        "monitors": lambda: [
+            serialize_monitor(monitor) for monitor in list_monitors_quiet()
+        ],
+    }
+    values: dict[str, object] = {}
+    errors: dict[str, str] = {}
+    with ThreadPoolExecutor(max_workers=len(SYSTEM_STATUS_SETTINGS)) as executor:
+        futures = {
+            executor.submit(readers[setting]): setting
+            for setting in SYSTEM_STATUS_SETTINGS
+        }
+        for future in as_completed(futures):
+            setting = futures[future]
+            try:
+                values[setting] = future.result()
+            except Exception as error:
+                errors[setting] = str(error) or error.__class__.__name__
+    return (
+        {setting: values[setting] for setting in SYSTEM_STATUS_SETTINGS if setting in values},
+        {setting: errors[setting] for setting in SYSTEM_STATUS_SETTINGS if setting in errors},
+    )
+
+
+def serialize_monitor(monitor: MonitorOutput) -> dict[str, object]:
+    return asdict(monitor) | {"enabled": monitor.enabled, "label": monitor.label}
+
+
+def format_system_status(
+    values: dict[str, object], *, shy_mode_status: str | None = None
+) -> str:
+    shy_status = shy_mode_status or format_status_value(values.get("shy-mode"))
+    return "\n".join(
+        (
+            "Hardware",
+            f"  {format_brightness_status(values)}",
+            f"  {format_monitors_status(values)}",
+            "",
+            "Desktop",
+            f"  Lid close: {format_status_value(values.get('lid-close-behavior'))}",
+            f"  KDE Connect: {format_status_value(values.get('kdeconnect'))}",
+            f"  Power profile: {format_status_value(values.get('power-profile'))}",
+            f"  Waybar theme: {format_status_value(values.get('waybar-theme'))}",
+            "",
+            "Privacy",
+            f"  Notifications: {format_status_value(values.get('notifications'))}",
+            f"  Shy mode: {shy_status}",
+            f"  Share: {format_status_value(values.get('share-state'))}",
+        )
+    )
+
+
+def format_system_status_json(values: dict[str, object]) -> str:
+    status = {
+        setting: values.get(setting, UNKNOWN_MODE)
+        for setting in SYSTEM_STATUS_SETTINGS
+    }
+    return json.dumps(status, indent=2)
+
+
+def format_brightness_status(values: dict[str, object]) -> str:
+    devices = values.get("brightness")
+    if not isinstance(devices, list):
+        return "Brightness: unknown"
+    if not devices:
+        return "Brightness: unavailable"
+    details = ", ".join(
+        f"{device.get('name', 'unknown')} {device.get('percent', 'unknown')}%"
+        for device in devices
+        if isinstance(device, dict)
+    )
+    return f"Brightness: {details}" if details else "Brightness: unknown"
+
+
+def format_monitors_status(values: dict[str, object]) -> str:
+    monitors = values.get("monitors")
+    if not isinstance(monitors, list):
+        return "Monitors: unknown"
+    if not monitors:
+        return "Monitors: unavailable"
+    details = ", ".join(
+        f"{monitor.get('name', 'unknown')} "
+        f"{monitor.get('label', monitor.get('name', 'unknown'))}: "
+        f"{'enabled' if monitor.get('enabled') else 'disabled'}"
+        f"{' (focused)' if monitor.get('focused') else ''}"
+        for monitor in monitors
+        if isinstance(monitor, dict)
+    )
+    return f"Monitors: {details}" if details else "Monitors: unknown"
+
+
+def format_status_value(value: object) -> str:
+    return value.strip() if isinstance(value, str) and value.strip() else UNKNOWN_MODE
+
+
+def run_system_status(
+    args: argparse.Namespace,
+    *,
+    lid_close_conf_path: Path = LID_CLOSE_CONF_PATH,
+    waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
+    backlight_path: Path = BACKLIGHT_PATH,
+    shy_mode_path: Path | None = None,
+) -> int:
+    values, _errors = collect_system_status(
+        lid_close_conf_path=lid_close_conf_path,
+        waybar_theme_state_path=waybar_theme_state_path,
+        backlight_path=backlight_path,
+        shy_mode_path=shy_mode_path,
+    )
+    if getattr(args, "format", "table") == "json":
+        print(format_system_status_json(values))
+    else:
+        print(format_system_status(values))
+    return 0
+
+
 def run_system_set(
     args: argparse.Namespace,
     *,
@@ -253,6 +441,7 @@ def run_system_set(
     waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
     waybar_config_path: Path = WAYBAR_CONFIG_PATH,
     waybar_style_path: Path = WAYBAR_STYLE_PATH,
+    shy_mode_path: Path | None = None,
     executor: Executor | None = None,
 ) -> int:
     execute = executor or execute_command
@@ -272,6 +461,15 @@ def run_system_set(
             return reload_logind_if_active(executor=execute)
         case "notifications":
             return set_notifications(args.value, executor=execute)
+        case "shy-mode":
+            current = load_shy_mode_settings(shy_mode_path)
+            settings = ShyModeSettings(
+                enabled=args.value == ON_VALUE,
+                replay_count=args.replay_count or current.replay_count,
+                replay_interval=args.replay_interval or current.replay_interval,
+            )
+            save_shy_mode_settings(settings, shy_mode_path)
+            return 0
         case "kdeconnect":
             return set_kdeconnect(args.value)
         case "power-profile":
@@ -437,6 +635,15 @@ def _spawn_detached(command: list[str]) -> None:
 
 def detect_power_profile() -> int:
     try:
+        print(read_power_profile())
+    except RuntimeError as error:
+        print(f"archie system get power-profile: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def read_power_profile() -> str:
+    try:
         result = subprocess.run(
             ["powerprofilesctl", "get"],
             check=False,
@@ -444,16 +651,10 @@ def detect_power_profile() -> int:
             text=True,
         )
     except FileNotFoundError:
-        print("unavailable", file=sys.stderr)
-        print(UNKNOWN_MODE)
-        return 0
+        return UNKNOWN_MODE
     if result.returncode != 0:
-        print(
-            f"archie system get power-profile: {result.stderr.strip()}", file=sys.stderr
-        )
-        return result.returncode
-    print(result.stdout.strip())
-    return 0
+        raise RuntimeError(result.stderr.strip() or "powerprofilesctl get failed")
+    return result.stdout.strip() or UNKNOWN_MODE
 
 
 def set_power_profile(value: str, *, executor: Executor | None = None) -> int:
@@ -596,3 +797,10 @@ def set_waybar_theme(
 
 def execute_command(command: list[str]) -> int:
     return subprocess.run(command, check=False).returncode
+
+
+def positive_float(value: str) -> float:
+    parsed = float(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be greater than zero")
+    return parsed

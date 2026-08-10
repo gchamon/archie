@@ -95,6 +95,22 @@ def list_monitors() -> list[MonitorOutput]:
     return parse_monitors_json(result.stdout)
 
 
+def list_monitors_quiet() -> list[MonitorOutput]:
+    """Return monitor state without emitting command diagnostics to stdout."""
+    try:
+        completed = subprocess.run(
+            ["hyprctl", "-j", "monitors", "all"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError as error:
+        raise RuntimeError("hyprctl not found") from error
+    if completed.returncode != 0:
+        raise RuntimeError(completed.stderr.strip() or "hyprctl monitors failed")
+    return parse_monitors_json(completed.stdout)
+
+
 def enabled_monitors(monitors: Sequence[MonitorOutput]) -> list[MonitorOutput]:
     return [monitor for monitor in monitors if monitor.enabled]
 
