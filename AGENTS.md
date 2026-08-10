@@ -56,13 +56,19 @@ This repository contains the complete configuration for "Archie", a Hyprland-bas
 ### Linting & Validation
 
 - **Shell Scripts**: `shellcheck <path/to/script.sh>`
+- **Python Lint**: `uv run ruff check src tests`
+- **Python Types**: `uv run pyright src tests`
 - **Neovim Health**: `:checkhealth` (inside nvim)
 - **Neovim Plugins**: `:Lazy sync` (install/update plugins)
 - **Waybar Config**: `waybar` (run from terminal to see error output)
 
 ### Test Execution
 
-There are no formal unit tests in this repository. Verification is performed by reloading the respective service:
+Run `uv run pytest` after Python changes. As in Buzz, use `uv run pytest`,
+`uv run pyright src tests`, and `uv run ruff check src tests` to verify Python
+changes before finishing.
+
+Configuration verification is performed by reloading the respective service:
 
 - **Hyprland**: `hyprctl reload`
 - **Waybar**: Kill and restart (handled by `hypr/scripts/launch-waybar.sh`)

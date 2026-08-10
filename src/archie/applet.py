@@ -5,25 +5,30 @@ import logging.handlers
 import os
 import signal
 import subprocess
+import threading
+import time
 from contextlib import ExitStack
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from archie.gui import (
-    get_brightness_devices,
-    get_kdeconnect_state,
-    get_lid_behavior,
-    get_notifications_state,
-    get_power_profile,
-    get_waybar_theme,
-    parse_brightness_devices,
+from archie.privacy import (
+    DunstClient,
+    ShyModeController,
+    ShyModeSettings,
+    ShyModeViewState,
+    detect_share_active,
+    load_shy_mode_settings,
 )
-from archie.monitor import list_monitors
+from archie.system import collect_system_status, format_system_status
 
 logger = logging.getLogger(__name__)
 
 APPLET_ICON_RESOURCE = "assets/applet-icon.png"
+APPLET_BADGE_RESOURCES = {
+    color: f"assets/applet-icon-badge-{color}.png"
+    for color in ("orange", "green", "red", "yellow", "blue")
+}
 SNI_BUS_NAME = "org.kde.StatusNotifierWatcher"
 SNI_WATCHER_PATH = "/StatusNotifierWatcher"
 SNI_WATCHER_INTERFACE = "org.kde.StatusNotifierWatcher"
@@ -70,6 +75,8 @@ SNI_XML = """
     <property name="ToolTip" type="(sa(iiay)ss)" access="read"/>
     <property name="ItemIsMenu" type="b" access="read"/>
     <property name="Menu" type="o" access="read"/>
+    <signal name="NewIcon"/>
+    <signal name="NewToolTip"/>
   </interface>
 </node>
 """
@@ -134,66 +141,72 @@ DBUSMENU_XML = """
 """
 
 
-def format_tooltip() -> str:
+def format_tooltip(
+    snapshot: dict[str, object] | None = None,
+    shy_state: ShyModeViewState | None = None,
+    *,
+    privacy_ready: bool = True,
+) -> str:
     """Return a complete, best-effort snapshot of Archie-controlled settings."""
-    lines = [format_brightness_tooltip(), format_monitors_tooltip()]
-    for label, getter in (
-        ("Lid close", get_lid_behavior),
-        ("Notifications", get_notifications_state),
-        ("KDE Connect", get_kdeconnect_state),
-        ("Power profile", get_power_profile),
-        ("Waybar theme", get_waybar_theme),
-    ):
-        lines.append(f"{label}: {read_tooltip_state(label, getter)}")
-    return "\n".join(lines)
-
-
-def format_brightness_tooltip() -> str:
-    try:
-        result = get_brightness_devices()
-        if result.returncode != 0:
-            return "Brightness: unknown"
-        devices = parse_brightness_devices(result.stdout)
-    except Exception:
-        logger.exception("could not read brightness state for tooltip")
-        return "Brightness: unknown"
-    if not devices:
-        return "Brightness: unavailable"
-    details = ", ".join(f"{device.name} {device.percent}%" for device in devices)
-    return f"Brightness: {details}"
-
-
-def format_monitors_tooltip() -> str:
-    try:
-        monitors = list_monitors()
-    except Exception:
-        logger.exception("could not read monitor state for tooltip")
-        return "Monitors: unknown"
-    if not monitors:
-        return "Monitors: unavailable"
-    details = ", ".join(
-        f"{monitor.name} {monitor.label}: "
-        f"{'enabled' if monitor.enabled else 'disabled'}"
-        f"{' (focused)' if monitor.focused else ''}"
-        for monitor in monitors
+    values = dict(snapshot or {})
+    if privacy_ready and shy_state is not None:
+        values["share-state"] = "on" if shy_state.sharing else "off"
+    status = (
+        "starting privacy monitor…"
+        if not privacy_ready
+        else format_shy_mode_status(shy_state)
     )
-    return f"Monitors: {details}"
+    return format_system_status(values, shy_mode_status=status)
 
 
-def read_tooltip_state(label: str, getter) -> str:
-    try:
-        state = getter().strip()
-    except Exception:
-        logger.exception("could not read %s state for tooltip", label)
-        return "unknown"
-    return state or "unknown"
+def format_shy_mode_status(state: ShyModeViewState | None = None) -> str:
+    current = state
+    if current is None:
+        settings = load_shy_mode_settings()
+        return format_configured_shy_mode(settings)
+    if not current.enabled:
+        return "off"
+    if current.sharing and current.owns_pause and current.pending:
+        return "on, sharing; notifications pending"
+    if current.sharing and current.owns_pause:
+        return "on, guarding active share"
+    if current.replaying:
+        return "on, replaying missed notifications"
+    if current.pending:
+        return "on, notifications pending"
+    return "on, ready"
+
+
+def format_configured_shy_mode(settings: ShyModeSettings) -> str:
+    if not settings.enabled:
+        return "off"
+    return (
+        f"on, replay {settings.replay_count} at "
+        f"{settings.replay_interval:g}s intervals"
+    )
+
+
+def select_applet_icon(state: ShyModeViewState) -> str:
+    return "orange" if state.pending else "base"
+
+
+def load_applet_snapshot() -> dict[str, object]:
+    snapshot, _errors = collect_system_status()
+    return snapshot
 
 
 @dataclass
 class ArchieStatusNotifier:
     connection: Any
-    icon_pixmap: Any
+    icon_pixmaps: dict[str, Any]
+    controller: ShyModeController
     revision: int = 0
+    shy_state: ShyModeViewState = field(
+        default_factory=lambda: ShyModeViewState(False, False, False, False, False)
+    )
+    snapshot: dict[str, object] = field(default_factory=dict)
+    privacy_ready: bool = False
+    privacy_refresh_in_progress: bool = False
 
     def on_method_call(
         self,
@@ -229,6 +242,7 @@ class ArchieStatusNotifier:
         gi.require_version("GLib", "2.0")
         from gi.repository import GLib  # type: ignore[attr-defined]
 
+        icon_pixmap = self.icon_pixmaps[select_applet_icon(self.shy_state)]
         values = {
             "Category": GLib.Variant("s", "Hardware"),
             "Id": GLib.Variant("s", "archie"),
@@ -236,13 +250,21 @@ class ArchieStatusNotifier:
             "Status": GLib.Variant("s", "Active"),
             "WindowId": GLib.Variant("i", 0),
             "IconName": GLib.Variant("s", "archie-controls"),
-            "IconPixmap": self.icon_pixmap,
+            "IconPixmap": icon_pixmap,
             "OverlayIconName": GLib.Variant("s", ""),
             "OverlayIconPixmap": GLib.Variant("a(iiay)", []),
             "AttentionIconName": GLib.Variant("s", ""),
             "AttentionIconPixmap": GLib.Variant("a(iiay)", []),
             "AttentionMovieName": GLib.Variant("s", ""),
-            "ToolTip": GLib.Variant("(sa(iiay)ss)", ("", [], "Archie Controls", format_tooltip())),
+            "ToolTip": GLib.Variant(
+                "(sa(iiay)ss)",
+                (
+                    "",
+                    [],
+                    "Archie Controls",
+                    format_tooltip(self.snapshot, self.shy_state, privacy_ready=self.privacy_ready),
+                ),
+            ),
             "ItemIsMenu": GLib.Variant("b", False),
             "Menu": GLib.Variant("o", DBUSMENU_OBJECT_PATH),
         }
@@ -296,7 +318,11 @@ class ArchieStatusNotifier:
             _parent_id, recursion_depth, _property_names = parameters.unpack()
             children = []
             if recursion_depth != 0:
-                for child_id in (MENU_ITEM_OPEN, MENU_ITEM_SEP, MENU_ITEM_QUIT):
+                for child_id in (
+                    MENU_ITEM_OPEN,
+                    MENU_ITEM_SEP,
+                    MENU_ITEM_QUIT,
+                ):
                     children.append(GLib.Variant("(ia{sv}av)", (child_id, self._item_props(child_id), [])))
             root = (0, self._item_props(0), children)
             invocation.return_value(GLib.Variant("(u(ia{sv}av))", (self.revision, root)))
@@ -362,6 +388,96 @@ class ArchieStatusNotifier:
         }
         return values[property_name]
 
+    def request_privacy_refresh(self) -> bool:
+        if self.privacy_refresh_in_progress:
+            return True
+        self.privacy_refresh_in_progress = True
+
+        def worker() -> None:
+            import gi
+
+            gi.require_version("GLib", "2.0")
+            from gi.repository import GLib  # type: ignore[attr-defined]
+
+            try:
+                state = self.controller.poll(detect_share_active(), time.monotonic())
+            except Exception:
+                logger.exception("could not refresh shy mode state")
+                GLib.idle_add(self.mark_privacy_refresh_failed)
+                return
+            GLib.idle_add(self.apply_privacy_state, state)
+
+        threading.Thread(target=worker, daemon=True).start()
+        return True
+
+    def start_privacy_monitor(self) -> bool:
+        def load_status() -> None:
+            import gi
+
+            gi.require_version("GLib", "2.0")
+            from gi.repository import GLib  # type: ignore[attr-defined]
+
+            try:
+                snapshot = load_applet_snapshot()
+            except Exception:
+                logger.exception("could not load applet status")
+                return
+            GLib.idle_add(self.apply_status_snapshot, snapshot)
+
+        threading.Thread(target=load_status, daemon=True).start()
+        self.request_privacy_refresh()
+        return False
+
+    def mark_privacy_refresh_failed(self) -> bool:
+        self.privacy_refresh_in_progress = False
+        return False
+
+    def apply_status_snapshot(self, snapshot: dict[str, object]) -> bool:
+        if snapshot != self.snapshot:
+            self.snapshot = snapshot
+            self.emit_state_changed()
+        return False
+
+    def apply_privacy_state(self, state: ShyModeViewState) -> bool:
+        previous = self.shy_state
+        was_ready = self.privacy_ready
+        self.shy_state = state
+        self.privacy_ready = True
+        self.privacy_refresh_in_progress = False
+        if state != previous or not was_ready:
+            self.emit_state_changed()
+        # This is scheduled with GLib.idle_add(), so it must run once.
+        return False
+
+    def emit_state_changed(self) -> None:
+        import gi
+
+        gi.require_version("GLib", "2.0")
+        from gi.repository import GLib  # type: ignore[attr-defined]
+
+        self.revision += 1
+        self.connection.emit_signal(
+            None,
+            SNI_OBJECT_PATH,
+            "org.kde.StatusNotifierItem",
+            "NewIcon",
+            None,
+        )
+        self.connection.emit_signal(
+            None,
+            SNI_OBJECT_PATH,
+            "org.kde.StatusNotifierItem",
+            "NewToolTip",
+            None,
+        )
+        self.connection.emit_signal(
+            None,
+            DBUSMENU_OBJECT_PATH,
+            DBUSMENU_INTERFACE,
+            "LayoutUpdated",
+            GLib.Variant("(ui)", (self.revision, 0)),
+        )
+
 
 def add_applet_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparsers.add_parser(
@@ -408,14 +524,23 @@ def run_applet(_args: argparse.Namespace) -> int:
         icon_path = stack.enter_context(
             importlib.resources.as_file(importlib.resources.files("archie").joinpath(APPLET_ICON_RESOURCE))
         )
-        icon_pixmap = load_icon_pixmap(icon_path)
+        icon_pixmaps = {"base": load_icon_pixmap(icon_path)}
+        for color, resource in APPLET_BADGE_RESOURCES.items():
+            badge_path = stack.enter_context(
+                importlib.resources.as_file(importlib.resources.files("archie").joinpath(resource))
+            )
+            icon_pixmaps[color] = load_icon_pixmap(badge_path)
         try:
             connection = Gio.bus_get_sync(Gio.BusType.SESSION)
         except GLib.Error as error:
             logger.error("could not connect to the session bus: %s", error)
             return 1
-        notifier = ArchieStatusNotifier(connection, icon_pixmap)
-
+        controller = ShyModeController(DunstClient())
+        notifier = ArchieStatusNotifier(
+            connection,
+            icon_pixmaps,
+            controller,
+        )
         node_info = Gio.DBusNodeInfo.new_for_xml(SNI_XML)
         interface_info = node_info.interfaces[0]
         registration_id = notifier.connection.register_object(
@@ -456,6 +581,8 @@ def run_applet(_args: argparse.Namespace) -> int:
             on_watcher_appeared,
             on_watcher_vanished,
         )
+        GLib.idle_add(notifier.start_privacy_monitor)
+        refresh_id = GLib.timeout_add_seconds(5, notifier.request_privacy_refresh)
         logger.info("archie applet started")
         try:
             Gtk.main()
@@ -463,6 +590,7 @@ def run_applet(_args: argparse.Namespace) -> int:
             logger.info("archie applet interrupted")
         finally:
             Gio.bus_unwatch_name(watcher_id)
+            GLib.source_remove(refresh_id)
             notifier.connection.unregister_object(registration_id)
             notifier.connection.unregister_object(menu_registration_id)
     logger.info("archie applet stopped")

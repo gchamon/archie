@@ -97,6 +97,33 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `myip` | Alias | Prints the public IP address. |
 | `scheme` | Alias | Starts `scheme` under `rlwrap`. |
 | `vm` | Alias | Runs `vboxmanage`. |
+| `archie:status` | Alias | Prints Archie's human-readable system status; accepts `-j` or `--json` for JSON. |
+| `archie:gui` | Alias | Opens the Archie graphical controls. |
+| `archie:applet` | Alias | Starts the Archie tray applet. |
+| `archie:get-lid` | Alias | Prints the managed lid-close behavior. |
+| `archie:get-notifications` | Alias | Prints the Dunst notification state. |
+| `archie:get-shy` | Alias | Prints shy-mode settings. |
+| `archie:get-share` | Alias | Prints the current screen-share state. |
+| `archie:get-kdeconnect` | Alias | Prints the KDE Connect state. |
+| `archie:get-power-profile` | Alias | Prints the active power profile. |
+| `archie:get-waybar-theme` | Alias | Prints the active Waybar theme. |
+| `archie:get-brightness` | Alias | Prints backlight brightness state. |
+| `archie:set-hibernate` | Alias | Sets lid-close behavior to hybrid sleep. |
+| `archie:set-lock` | Alias | Sets lid-close behavior to lock after reopening. |
+| `archie:set-none` | Alias | Disables Archie lid-close actions. |
+| `archie:set-notifications-on` | Alias | Resumes Dunst notifications. |
+| `archie:set-notifications-off` | Alias | Pauses Dunst notifications. |
+| `archie:set-shy-on` | Alias | Enables shy mode and accepts optional replay settings. |
+| `archie:set-shy-off` | Alias | Disables shy mode. |
+| `archie:set-kdeconnect-on` | Alias | Enables KDE Connect backends. |
+| `archie:set-kdeconnect-off` | Alias | Disables KDE Connect backends. |
+| `archie:set-performance` | Alias | Selects the performance power profile. |
+| `archie:set-balanced` | Alias | Selects the balanced power profile. |
+| `archie:set-power-saver` | Alias | Selects the power-saver profile. |
+| `archie:set-waybar-cjbassi` | Alias | Selects the Cjbassi Waybar theme. |
+| `archie:set-waybar-mechabar` | Alias | Selects the Mechabar Waybar theme. |
+| `archie:set-waybar-tokyonight` | Alias | Selects the Tokyo Night Waybar theme. |
+| `archie:set-brightness` | Alias | Sets brightness from appended `<device> <percent>` arguments. |
 | `cpi` | Function | Copies files with `rsync --progress`. |
 | `de-reload` | Function | Reloads Hyprland twice with a short delay. |
 | `dunst-history` | Function | Prints Dunst notification history in a readable text format. |

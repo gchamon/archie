@@ -272,19 +272,6 @@ bootstrap_yay() {
     run_cmd yay -Scc --noconfirm
 }
 
-install_archie_cli() {
-    log_step "Install archie-cli from local package"
-
-    if package_is_installed archie-cli; then
-        log_info "archie-cli is already installed; reinstalling to pick up latest build"
-    fi
-
-    (
-        cd "$REPO_ROOT/packaging/archie-cli"
-        run_cmd  makepkg -Cfsi --noconfirm
-    )
-}
-
 install_yay_packages() {
     log_step "Install Archie packages with yay"
     run_yay_install "${ESSENTIAL_PACKAGES[@]}"
@@ -772,7 +759,7 @@ main() {
     install_base_packages
     bootstrap_checkout_if_needed
     bootstrap_yay
-    install_archie_cli
+    run_cmd "$REPO_ROOT/scripts/install-archie-cli.sh"
     install_yay_packages
     install_zsh_packages
     install_theme_packages

@@ -3,14 +3,10 @@
 # Emit "SHARE" when xdg-desktop-portal-hyprland has an active screen capture
 # stream.  Used by Waybar custom/share module.
 #
-# Runtime dependencies: pw-dump (pipewire-cli), jq
+# Runtime dependencies: archie CLI, pw-dump (pipewire-cli) via Archie.
 
 set -euo pipefail
 
-pw-dump | jq -r '
-  map(.info?.props?)
-  | map(select(
-      .["node.name"]? == "xdg-desktop-portal-hyprland"
-    ))
-  | if length > 0 then "SHARE" else empty end
-'
+if [[ "$(archie system get share-state)" == "on" ]]; then
+    printf 'SHARE\n'
+fi

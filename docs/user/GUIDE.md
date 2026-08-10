@@ -494,6 +494,15 @@ To inspect the current managed behavior:
 archie system get lid-close-behavior
 ```
 
+To print a best-effort summary of the current desktop state without launching
+the tray applet:
+
+```bash
+archie system status
+archie system status --format json
+archie system status --json
+```
+
 To make every lid close event put the machine in Archie’s hibernate behavior:
 
 ```bash

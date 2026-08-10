@@ -4,6 +4,7 @@ frame_color = "#8CAAEE"
 separator_color = frame
 font = Monospace 12
 timeout = 10
+history_length = 20
 follow = keyboard
 # origin = bottom-left
 offset = 40x40

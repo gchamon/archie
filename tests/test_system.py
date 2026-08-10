@@ -1,5 +1,6 @@
 import argparse
 import io
+import json
 import subprocess
 import tempfile
 import unittest
@@ -19,6 +20,8 @@ from archie.system import (
     clamp_brightness_percent,
     detect_lid_close_behavior,
     detect_kdeconnect_state,
+    format_system_status,
+    format_system_status_json,
     set_kdeconnect,
     format_brightness_device,
     install_lid_close_behavior,
@@ -28,6 +31,190 @@ from archie.system import (
     run_system_set,
     set_brightness,
 )
+
+
+class ShyModeCommandTest(unittest.TestCase):
+    def test_get_and_set_persist_replay_configuration(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "shy-mode.json"
+            args = argparse.Namespace(
+                setting="shy-mode",
+                value="on",
+                replay_count=6,
+                replay_interval=2.5,
+            )
+
+            self.assertEqual(run_system_set(args, shy_mode_path=path), 0)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                self.assertEqual(
+                    run_system_get(argparse.Namespace(setting="shy-mode"), shy_mode_path=path),
+                    0,
+                )
+
+            self.assertEqual(
+                stdout.getvalue(),
+                "enabled: on\nreplay-count: 6\nreplay-interval: 2.5s\n",
+            )
+
+    def test_set_off_preserves_replay_configuration(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "shy-mode.json"
+            run_system_set(
+                argparse.Namespace(
+                    setting="shy-mode",
+                    value="on",
+                    replay_count=4,
+                    replay_interval=3.0,
+                ),
+                shy_mode_path=path,
+            )
+
+            self.assertEqual(
+                run_system_set(
+                    argparse.Namespace(
+                        setting="shy-mode",
+                        value="off",
+                        replay_count=None,
+                        replay_interval=None,
+                    ),
+                    shy_mode_path=path,
+                ),
+                0,
+            )
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                run_system_get(argparse.Namespace(setting="shy-mode"), shy_mode_path=path)
+
+            self.assertEqual(
+                stdout.getvalue(),
+                "enabled: off\nreplay-count: 4\nreplay-interval: 3s\n",
+            )
+
+    def test_cli_validates_replay_bounds_and_interval(self) -> None:
+        for arguments in (
+            ["system", "set", "shy-mode", "on", "--replay-count", "21"],
+            ["system", "set", "shy-mode", "on", "--replay-interval", "0"],
+        ):
+            with self.subTest(arguments=arguments):
+                stderr = io.StringIO()
+                with self.assertRaises(SystemExit) as error, redirect_stderr(stderr):
+                    main(arguments)
+                self.assertEqual(error.exception.code, 2)
+
+
+class SystemStatusTest(unittest.TestCase):
+    @patch("archie.system.collect_system_status")
+    def test_cli_prints_status_without_the_applet(self, collect) -> None:
+        collect.return_value = (
+            {
+                "notifications": "on",
+                "shy-mode": "off",
+                "share-state": "off",
+            },
+            {},
+        )
+        stdout = io.StringIO()
+
+        with redirect_stdout(stdout):
+            self.assertEqual(main(["system", "status"]), 0)
+
+        self.assertIn("Notifications: on", stdout.getvalue())
+        self.assertIn("Shy mode: off", stdout.getvalue())
+        self.assertIn("Share: off", stdout.getvalue())
+
+    @patch("archie.system.collect_system_status")
+    def test_cli_accepts_short_json_format_option(self, collect) -> None:
+        collect.return_value = ({"notifications": "on"}, {})
+        stdout = io.StringIO()
+
+        with redirect_stdout(stdout):
+            self.assertEqual(main(["system", "status", "-f", "json"]), 0)
+
+        status = json.loads(stdout.getvalue())
+        self.assertEqual(status["notifications"], "on")
+        self.assertEqual(status["lid-close-behavior"], "unknown")
+        self.assertEqual(list(status), [
+            "lid-close-behavior",
+            "notifications",
+            "shy-mode",
+            "share-state",
+            "kdeconnect",
+            "power-profile",
+            "waybar-theme",
+            "brightness",
+            "monitors",
+        ])
+
+    @patch("archie.system.collect_system_status")
+    def test_cli_accepts_json_aliases(self, collect) -> None:
+        collect.return_value = ({"notifications": "on"}, {})
+
+        for option in ("-j", "--json"):
+            with self.subTest(option=option):
+                stdout = io.StringIO()
+                with redirect_stdout(stdout):
+                    self.assertEqual(main(["system", "status", option]), 0)
+                self.assertEqual(json.loads(stdout.getvalue())["notifications"], "on")
+
+    def test_formats_the_applet_summary(self) -> None:
+        values = {
+            "notifications": "on",
+            "brightness": [{"name": "amdgpu_bl1", "percent": 71}],
+            "monitors": [
+                {
+                    "name": "eDP-1",
+                    "label": "Built-in display",
+                    "enabled": True,
+                    "focused": True,
+                }
+            ],
+            "lid-close-behavior": "lock",
+            "kdeconnect": "on",
+            "power-profile": "balanced",
+            "waybar-theme": "tokyonight",
+            "shy-mode": "on",
+            "share-state": "off",
+        }
+
+        self.assertEqual(
+            format_system_status(values),
+            "Hardware\n"
+            "  Brightness: amdgpu_bl1 71%\n"
+            "  Monitors: eDP-1 Built-in display: enabled (focused)\n"
+            "\n"
+            "Desktop\n"
+            "  Lid close: lock\n"
+            "  KDE Connect: on\n"
+            "  Power profile: balanced\n"
+            "  Waybar theme: tokyonight\n"
+            "\n"
+            "Privacy\n"
+            "  Notifications: on\n"
+            "  Shy mode: on\n"
+            "  Share: off",
+        )
+
+    def test_json_uses_system_get_and_set_property_names(self) -> None:
+        rendered = format_system_status_json(
+            {
+                "brightness": [{"name": "amdgpu_bl1", "percent": 71}],
+                "shy-mode": "on",
+            }
+        )
+
+        status = json.loads(rendered)
+        self.assertEqual(status["brightness"][0]["percent"], 71)
+        self.assertEqual(status["shy-mode"], "on")
+        self.assertEqual(status["monitors"], "unknown")
+
+    def test_formats_missing_values_as_unknown_without_losing_available_values(self) -> None:
+        rendered = format_system_status({"notifications": "on"})
+
+        self.assertIn("Notifications: on", rendered)
+        self.assertIn("Monitors: unknown", rendered)
+        self.assertIn("Power profile: unknown", rendered)
+
 
 
 class LidCloseBehaviorDetectionTest(unittest.TestCase):
@@ -221,7 +408,8 @@ HandleLidSwitchExternalPower=hybrid-sleep
         self.assertIn("  downgrade - Resolve Arch Linux Archive package URLs", stdout.getvalue())
         self.assertIn("  system - Inspect or change Archie-owned system policy.", stdout.getvalue())
         self.assertIn("    get", stdout.getvalue())
-        self.assertIn("      lid-close-behavior - Read Archie-managed lid close behavior.", stdout.getvalue())
+        self.assertIn("    get - Read an Archie-owned system setting.", stdout.getvalue())
+        self.assertIn("    status - Print the same best-effort system summary", stdout.getvalue())
         self.assertIn("    set", stdout.getvalue())
         self.assertIn("      lid-close-behavior - Change Archie-managed lid close behavior.", stdout.getvalue())
         self.assertIn("lock after reopening", stdout.getvalue())
