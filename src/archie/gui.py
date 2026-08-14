@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from archie.applet_bus import notify_applet_settings_changed
 from archie.gui_state import (
     GUI_SETTINGS_SNAPSHOT_ENV,
     GuiSettingsSnapshot,
@@ -524,6 +525,7 @@ class ArchieControlsWindow:
         except Exception as error:
             self.set_status(str(error))
             return
+        notify_applet_settings_changed()
         self.set_status("Confirm monitor layout within 10 seconds.")
         self.render_confirmation()
         self.pending_timeout_id = self.add_timeout(10, self.revert_pending_change)
@@ -550,6 +552,7 @@ class ArchieControlsWindow:
         if self.pending_snapshot is not None:
             try:
                 restore_monitors(self.pending_snapshot)
+                notify_applet_settings_changed()
                 self.set_status("Monitor layout restored.")
             except Exception as error:
                 self.set_status(f"Restore failed: {error}")
@@ -569,6 +572,7 @@ class ArchieControlsWindow:
     def on_lid_set_done(self, result: subprocess.CompletedProcess[str], behavior: str) -> bool:
         if result.returncode == 0:
             self.set_status(f"Lid close behavior set to {behavior}.")
+            notify_applet_settings_changed()
         else:
             self.set_status(lid_error_message(result))
         self.clear_box(self.lid_box)
@@ -642,6 +646,7 @@ class ArchieControlsWindow:
         result = run_cli(["archie", "system", "set", "notifications", value])
         if result.returncode == 0:
             self.set_status(f"Notifications set to {value}.")
+            notify_applet_settings_changed()
         else:
             self.set_status(f"Failed to set notifications: {result.stderr.strip()}")
         self.clear_box(self.notifications_box)
@@ -651,6 +656,7 @@ class ArchieControlsWindow:
         result = run_cli(["archie", "system", "set", "notification-sounds", value])
         if result.returncode == 0:
             self.set_status(f"Notification sounds set to {value}.")
+            notify_applet_settings_changed()
         else:
             self.set_status(f"Failed to set notification sounds: {result.stderr.strip()}")
         self.clear_box(self.notification_sounds_box)
@@ -660,6 +666,7 @@ class ArchieControlsWindow:
         result = run_cli(["archie", "system", "set", "shy-mode", value])
         if result.returncode == 0:
             self.set_status(f"Shy mode set to {value}.")
+            notify_applet_settings_changed()
         else:
             self.set_status(f"Failed to set shy mode: {result.stderr.strip()}")
         self.clear_box(self.shy_mode_box)
@@ -669,6 +676,7 @@ class ArchieControlsWindow:
         result = run_cli(["archie", "system", "set", "kdeconnect", value])
         if result.returncode == 0:
             self.set_status(f"KDE Connect set to {value}.")
+            notify_applet_settings_changed()
         else:
             self.set_status(f"Failed to set KDE Connect: {result.stderr.strip()}")
         self.clear_box(self.kdeconnect_box)
@@ -678,6 +686,7 @@ class ArchieControlsWindow:
         result = run_cli(["archie", "system", "set", "power-profile", value])
         if result.returncode == 0:
             self.set_status(f"Power profile set to {value}.")
+            notify_applet_settings_changed()
         else:
             self.set_status(f"Failed to set power profile: {result.stderr.strip()}")
         self.clear_box(self.power_profile_box)
@@ -687,6 +696,7 @@ class ArchieControlsWindow:
         result = run_cli(["archie", "system", "set", "waybar-theme", value])
         if result.returncode == 0:
             self.set_status(f"Waybar theme set to {value}.")
+            notify_applet_settings_changed()
         else:
             self.set_status(f"Failed to set waybar theme: {result.stderr.strip()}")
         self.clear_box(self.waybar_theme_box)
@@ -715,6 +725,7 @@ class ArchieControlsWindow:
         result = run_cli(["archie", "system", "set", "brightness", device_name, str(percent)])
         if result.returncode == 0:
             self.set_status(f"Brightness for {device_name} set to {percent}%.")
+            notify_applet_settings_changed()
         else:
             self.set_status(f"Failed to set brightness for {device_name}: {result.stderr.strip()}")
         return False

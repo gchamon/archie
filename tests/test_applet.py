@@ -1,6 +1,6 @@
 import subprocess
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from archie.applet import (
     ArchieStatusNotifier,
@@ -134,6 +134,54 @@ class AppletPrivacyStateTest(unittest.TestCase):
         self.assertTrue(notifier.privacy_ready)
         self.assertFalse(notifier.privacy_refresh_in_progress)
         emit_state_changed.assert_called_once_with()
+
+
+class AppletTooltipRefreshTest(unittest.TestCase):
+    @patch.object(ArchieStatusNotifier, "emit_state_changed")
+    def test_changed_refresh_emits_a_tooltip_update(self, emit_state_changed) -> None:
+        notifier = ArchieStatusNotifier(object(), {}, Mock())
+        refreshed_state = ShyModeViewState(True, True, True, False, False)
+        notifier.tooltip_refresh_in_progress = True
+
+        self.assertFalse(notifier.apply_tooltip_refresh({"notifications": "off"}, refreshed_state))
+
+        self.assertEqual(notifier.snapshot, {"notifications": "off"})
+        self.assertEqual(notifier.shy_state, refreshed_state)
+        self.assertTrue(notifier.privacy_ready)
+        self.assertFalse(notifier.tooltip_refresh_in_progress)
+        emit_state_changed.assert_called_once_with()
+
+    @patch.object(ArchieStatusNotifier, "emit_state_changed")
+    def test_unchanged_refresh_preserves_last_good_values_without_a_signal(self, emit_state_changed) -> None:
+        previous_snapshot: dict[str, object] = {"notifications": "on"}
+        previous_state = ShyModeViewState(True, False, False, True, False)
+        notifier = ArchieStatusNotifier(
+            object(),
+            {},
+            Mock(),
+            shy_state=previous_state,
+            snapshot=previous_snapshot,
+            privacy_ready=True,
+        )
+        notifier.tooltip_refresh_in_progress = True
+
+        self.assertFalse(notifier.apply_tooltip_refresh(None, None))
+
+        self.assertIs(notifier.snapshot, previous_snapshot)
+        self.assertIs(notifier.shy_state, previous_state)
+        self.assertTrue(notifier.privacy_ready)
+        self.assertFalse(notifier.tooltip_refresh_in_progress)
+        emit_state_changed.assert_not_called()
+
+    def test_settings_changed_requests_a_background_tooltip_refresh(self) -> None:
+        notifier = ArchieStatusNotifier(object(), {}, Mock())
+        invocation = Mock()
+
+        with patch.object(notifier, "request_tooltip_refresh") as refresh:
+            notifier.applet_method_call(None, "", "", "", "SettingsChanged", None, invocation)
+
+        refresh.assert_called_once_with()
+        invocation.return_value.assert_called_once_with(None)
 
 
 class AppletGuiSnapshotTest(unittest.TestCase):

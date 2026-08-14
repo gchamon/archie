@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from archie.applet_bus import APPLET_BUS_NAME, APPLET_INTERFACE, APPLET_OBJECT_PATH
 from archie.gui import load_gui_settings_snapshot
 from archie.gui_state import (
     GUI_SETTINGS_SNAPSHOT_ENV,
@@ -39,6 +40,9 @@ SNI_BUS_NAME = "org.kde.StatusNotifierWatcher"
 SNI_WATCHER_PATH = "/StatusNotifierWatcher"
 SNI_WATCHER_INTERFACE = "org.kde.StatusNotifierWatcher"
 SNI_OBJECT_PATH = "/org/archie/sni"
+
+DBUS_INTERFACE = "org.freedesktop.DBus"
+DBUS_OBJECT_PATH = "/org/freedesktop/DBus"
 
 DBUSMENU_OBJECT_PATH = "/org/archie/menu"
 DBUSMENU_INTERFACE = "com.canonical.dbusmenu"
@@ -146,6 +150,14 @@ DBUSMENU_XML = """
 </node>
 """
 
+APPLET_XML = """
+<node>
+  <interface name="com.gchamon.Archie.Applet">
+    <method name="SettingsChanged"/>
+  </interface>
+</node>
+"""
+
 
 def format_tooltip(
     snapshot: dict[str, object] | None = None,
@@ -213,6 +225,7 @@ class ArchieStatusNotifier:
     snapshot: dict[str, object] = field(default_factory=dict)
     privacy_ready: bool = False
     privacy_refresh_in_progress: bool = False
+    tooltip_refresh_in_progress: bool = False
     gui_snapshot: GuiSettingsSnapshot | None = None
     gui_snapshot_refresh_in_progress: bool = False
 
@@ -398,6 +411,20 @@ class ArchieStatusNotifier:
         }
         return values[property_name]
 
+    def applet_method_call(
+        self,
+        _connection,
+        _sender: str,
+        _object_path: str,
+        _interface_name: str,
+        method_name: str,
+        _parameters,
+        invocation,
+    ) -> None:
+        if method_name == "SettingsChanged":
+            self.request_tooltip_refresh()
+        invocation.return_value(None)
+
     def request_privacy_refresh(self) -> bool:
         if self.privacy_refresh_in_progress:
             return True
@@ -416,6 +443,32 @@ class ArchieStatusNotifier:
                 GLib.idle_add(self.mark_privacy_refresh_failed)
                 return
             GLib.idle_add(self.apply_privacy_state, state)
+
+        threading.Thread(target=worker, daemon=True).start()
+        return True
+
+    def request_tooltip_refresh(self) -> bool:
+        if self.tooltip_refresh_in_progress:
+            return True
+        self.tooltip_refresh_in_progress = True
+
+        def worker() -> None:
+            import gi
+
+            gi.require_version("GLib", "2.0")
+            from gi.repository import GLib  # type: ignore[attr-defined]
+
+            snapshot: dict[str, object] | None = None
+            state: ShyModeViewState | None = None
+            try:
+                snapshot = load_applet_snapshot()
+            except Exception:
+                logger.exception("could not refresh applet tooltip status")
+            try:
+                state = self.controller.poll(detect_share_active(), time.monotonic())
+            except Exception:
+                logger.exception("could not refresh applet tooltip privacy state")
+            GLib.idle_add(self.apply_tooltip_refresh, snapshot, state)
 
         threading.Thread(target=worker, daemon=True).start()
         return True
@@ -443,21 +496,7 @@ class ArchieStatusNotifier:
         return True
 
     def start_privacy_monitor(self) -> bool:
-        def load_status() -> None:
-            import gi
-
-            gi.require_version("GLib", "2.0")
-            from gi.repository import GLib  # type: ignore[attr-defined]
-
-            try:
-                snapshot = load_applet_snapshot()
-            except Exception:
-                logger.exception("could not load applet status")
-                return
-            GLib.idle_add(self.apply_status_snapshot, snapshot)
-
-        threading.Thread(target=load_status, daemon=True).start()
-        self.request_privacy_refresh()
+        self.request_tooltip_refresh()
         self.request_gui_snapshot_refresh()
         return False
 
@@ -472,6 +511,26 @@ class ArchieStatusNotifier:
     def apply_gui_snapshot(self, snapshot: GuiSettingsSnapshot) -> bool:
         self.gui_snapshot = snapshot
         self.gui_snapshot_refresh_in_progress = False
+        return False
+
+    def apply_tooltip_refresh(
+        self,
+        snapshot: dict[str, object] | None,
+        state: ShyModeViewState | None,
+    ) -> bool:
+        changed = False
+        if snapshot is not None and snapshot != self.snapshot:
+            self.snapshot = snapshot
+            changed = True
+        if state is not None:
+            previous_state = self.shy_state
+            was_ready = self.privacy_ready
+            self.shy_state = state
+            self.privacy_ready = True
+            changed = changed or state != previous_state or not was_ready
+        self.tooltip_refresh_in_progress = False
+        if changed:
+            self.emit_state_changed()
         return False
 
     def open_gui(self) -> None:
@@ -586,6 +645,7 @@ def run_applet(_args: argparse.Namespace) -> int:
             icon_pixmaps,
             controller,
         )
+        owns_applet_bus_name = claim_applet_bus_name(connection)
         node_info = Gio.DBusNodeInfo.new_for_xml(SNI_XML)
         interface_info = node_info.interfaces[0]
         registration_id = notifier.connection.register_object(
@@ -602,6 +662,14 @@ def run_applet(_args: argparse.Namespace) -> int:
             menu_interface_info,
             notifier.dbusmenu_method_call,
             notifier.dbusmenu_get_property,
+            None,
+        )
+        applet_node_info = Gio.DBusNodeInfo.new_for_xml(APPLET_XML)
+        applet_registration_id = notifier.connection.register_object(
+            APPLET_OBJECT_PATH,
+            applet_node_info.interfaces[0],
+            notifier.applet_method_call,
+            None,
             None,
         )
         def on_watcher_appeared(_connection, _name, _name_owner):
@@ -628,6 +696,7 @@ def run_applet(_args: argparse.Namespace) -> int:
         )
         GLib.idle_add(notifier.start_privacy_monitor)
         refresh_id = GLib.timeout_add_seconds(5, notifier.request_privacy_refresh)
+        tooltip_refresh_id = GLib.timeout_add_seconds(30, notifier.request_tooltip_refresh)
         logger.info("archie applet started")
         try:
             Gtk.main()
@@ -636,8 +705,12 @@ def run_applet(_args: argparse.Namespace) -> int:
         finally:
             Gio.bus_unwatch_name(watcher_id)
             GLib.source_remove(refresh_id)
+            GLib.source_remove(tooltip_refresh_id)
             notifier.connection.unregister_object(registration_id)
             notifier.connection.unregister_object(menu_registration_id)
+            notifier.connection.unregister_object(applet_registration_id)
+            if owns_applet_bus_name:
+                release_applet_bus_name(notifier.connection)
     logger.info("archie applet stopped")
     return 0
 
@@ -662,6 +735,58 @@ def register_status_notifier_item(connection) -> None:
         )
     except GLib.Error as error:
         logger.warning("could not register status notifier item: %s", error)
+
+
+def claim_applet_bus_name(connection) -> bool:
+    import gi
+
+    gi.require_version("Gio", "2.0")
+    gi.require_version("GLib", "2.0")
+    from gi.repository import Gio, GLib  # type: ignore[attr-defined]
+
+    try:
+        reply = connection.call_sync(
+            DBUS_INTERFACE,
+            DBUS_OBJECT_PATH,
+            DBUS_INTERFACE,
+            "RequestName",
+            GLib.Variant("(su)", (APPLET_BUS_NAME, 0)),
+            GLib.VariantType.new("(u)"),
+            Gio.DBusCallFlags.NONE,
+            -1,
+            None,
+        )
+    except GLib.Error as error:
+        logger.warning("could not claim Archie applet bus name: %s", error)
+        return False
+    (result,) = reply.unpack()
+    if result in {1, 4}:
+        return True
+    logger.warning("Archie applet bus name is already owned")
+    return False
+
+
+def release_applet_bus_name(connection) -> None:
+    import gi
+
+    gi.require_version("Gio", "2.0")
+    gi.require_version("GLib", "2.0")
+    from gi.repository import Gio, GLib  # type: ignore[attr-defined]
+
+    try:
+        connection.call_sync(
+            DBUS_INTERFACE,
+            DBUS_OBJECT_PATH,
+            DBUS_INTERFACE,
+            "ReleaseName",
+            GLib.Variant("(s)", (APPLET_BUS_NAME,)),
+            None,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            None,
+        )
+    except GLib.Error as error:
+        logger.warning("could not release Archie applet bus name: %s", error)
 
 
 def load_icon_pixmap(icon_path: Path):
