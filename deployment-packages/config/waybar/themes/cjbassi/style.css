@@ -30,7 +30,8 @@ window#waybar {
 #disk,
 #tray,
 #custom-share,
-#custom-cam {
+#custom-cam,
+#custom-mic {
   background: #1a1a1a;
 }
 

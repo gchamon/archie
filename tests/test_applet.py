@@ -1,3 +1,4 @@
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -8,7 +9,14 @@ from archie.applet import (
     load_applet_snapshot,
     select_applet_icon,
 )
-from archie.privacy import DunstClient, ShyModeController, ShyModeViewState
+from archie.gui_state import GUI_SETTINGS_SNAPSHOT_ENV, GuiSettingsSnapshot
+from archie.monitor import MonitorOutput
+from archie.privacy import (
+    DunstClient,
+    ShyModeController,
+    ShyModeSettings,
+    ShyModeViewState,
+)
 
 
 class AppletTooltipTest(unittest.TestCase):
@@ -20,6 +28,7 @@ class AppletTooltipTest(unittest.TestCase):
                     "monitors": [{"name": "eDP-1", "label": "Built-in display", "enabled": True, "focused": True}],
                     "lid-close-behavior": "lock",
                     "notifications": "off",
+                    "notification-sounds": "on",
                     "kdeconnect": "on",
                     "power-profile": "balanced",
                     "waybar-theme": "tokyonight",
@@ -38,6 +47,7 @@ class AppletTooltipTest(unittest.TestCase):
             "\n"
             "Privacy\n"
             "  Notifications: off\n"
+            "  Notification sounds: on\n"
             "  Shy mode: off\n"
             "  Share: off",
         )
@@ -50,6 +60,7 @@ class AppletTooltipTest(unittest.TestCase):
                     "monitors": [],
                     "lid-close-behavior": "unknown",
                     "notifications": "on",
+                    "notification-sounds": "unknown",
                     "kdeconnect": "off",
                     "power-profile": "",
                 },
@@ -67,6 +78,7 @@ class AppletTooltipTest(unittest.TestCase):
             "\n"
             "Privacy\n"
             "  Notifications: on\n"
+            "  Notification sounds: unknown\n"
             "  Shy mode: off\n"
             "  Share: off",
         )
@@ -122,3 +134,64 @@ class AppletPrivacyStateTest(unittest.TestCase):
         self.assertTrue(notifier.privacy_ready)
         self.assertFalse(notifier.privacy_refresh_in_progress)
         emit_state_changed.assert_called_once_with()
+
+
+class AppletGuiSnapshotTest(unittest.TestCase):
+    def test_startup_requests_a_gui_snapshot(self) -> None:
+        notifier = ArchieStatusNotifier(object(), {}, ShyModeController(DunstClient()))
+
+        with (
+            patch("archie.applet.threading.Thread"),
+            patch.object(notifier, "request_privacy_refresh"),
+            patch.object(notifier, "request_gui_snapshot_refresh") as refresh_gui_snapshot,
+        ):
+            self.assertFalse(notifier.start_privacy_monitor())
+
+        refresh_gui_snapshot.assert_called_once_with()
+
+    def test_applies_gui_snapshot_in_memory(self) -> None:
+        notifier = ArchieStatusNotifier(object(), {}, ShyModeController(DunstClient()))
+        snapshot = make_gui_snapshot()
+        notifier.gui_snapshot_refresh_in_progress = True
+
+        self.assertFalse(notifier.apply_gui_snapshot(snapshot))
+        self.assertIs(notifier.gui_snapshot, snapshot)
+        self.assertFalse(notifier.gui_snapshot_refresh_in_progress)
+
+    def test_open_gui_passes_the_cached_snapshot_through_its_environment(self) -> None:
+        notifier = ArchieStatusNotifier(object(), {}, ShyModeController(DunstClient()))
+        snapshot = make_gui_snapshot()
+        notifier.gui_snapshot = snapshot
+
+        with patch("archie.applet._open_gui") as open_gui:
+            notifier.open_gui()
+
+        open_gui.assert_called_once_with(snapshot)
+
+    def test_launch_serializes_the_snapshot_only_for_the_gui_child(self) -> None:
+        snapshot = make_gui_snapshot()
+
+        with patch("archie.applet.subprocess.Popen") as popen:
+            from archie.applet import _open_gui
+
+            _open_gui(snapshot)
+
+        command, = popen.call_args.args
+        environment = popen.call_args.kwargs["env"]
+        self.assertEqual(command, ["archie", "gui"])
+        self.assertIn(GUI_SETTINGS_SNAPSHOT_ENV, environment)
+
+
+def make_gui_snapshot() -> GuiSettingsSnapshot:
+    return GuiSettingsSnapshot(
+        brightness_result=subprocess.CompletedProcess([], 0, "", ""),
+        monitors=[MonitorOutput("eDP-1", "", 1920, 1080, 60.0, 0, 0, 1.0, 0, False, True)],
+        monitor_error=None,
+        lid_behavior="lock",
+        notifications="on",
+        notification_sounds="on",
+        shy_mode=ShyModeSettings(),
+        kdeconnect="on",
+        power_profile="balanced",
+        waybar_theme="tokyonight",
+    )

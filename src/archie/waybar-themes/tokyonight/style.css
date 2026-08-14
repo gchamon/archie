@@ -36,7 +36,8 @@ window#waybar {
 #disk,
 #tray,
 #custom-share,
-#custom-cam {
+#custom-cam,
+#custom-mic {
     background: @module-bg;
     padding: 1px 7px;
     margin: 3px 2px;

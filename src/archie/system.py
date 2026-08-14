@@ -2,16 +2,17 @@ import argparse
 import configparser
 import importlib.resources
 import json
+import os
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Protocol
 
 from archie.monitor import MonitorOutput, list_monitors_quiet
-
 from archie.privacy import (
     DEFAULT_DUNST_HISTORY_LIMIT,
     ShyModeSettings,
@@ -48,6 +49,7 @@ WAYBAR_THEMES = [DEFAULT_THEME, MECHABAR_THEME, TOKYONIGHT_THEME]
 SYSTEM_STATUS_SETTINGS = [
     "lid-close-behavior",
     "notifications",
+    "notification-sounds",
     "shy-mode",
     "share-state",
     "kdeconnect",
@@ -118,6 +120,7 @@ def add_system_parser(
     for setting, help_text, description in (
         ("lid-close-behavior", "Read lid close behavior.", "Read Archie-managed lid close behavior."),
         ("notifications", "Read dunst notification state.", "Read whether dunst notifications are on or off."),
+        ("notification-sounds", "Read notification sound state.", "Read whether Dunst notification sounds are on or off."),
         ("shy-mode", "Read shy mode notification privacy settings.", "Read Archie-managed shy mode and replay settings."),
         ("share-state", "Read the managed screen-share state.", "Read whether the managed Hyprland portal is sharing a screen."),
         ("kdeconnect", "Read KDE Connect daemon state.", "Read whether the KDE Connect daemon is running."),
@@ -189,6 +192,18 @@ def add_system_parser(
         help="Use on to resume notifications or off to pause them.",
     )
     notifications_set_parser.set_defaults(func=run_system_set)
+
+    notification_sounds_set_parser = set_subparsers.add_parser(
+        "notification-sounds",
+        help="Enable or disable Dunst notification sounds.",
+        description="Enable or disable sounds played for Dunst desktop notifications.",
+    )
+    notification_sounds_set_parser.add_argument(
+        "value",
+        choices=[ON_VALUE, OFF_VALUE],
+        help="Use on to play notification sounds or off to silence them.",
+    )
+    notification_sounds_set_parser.set_defaults(func=run_system_set)
 
     shy_mode_set_parser = set_subparsers.add_parser(
         "shy-mode",
@@ -268,6 +283,7 @@ def run_system_get(
     waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
     backlight_path: Path = BACKLIGHT_PATH,
     shy_mode_path: Path | None = None,
+    notification_sounds_path: Path | None = None,
 ) -> int:
     match args.setting:
         case "lid-close-behavior":
@@ -275,6 +291,13 @@ def run_system_get(
             return 0
         case "notifications":
             print(detect_notifications_state())
+            return 0
+        case "notification-sounds":
+            print(
+                ON_VALUE
+                if load_notification_sounds_enabled(notification_sounds_path)
+                else OFF_VALUE
+            )
             return 0
         case "shy-mode":
             print(format_shy_mode_settings(load_shy_mode_settings(shy_mode_path)))
@@ -306,10 +329,14 @@ def collect_system_status(
     waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
     backlight_path: Path = BACKLIGHT_PATH,
     shy_mode_path: Path | None = None,
+    notification_sounds_path: Path | None = None,
 ) -> tuple[dict[str, object], dict[str, str]]:
     readers: dict[str, Callable[[], object]] = {
         "lid-close-behavior": lambda: detect_lid_close_behavior(lid_close_conf_path),
         "notifications": detect_notifications_state,
+        "notification-sounds": lambda: ON_VALUE
+        if load_notification_sounds_enabled(notification_sounds_path)
+        else OFF_VALUE,
         "shy-mode": lambda: ON_VALUE if load_shy_mode_settings(shy_mode_path).enabled else OFF_VALUE,
         "share-state": lambda: ON_VALUE if detect_share_active() else OFF_VALUE,
         "kdeconnect": detect_kdeconnect_state,
@@ -364,6 +391,7 @@ def format_system_status(
             "",
             "Privacy",
             f"  Notifications: {format_status_value(values.get('notifications'))}",
+            f"  Notification sounds: {format_status_value(values.get('notification-sounds'))}",
             f"  Shy mode: {shy_status}",
             f"  Share: {format_status_value(values.get('share-state'))}",
         )
@@ -420,12 +448,14 @@ def run_system_status(
     waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
     backlight_path: Path = BACKLIGHT_PATH,
     shy_mode_path: Path | None = None,
+    notification_sounds_path: Path | None = None,
 ) -> int:
     values, _errors = collect_system_status(
         lid_close_conf_path=lid_close_conf_path,
         waybar_theme_state_path=waybar_theme_state_path,
         backlight_path=backlight_path,
         shy_mode_path=shy_mode_path,
+        notification_sounds_path=notification_sounds_path,
     )
     if getattr(args, "format", "table") == "json":
         print(format_system_status_json(values))
@@ -442,6 +472,7 @@ def run_system_set(
     waybar_config_path: Path = WAYBAR_CONFIG_PATH,
     waybar_style_path: Path = WAYBAR_STYLE_PATH,
     shy_mode_path: Path | None = None,
+    notification_sounds_path: Path | None = None,
     executor: Executor | None = None,
 ) -> int:
     execute = executor or execute_command
@@ -461,6 +492,9 @@ def run_system_set(
             return reload_logind_if_active(executor=execute)
         case "notifications":
             return set_notifications(args.value, executor=execute)
+        case "notification-sounds":
+            save_notification_sounds_enabled(args.value == ON_VALUE, notification_sounds_path)
+            return 0
         case "shy-mode":
             current = load_shy_mode_settings(shy_mode_path)
             settings = ShyModeSettings(
@@ -561,6 +595,31 @@ def reload_logind_if_active(*, executor: Executor | None = None) -> int:
 
 
 # --- notifications ---
+
+
+def notification_sounds_config_path() -> Path:
+    config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    return config_home / "archie/notification-sounds.json"
+
+
+def load_notification_sounds_enabled(path: Path | None = None) -> bool:
+    settings_path = path or notification_sounds_config_path()
+    try:
+        data = json.loads(settings_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return True
+    return data.get("enabled") is not False if isinstance(data, dict) else True
+
+
+def save_notification_sounds_enabled(enabled: bool, path: Path | None = None) -> None:
+    settings_path = path or notification_sounds_config_path()
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = settings_path.with_suffix(f"{settings_path.suffix}.tmp")
+    temporary_path.write_text(
+        json.dumps({"enabled": enabled}, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    temporary_path.replace(settings_path)
 
 
 def detect_notifications_state() -> str:

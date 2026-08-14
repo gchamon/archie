@@ -12,6 +12,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from archie.gui import load_gui_settings_snapshot
+from archie.gui_state import (
+    GUI_SETTINGS_SNAPSHOT_ENV,
+    GuiSettingsSnapshot,
+    serialize_gui_settings_snapshot,
+)
 from archie.privacy import (
     DunstClient,
     ShyModeController,
@@ -207,6 +213,8 @@ class ArchieStatusNotifier:
     snapshot: dict[str, object] = field(default_factory=dict)
     privacy_ready: bool = False
     privacy_refresh_in_progress: bool = False
+    gui_snapshot: GuiSettingsSnapshot | None = None
+    gui_snapshot_refresh_in_progress: bool = False
 
     def on_method_call(
         self,
@@ -220,7 +228,7 @@ class ArchieStatusNotifier:
     ) -> None:
         if method_name == "Activate":
             logger.info("archie applet activate")
-            _open_gui()
+            self.open_gui()
         elif method_name == "ContextMenu":
             # Hosts that render the menu themselves (Waybar) use the DBusMenu
             # object exposed via the Menu property and never reach this branch.
@@ -242,6 +250,8 @@ class ArchieStatusNotifier:
         gi.require_version("GLib", "2.0")
         from gi.repository import GLib  # type: ignore[attr-defined]
 
+        if property_name == "ToolTip":
+            self.request_gui_snapshot_refresh()
         icon_pixmap = self.icon_pixmaps[select_applet_icon(self.shy_state)]
         values = {
             "Category": GLib.Variant("s", "Hardware"),
@@ -347,7 +357,7 @@ class ArchieStatusNotifier:
             item_id, event_id, _data, _timestamp = parameters.unpack()
             if event_id == "clicked":
                 if item_id == MENU_ITEM_OPEN:
-                    _open_gui()
+                    self.open_gui()
                 elif item_id == MENU_ITEM_QUIT:
                     Gtk.main_quit()
             invocation.return_value(None)
@@ -356,7 +366,7 @@ class ArchieStatusNotifier:
             for item_id, event_id, _data, _timestamp in events:
                 if event_id == "clicked":
                     if item_id == MENU_ITEM_OPEN:
-                        _open_gui()
+                        self.open_gui()
                     elif item_id == MENU_ITEM_QUIT:
                         Gtk.main_quit()
             invocation.return_value(GLib.Variant("(ai)", ([],)))
@@ -410,6 +420,28 @@ class ArchieStatusNotifier:
         threading.Thread(target=worker, daemon=True).start()
         return True
 
+    def request_gui_snapshot_refresh(self) -> bool:
+        if self.gui_snapshot_refresh_in_progress:
+            return True
+        self.gui_snapshot_refresh_in_progress = True
+
+        def worker() -> None:
+            import gi
+
+            gi.require_version("GLib", "2.0")
+            from gi.repository import GLib  # type: ignore[attr-defined]
+
+            try:
+                snapshot = load_gui_settings_snapshot()
+            except Exception:
+                logger.exception("could not refresh GUI settings snapshot")
+                GLib.idle_add(self.mark_gui_snapshot_refresh_failed)
+                return
+            GLib.idle_add(self.apply_gui_snapshot, snapshot)
+
+        threading.Thread(target=worker, daemon=True).start()
+        return True
+
     def start_privacy_monitor(self) -> bool:
         def load_status() -> None:
             import gi
@@ -426,11 +458,24 @@ class ArchieStatusNotifier:
 
         threading.Thread(target=load_status, daemon=True).start()
         self.request_privacy_refresh()
+        self.request_gui_snapshot_refresh()
         return False
 
     def mark_privacy_refresh_failed(self) -> bool:
         self.privacy_refresh_in_progress = False
         return False
+
+    def mark_gui_snapshot_refresh_failed(self) -> bool:
+        self.gui_snapshot_refresh_in_progress = False
+        return False
+
+    def apply_gui_snapshot(self, snapshot: GuiSettingsSnapshot) -> bool:
+        self.gui_snapshot = snapshot
+        self.gui_snapshot_refresh_in_progress = False
+        return False
+
+    def open_gui(self) -> None:
+        _open_gui(self.gui_snapshot)
 
     def apply_status_snapshot(self, snapshot: dict[str, object]) -> bool:
         if snapshot != self.snapshot:
@@ -639,7 +684,10 @@ def load_icon_pixmap(icon_path: Path):
     return GLib.Variant("a(iiay)", [(width, height, bytes(argb))])
 
 
-def _open_gui(*_args) -> None:
+def _open_gui(snapshot: GuiSettingsSnapshot | None = None) -> None:
     command = ["archie", "gui"]
     logger.info("$ %s", " ".join(command))
-    subprocess.Popen(command)
+    environment = os.environ.copy()
+    if snapshot is not None:
+        environment[GUI_SETTINGS_SNAPSHOT_ENV] = serialize_gui_settings_snapshot(snapshot)
+    subprocess.Popen(command, env=environment)

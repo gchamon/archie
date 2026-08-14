@@ -39,7 +39,8 @@ window#waybar {
 #disk,
 #tray,
 #custom-share,
-#custom-cam {
+#custom-cam,
+#custom-mic {
     background: @base;
     padding: 0 10px;
     margin: 4px 2px;

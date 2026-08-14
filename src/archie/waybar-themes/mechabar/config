@@ -17,6 +17,7 @@
     "modules-right": [
         "custom/share",
         "custom/cam",
+        "custom/mic",
         "pulseaudio",
         "battery",
         "disk",
@@ -49,6 +50,11 @@
     "custom/cam": {
         "format": "<span foreground=\"#f38ba8\"> {} </span>",
         "exec": "~/.config/hypr/scripts/waybar-cam-indicator.sh",
+        "interval": 5
+    },
+    "custom/mic": {
+        "format": "<span foreground=\"#f38ba8\"> {} </span>",
+        "exec": "~/.config/hypr/scripts/waybar-mic-indicator.sh",
         "interval": 5
     },
     "idle_inhibitor": {

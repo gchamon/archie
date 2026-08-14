@@ -1,5 +1,6 @@
 import argparse
 import importlib.resources
+import os
 import signal
 import subprocess
 import threading
@@ -8,7 +9,18 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from archie.monitor import MonitorOutput, apply_monitor_toggle, list_monitors, restore_monitors
+from archie.gui_state import (
+    GUI_SETTINGS_SNAPSHOT_ENV,
+    GuiSettingsSnapshot,
+    deserialize_gui_settings_snapshot,
+)
+from archie.monitor import (
+    MonitorOutput,
+    apply_monitor_toggle,
+    list_monitors,
+    restore_monitors,
+)
+from archie.privacy import ShyModeSettings
 from archie.system import (
     HIBERNATE_MODE,
     LOCK_MODE,
@@ -18,7 +30,6 @@ from archie.system import (
     POWER_PROFILES,
     WAYBAR_THEMES,
 )
-from archie.privacy import ShyModeSettings
 
 LID_BEHAVIORS = [HIBERNATE_MODE, LOCK_MODE, NONE_MODE]
 TOGGLE_VALUES = [ON_VALUE, OFF_VALUE]
@@ -97,6 +108,8 @@ class ArchieControlsWindow:
         self.pending_timeout_id: int | None = None
         self.brightness_timeout_ids: dict[str, int] = {}
         self.documentation_tabs: dict[str, tuple[str, object]] = {}
+        self.settings_loading = False
+        self.settings_visible = False
         self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.monitor_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.lid_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
@@ -105,6 +118,9 @@ class ArchieControlsWindow:
         self.notifications_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.notifications_box.add_css_class("archie-lid-segments")
         self.notifications_box.add_css_class("linked")
+        self.notification_sounds_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        self.notification_sounds_box.add_css_class("archie-lid-segments")
+        self.notification_sounds_box.add_css_class("linked")
         self.shy_mode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.shy_mode_box.add_css_class("archie-lid-segments")
         self.shy_mode_box.add_css_class("linked")
@@ -142,12 +158,14 @@ class ArchieControlsWindow:
         self.window = Gtk.ApplicationWindow(application=application)
         self.window.set_title("Archie Controls")
         self.window.set_default_size(520, 360)
-        self.window.set_resizable(False)
         self.window.connect("close-request", self._on_close_request)
         self.install_css()
         self.window.set_child(self.build_content())
         self._install_copy_shortcut()
         self.set_status("Loading system settings…")
+        if snapshot := load_gui_settings_snapshot_from_environment():
+            self.render_settings_snapshot(snapshot, controls_enabled=False)
+            self.set_status("Refreshing system settings…")
         self.GLib.timeout_add(50, self.refresh)
 
     def present(self) -> None:
@@ -188,6 +206,18 @@ class ArchieControlsWindow:
         root.set_margin_start(14)
         root.set_margin_end(14)
 
+        self.system_settings_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.system_settings_content.set_vexpand(True)
+        root.append(self.system_settings_content)
+        self.render_settings_loading()
+
+        root.append(self.message_scroller)
+        root.append(self.confirm_box)
+
+        return root
+
+    def build_system_settings_options(self):
+        Gtk = self.Gtk
         options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
         brightness_label = Gtk.Label(label="Screen brightness:")
         brightness_label.set_xalign(0)
@@ -208,6 +238,11 @@ class ArchieControlsWindow:
         notifications_label.set_xalign(0)
         options.append(notifications_label)
         options.append(self.notifications_box)
+
+        notification_sounds_label = Gtk.Label(label="Notification sounds:")
+        notification_sounds_label.set_xalign(0)
+        options.append(notification_sounds_label)
+        options.append(self.notification_sounds_box)
 
         shy_mode_label = Gtk.Label(label="Shy mode:")
         shy_mode_label.set_xalign(0)
@@ -234,12 +269,7 @@ class ArchieControlsWindow:
         options_scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         options_scroller.set_vexpand(True)
         options_scroller.set_child(options)
-        root.append(options_scroller)
-
-        root.append(self.message_scroller)
-        root.append(self.confirm_box)
-
-        return root
+        return options_scroller
 
     def build_documentation_table_tab(self, tab_id: str, search_placeholder: str, read_markdown):
         Gtk = self.Gtk
@@ -336,27 +366,75 @@ class ArchieControlsWindow:
         self.render_documentation_tables(markdown, content, search_entry.get_text())
 
     def refresh(self) -> bool:
+        if self.settings_loading:
+            return False
+        self.settings_loading = True
+        if self.settings_visible:
+            self.set_system_settings_sensitive(False)
+        else:
+            self.render_settings_loading()
+        self.run_cli_async(load_gui_settings_snapshot, self.on_settings_snapshot_loaded)
+        return False
+
+    def render_settings_loading(self) -> None:
+        self.clear_box(self.system_settings_content)
+        loading_box = self.Gtk.Box(orientation=self.Gtk.Orientation.VERTICAL)
+        loading_box.set_vexpand(True)
+        loading_pill = self.Gtk.Button(label="Loading system settings…")
+        loading_pill.set_sensitive(False)
+        loading_pill.set_halign(self.Gtk.Align.CENTER)
+        loading_pill.set_valign(self.Gtk.Align.CENTER)
+        loading_pill.set_vexpand(True)
+        loading_pill.add_css_class("archie-loading-pill")
+        loading_box.append(loading_pill)
+        self.system_settings_content.append(loading_box)
+
+    def on_settings_snapshot_loaded(self, snapshot: GuiSettingsSnapshot) -> bool:
+        self.settings_loading = False
+        self.render_settings_snapshot(snapshot, controls_enabled=True)
+        return False
+
+    def render_settings_snapshot(self, snapshot: GuiSettingsSnapshot, *, controls_enabled: bool) -> None:
         self.clear_box(self.brightness_box)
         self.clear_box(self.monitor_box)
         self.clear_box(self.lid_box)
         self.clear_box(self.notifications_box)
+        self.clear_box(self.notification_sounds_box)
         self.clear_box(self.shy_mode_box)
         self.clear_box(self.kdeconnect_box)
         self.clear_box(self.power_profile_box)
         self.clear_box(self.waybar_theme_box)
-        self.render_brightness()
-        try:
-            self.monitors = list_monitors()
+        self.render_brightness(snapshot.brightness_result)
+        self.monitors = snapshot.monitors
+        if snapshot.monitor_error is None:
             self.render_monitors()
-        except Exception as error:
-            self.set_status(f"Monitor error: {error}")
-        self.render_lid_behavior()
-        self.render_notifications()
-        self.render_shy_mode()
-        self.render_kdeconnect()
-        self.render_power_profile()
-        self.render_waybar_theme()
-        return False
+        else:
+            self.set_status(f"Monitor error: {snapshot.monitor_error}")
+        self.render_lid_behavior(snapshot.lid_behavior)
+        self.render_notifications(snapshot.notifications)
+        self.render_notification_sounds(snapshot.notification_sounds)
+        self.render_shy_mode(snapshot.shy_mode)
+        self.render_kdeconnect(snapshot.kdeconnect)
+        self.render_power_profile(snapshot.power_profile)
+        self.render_waybar_theme(snapshot.waybar_theme)
+        self.clear_box(self.system_settings_content)
+        self.system_settings_content.append(self.build_system_settings_options())
+        self.settings_visible = True
+        self.set_system_settings_sensitive(controls_enabled)
+
+    def set_system_settings_sensitive(self, sensitive: bool) -> None:
+        for box in (
+            self.brightness_box,
+            self.monitor_box,
+            self.lid_box,
+            self.notifications_box,
+            self.notification_sounds_box,
+            self.shy_mode_box,
+            self.kdeconnect_box,
+            self.power_profile_box,
+            self.waybar_theme_box,
+        ):
+            self.set_box_sensitive(box, sensitive)
 
     def render_monitors(self) -> None:
         for monitor in self.monitors:
@@ -369,8 +447,9 @@ class ArchieControlsWindow:
             button.connect("clicked", self.on_monitor_clicked, monitor.name)
             self.monitor_box.append(button)
 
-    def render_brightness(self) -> None:
-        result = get_brightness_devices()
+    def render_brightness(self, result: subprocess.CompletedProcess[str] | None = None) -> None:
+        if result is None:
+            result = get_brightness_devices()
         if result.returncode != 0:
             self.render_brightness_unavailable("Brightness unavailable.")
             self.set_status(f"Brightness error: {result.stderr.strip()}")
@@ -421,8 +500,9 @@ class ArchieControlsWindow:
 
         self.brightness_box.append(row)
 
-    def render_lid_behavior(self) -> None:
-        active = get_lid_behavior()
+    def render_lid_behavior(self, active: str | None = None) -> None:
+        if active is None:
+            active = get_lid_behavior()
         for index, behavior in enumerate(LID_BEHAVIORS):
             button = self.Gtk.ToggleButton(label=behavior)
             if index == 0:
@@ -519,12 +599,23 @@ class ArchieControlsWindow:
             button.connect("clicked", on_clicked, value)
             box.append(button)
 
-    def render_notifications(self) -> None:
-        active = get_notifications_state()
+    def render_notifications(self, active: str | None = None) -> None:
+        if active is None:
+            active = get_notifications_state()
         self.render_toggle_row(self.notifications_box, active, self.on_notifications_clicked)
 
-    def render_shy_mode(self) -> None:
-        settings = get_shy_mode_settings()
+    def render_notification_sounds(self, active: str | None = None) -> None:
+        if active is None:
+            active = get_notification_sounds_state()
+        self.render_toggle_row(
+            self.notification_sounds_box,
+            active,
+            self.on_notification_sounds_clicked,
+        )
+
+    def render_shy_mode(self, settings: ShyModeSettings | None = None) -> None:
+        if settings is None:
+            settings = get_shy_mode_settings()
         active = ON_VALUE if settings.enabled else OFF_VALUE
         self.render_toggle_row(self.shy_mode_box, active, self.on_shy_mode_clicked)
         self.shy_mode_status.set_label(
@@ -532,16 +623,19 @@ class ArchieControlsWindow:
             f"{settings.replay_count} at {settings.replay_interval:g}s intervals."
         )
 
-    def render_kdeconnect(self) -> None:
-        active = get_kdeconnect_state()
+    def render_kdeconnect(self, active: str | None = None) -> None:
+        if active is None:
+            active = get_kdeconnect_state()
         self.render_toggle_row(self.kdeconnect_box, active, self.on_kdeconnect_clicked)
 
-    def render_power_profile(self) -> None:
-        active = get_power_profile()
+    def render_power_profile(self, active: str | None = None) -> None:
+        if active is None:
+            active = get_power_profile()
         self.render_segmented_row(self.power_profile_box, POWER_PROFILES, active, self.on_power_profile_clicked)
 
-    def render_waybar_theme(self) -> None:
-        active = get_waybar_theme()
+    def render_waybar_theme(self, active: str | None = None) -> None:
+        if active is None:
+            active = get_waybar_theme()
         self.render_segmented_row(self.waybar_theme_box, WAYBAR_THEMES, active, self.on_waybar_theme_clicked)
 
     def on_notifications_clicked(self, _button, value: str) -> None:
@@ -552,6 +646,15 @@ class ArchieControlsWindow:
             self.set_status(f"Failed to set notifications: {result.stderr.strip()}")
         self.clear_box(self.notifications_box)
         self.render_notifications()
+
+    def on_notification_sounds_clicked(self, _button, value: str) -> None:
+        result = run_cli(["archie", "system", "set", "notification-sounds", value])
+        if result.returncode == 0:
+            self.set_status(f"Notification sounds set to {value}.")
+        else:
+            self.set_status(f"Failed to set notification sounds: {result.stderr.strip()}")
+        self.clear_box(self.notification_sounds_box)
+        self.render_notification_sounds()
 
     def on_shy_mode_clicked(self, _button, value: str) -> None:
         result = run_cli(["archie", "system", "set", "shy-mode", value])
@@ -734,6 +837,13 @@ def get_notifications_state() -> str:
     return result.stdout.strip()
 
 
+def get_notification_sounds_state() -> str:
+    result = run_cli(["archie", "system", "get", "notification-sounds"])
+    if result.returncode != 0:
+        return "unknown"
+    return result.stdout.strip()
+
+
 def get_shy_mode_settings() -> ShyModeSettings:
     result = run_cli(["archie", "system", "get", "shy-mode"])
     if result.returncode != 0:
@@ -776,6 +886,34 @@ def get_waybar_theme() -> str:
 
 def get_brightness_devices() -> subprocess.CompletedProcess[str]:
     return run_cli(["archie", "system", "get", "brightness"])
+
+
+def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
+    try:
+        monitors = list_monitors()
+        monitor_error = None
+    except Exception as error:
+        monitors = []
+        monitor_error = str(error)
+    return GuiSettingsSnapshot(
+        brightness_result=get_brightness_devices(),
+        monitors=monitors,
+        monitor_error=monitor_error,
+        lid_behavior=get_lid_behavior(),
+        notifications=get_notifications_state(),
+        notification_sounds=get_notification_sounds_state(),
+        shy_mode=get_shy_mode_settings(),
+        kdeconnect=get_kdeconnect_state(),
+        power_profile=get_power_profile(),
+        waybar_theme=get_waybar_theme(),
+    )
+
+
+def load_gui_settings_snapshot_from_environment() -> GuiSettingsSnapshot | None:
+    payload = os.environ.get(GUI_SETTINGS_SNAPSHOT_ENV)
+    if payload is None:
+        return None
+    return deserialize_gui_settings_snapshot(payload)
 
 
 def parse_brightness_devices(output: str) -> list[GuiBrightnessDevice]:

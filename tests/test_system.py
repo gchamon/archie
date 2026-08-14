@@ -10,27 +10,58 @@ from unittest.mock import patch
 
 from archie.cli import main
 from archie.system import (
-    BrightnessDevice,
     HIBERNATE_MODE,
     LOCK_MODE,
     NONE_MODE,
     OFF_VALUE,
     ON_VALUE,
     UNKNOWN_MODE,
+    BrightnessDevice,
     clamp_brightness_percent,
-    detect_lid_close_behavior,
     detect_kdeconnect_state,
+    detect_lid_close_behavior,
+    format_brightness_device,
     format_system_status,
     format_system_status_json,
-    set_kdeconnect,
-    format_brightness_device,
     install_lid_close_behavior,
     list_backlight_device_names,
+    load_notification_sounds_enabled,
     reload_logind_if_active,
     run_system_get,
     run_system_set,
     set_brightness,
+    set_kdeconnect,
 )
+
+
+class NotificationSoundsCommandTest(unittest.TestCase):
+    def test_defaults_to_enabled_when_configuration_is_missing_or_invalid(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "notification-sounds.json"
+
+            self.assertTrue(load_notification_sounds_enabled(path))
+            path.write_text("not json", encoding="utf-8")
+            self.assertTrue(load_notification_sounds_enabled(path))
+
+    def test_get_and_set_persist_sound_configuration(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "notification-sounds.json"
+            args = argparse.Namespace(setting="notification-sounds", value="off")
+
+            self.assertEqual(run_system_set(args, notification_sounds_path=path), 0)
+            self.assertEqual(path.read_text(encoding="utf-8"), '{\n  "enabled": false\n}\n')
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                self.assertEqual(
+                    run_system_get(
+                        argparse.Namespace(setting="notification-sounds"),
+                        notification_sounds_path=path,
+                    ),
+                    0,
+                )
+
+            self.assertEqual(stdout.getvalue(), "off\n")
 
 
 class ShyModeCommandTest(unittest.TestCase):
@@ -109,6 +140,7 @@ class SystemStatusTest(unittest.TestCase):
         collect.return_value = (
             {
                 "notifications": "on",
+                "notification-sounds": "on",
                 "shy-mode": "off",
                 "share-state": "off",
             },
@@ -120,6 +152,7 @@ class SystemStatusTest(unittest.TestCase):
             self.assertEqual(main(["system", "status"]), 0)
 
         self.assertIn("Notifications: on", stdout.getvalue())
+        self.assertIn("Notification sounds: on", stdout.getvalue())
         self.assertIn("Shy mode: off", stdout.getvalue())
         self.assertIn("Share: off", stdout.getvalue())
 
@@ -133,10 +166,12 @@ class SystemStatusTest(unittest.TestCase):
 
         status = json.loads(stdout.getvalue())
         self.assertEqual(status["notifications"], "on")
+        self.assertEqual(status["notification-sounds"], "unknown")
         self.assertEqual(status["lid-close-behavior"], "unknown")
         self.assertEqual(list(status), [
             "lid-close-behavior",
             "notifications",
+            "notification-sounds",
             "shy-mode",
             "share-state",
             "kdeconnect",
@@ -160,6 +195,7 @@ class SystemStatusTest(unittest.TestCase):
     def test_formats_the_applet_summary(self) -> None:
         values = {
             "notifications": "on",
+            "notification-sounds": "off",
             "brightness": [{"name": "amdgpu_bl1", "percent": 71}],
             "monitors": [
                 {
@@ -191,6 +227,7 @@ class SystemStatusTest(unittest.TestCase):
             "\n"
             "Privacy\n"
             "  Notifications: on\n"
+            "  Notification sounds: off\n"
             "  Shy mode: on\n"
             "  Share: off",
         )
@@ -212,6 +249,7 @@ class SystemStatusTest(unittest.TestCase):
         rendered = format_system_status({"notifications": "on"})
 
         self.assertIn("Notifications: on", rendered)
+        self.assertIn("Notification sounds: unknown", rendered)
         self.assertIn("Monitors: unknown", rendered)
         self.assertIn("Power profile: unknown", rendered)
 

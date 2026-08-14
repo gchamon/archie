@@ -28,6 +28,13 @@
     min-height: 32px;
 }
 
+.archie-loading-pill {
+    min-height: 34px;
+    opacity: 0.65;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
 .archie-message-scroller {
     border: 1px solid alpha(currentColor, 0.35);
     border-radius: 6px;
