@@ -63,6 +63,10 @@ source /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme
 plugins=(git extract fzf docker docker-compose terraform)
 source $ZSH/oh-my-zsh.sh
 
+# Set this in ~/.zshenv or ~/.local/lib/zsh/overrides.sh to suppress the
+# stdout output produced by cliphist:squash and its variants.
+# export CLIPHIST_SQUASH_SILENT=1
+
 test -f $HOME/.local/lib/zsh/commands.sh && source "$HOME/.local/lib/zsh/commands.sh"
 test -f $HOME/.local/lib/zsh/overrides.sh && source "$HOME/.local/lib/zsh/overrides.sh"
 test -f $HOME/.fzf.zsh && source "$HOME/.fzf.zsh"

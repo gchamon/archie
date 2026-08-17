@@ -129,6 +129,9 @@ _cliphist:squash() {
     fi
 
     wl-copy <"$output_file"
+    if [[ ! -v CLIPHIST_SQUASH_SILENT ]]; then
+      cat "$output_file"
+    fi
   } always {
     rm -f "$output_file" "$entry_file" "$list_file" "${list_file}.ordered"
   }

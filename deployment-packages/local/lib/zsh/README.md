@@ -161,8 +161,8 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `terraform-bulk` | Function | Runs a command for each Terraform state entry matching a regex. |
 | `cclip` | Function | Copies a file into the X11 clipboard. |
 | `ccopy` | Function | Copies a file into the Wayland clipboard. |
-| `cliphist:squash-fifo` | Function | Copies the latest text clipboard history entries into one new Wayland clipboard entry, ordered oldest to newest. |
-| `cliphist:squash-lifo` | Function | Copies the latest text clipboard history entries into one new Wayland clipboard entry, ordered newest to oldest. |
+| `cliphist:squash-fifo` | Function | Copies the latest text clipboard history entries into one new Wayland clipboard entry, ordered oldest to newest, and prints the squash to stdout. |
+| `cliphist:squash-lifo` | Function | Copies the latest text clipboard history entries into one new Wayland clipboard entry, ordered newest to oldest, and prints the squash to stdout. |
 | `cliphist:squash` | Alias | Compatibility alias for `cliphist:squash-fifo`. |
 | `urlencode` | Function | URL-encodes a string with `jq`. |
 | `urldecode` | Function | URL-decodes a string. |
@@ -193,6 +193,10 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `vim:file-parsers` | Function | Reports filetype, Treesitter language, parser, and query availability for a file. |
 | `vim:file-plugins` | Function | Reports Lazy.nvim plugins loaded after opening a file. |
 | `vim:file-debug` | Function | Prints a combined file-specific Neovim debug report. |
+
+Set `CLIPHIST_SQUASH_SILENT` in `~/.zshenv` or
+`~/.local/lib/zsh/overrides.sh` to suppress the stdout output from the
+`cliphist:squash` functions.
 
 ## `commands-agents.sh`
 
