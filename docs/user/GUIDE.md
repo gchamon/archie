@@ -76,12 +76,19 @@ yay -Scc
 
 ### 1.3 Install Essential Packages with Yay
 
-First, build and install the `archie-cli` local package from the repo:
+Install `archie-cli` from AUR. To build the checked-out source instead, set
+`ARCHIE_CLI_SOURCE=local`:
 
 ```bash
-cd packaging/archie-cli
- makepkg -Cfsi --noconfirm
-cd ../..
+./scripts/install-archie-cli.sh
+# ARCHIE_CLI_SOURCE=local ./scripts/install-archie-cli.sh
+```
+
+For an alpha build from an active merge request, install the nightly package.
+It replaces the stable package because both provide `archie`:
+
+```bash
+yay -S archie-cli-nightly
 ```
 
 Then install the remaining packages using `yay`:
@@ -221,13 +228,12 @@ Some files aren't managed by Stow because they are machine-specific local files.
 Create them next to the real deployed template target instead of treating the
 `.dist` file as a copied file.
 
-To create `~/.config/hypr/config/device.conf` from the deployed
-`device.dist.conf` template:
+To create `~/.config/hypr/config/device.lua` from the deployed
+`device.dist.lua` template:
 
 ```bash
-device_template="$(readlink -f ~/.config/hypr/config/device.dist.conf)"
-cp "$device_template" "${device_template%.dist.conf}.conf"
-${EDITOR:-nvim} ~/.config/hypr/config/device.conf
+cp ~/.config/hypr/config/device{.dist,}.lua
+${EDITOR:-nvim} ~/.config/hypr/config/device.lua
 hyprctl reload
 ```
 
@@ -455,7 +461,7 @@ MODULES=(... nvidia nvidia_modeset nvidia_uvm nvidia_drm ...)
 After which you must run `sudo mkinitcpio -P`.
 
 Lastly, add the required environment variables to the hyprland config for the
-device under `~/.config/hypr/config/device.conf`:
+device under `~/.config/hypr/config/device.lua`:
 
 ```hyprland
 env = LIBVA_DRIVER_NAME,nvidia

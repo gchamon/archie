@@ -3,98 +3,73 @@
 <!--toc:start-->
 
 - [Keyboard shortcuts](#keyboard-shortcuts)
-  - [Window Management](#window-management)
-  - [Focus and Workspace Navigation](#focus-and-workspace-navigation)
-  - [Application Launchers and Utilities](#application-launchers-and-utilities)
-  - [Session Management](#session-management)
-  - [Brightness Control](#brightness-control)
-  - [Window Resizing and Movement (Mouse)](#window-resizing-and-movement-mouse)
+  - [Window management](#window-management)
+  - [Focus and workspaces](#focus-and-workspaces)
+  - [Launchers and utilities](#launchers-and-utilities)
+  - [Session and brightness](#session-and-brightness)
+  - [Mouse actions](#mouse-actions)
+
 <!--toc:end-->
 
-## Window Management
+The bindings are defined in `deployment-packages/config/hypr/config/binds.lua`.
 
-| Shortcut                     | Command/Action        | Description                                  |
-| :--------------------------- | :-------------------- | :------------------------------------------- |
-| `SUPER + Q`                  | `exec, $terminal`     | Launches your terminal (`kitty`).            |
-| `SUPER + C`                  | `killactive,`         | Kills the active window.                     |
-| `SUPER + E`                  | `exec, $fileManager`  | Launches your file manager (`kitty ranger`). |
-| `SUPER + W`                  | `exec, $windowMenu`   | Opens the Rofi window menu.                  |
-| `SUPER + J`                  | `layoutmsg, togglesplit` | Toggles split direction in dwindle layout. |
-| `SUPER + SHIFT + J`          | `layoutmsg, swapsplit` | Swaps the split direction in dwindle layout. |
-| `SUPER + SHIFT + F`          | `togglefloating,`     | Toggles floating mode for the active window. |
-| `SUPER + F`                  | `fullscreen`          | Toggles fullscreen for the active window.    |
-| `SUPER + SHIFT + Left`       | `swapwindow, l`       | Swaps the active window with the window to its left. |
-| `SUPER + SHIFT + Down`       | `swapwindow, d`       | Swaps the active window with the window below it. |
-| `SUPER + SHIFT + Up`         | `swapwindow, u`       | Swaps the active window with the window above it. |
-| `SUPER + SHIFT + Right`      | `swapwindow, r`       | Swaps the active window with the window to its right. |
-| `SUPER + CTRL + SHIFT + Left`| `movewindow, l`       | Moves the active window to the left.         |
-| `SUPER + CTRL + SHIFT + Down`| `movewindow, d`       | Moves the active window down.                |
-| `SUPER + CTRL + SHIFT + Up`  | `movewindow, u`       | Moves the active window up.                  |
-| `SUPER + CTRL + SHIFT + Right`| `movewindow, r`       | Moves the active window to the right.        |
+## Window management
 
-## Focus and Workspace Navigation
+| Shortcut | Description |
+| :-- | :-- |
+| `SUPER + Q` | Launches Kitty. |
+| `SUPER + C` | Closes the active window. |
+| `SUPER + E` | Launches the Kitty Ranger file manager. |
+| `SUPER + W` | Opens the Rofi window menu. |
+| `SUPER + J` / `SUPER + SHIFT + J` | Toggles or swaps the dwindle split direction. |
+| `SUPER + SHIFT + F` / `SUPER + F` | Toggles floating or fullscreen mode. |
+| `SUPER + SHIFT + Arrow` | Swaps the active window in that direction. |
+| `SUPER + CTRL + SHIFT + Arrow` | Moves the active window in that direction. |
 
-| Shortcut                     | Command/Action                 | Description                                    |
-| :--------------------------- | :----------------------------- | :--------------------------------------------- |
-| `SUPER + Left`               | `movefocus, l`                 | Moves focus to the window on the left.         |
-| `SUPER + Right`              | `movefocus, r`                 | Moves focus to the window on the right.        |
-| `SUPER + Up`                 | `movefocus, u`                 | Moves focus to the window above.               |
-| `SUPER + Down`               | `movefocus, d`                 | Moves focus to the window below.               |
-| `SUPER + SHIFT + Mouse Up`   | `movefocus, l`                 | Moves focus to the window on the left (mouse scroll). |
-| `SUPER + SHIFT + Mouse Down` | `movefocus, r`                 | Moves focus to the window on the right (mouse scroll). |
-| `SUPER + [1-9, 0]`           | `workspace, [1-9, 10]`         | Switches to the specified workspace.           |
-| `CTRL + ALT + Right`         | `workspace, m+1`               | Switches to the next monitor's workspace.      |
-| `CTRL + ALT + Left`          | `workspace, m-1`               | Switches to the previous monitor's workspace.  |
-| `CTRL + ALT + 21`            | `workspace, r+1`               | Switches to the next workspace relative to the current one. (CTRL + ALT + '+ =' key in the keyboard) |
-| `SUPER + SHIFT + [1-9, 0]`   | `movetoworkspace, [1-9, 10]`   | Moves the active window to the specified workspace. |
-| `SUPER + SHIFT + L`          | `movetoworkspace, r+1`         | Moves the active window to the next right workspace (on another monitor if applicable). |
-| `SUPER + SHIFT + H`          | `movetoworkspace, r-1`         | Moves the active window to the next left workspace (on another monitor if applicable). |
-| `SUPER + TAB`                | `workspace, previous`          | Switches to the previously active workspace.   |
-| `SUPER + CTRL + Right`       | `movewindow, mon:1`            | Moves the active window to monitor 1.          |
-| `SUPER + CTRL + Left`        | `movewindow, mon:0`            | Moves the active window to monitor 0.          |
-| `SUPER + Mouse Down`         | `workspace, e+1`               | Scrolls to the next workspace.                 |
-| `SUPER + Mouse Up`           | `workspace, e-1`               | Scrolls to the previous workspace.             |
-| `SUPER + S`                  | `togglespecialworkspace, magic`| Toggles the special workspace "magic" (scratchpad). |
-| `SUPER + SHIFT + S`          | `movetoworkspace, special:magic`| Moves the active window to the "magic" special workspace. |
+## Focus and workspaces
 
-## Application Launchers and Utilities
+| Shortcut | Description |
+| :-- | :-- |
+| `SUPER + Arrow` | Moves focus in that direction. |
+| `SUPER + SHIFT + Mouse Up/Down` | Moves focus left/right. |
+| `SUPER + [1-9, 0]` | Switches to workspace 1–10. |
+| `CTRL + ALT + Right/Left` | Switches to the next/previous monitor workspace. |
+| `CTRL + ALT + equal` | Switches to the next relative workspace. |
+| `SUPER + SHIFT + [1-9, 0]` | Moves the active window to workspace 1–10. |
+| `SUPER + SHIFT + L/H` | Moves the active window to the next/previous relative workspace. |
+| `SUPER + TAB` | Switches to the previous workspace. |
+| `SUPER + CTRL + Right/Left` | Moves the active window to monitor 1/0. |
+| `SUPER + Mouse Down/Up` | Switches to the next/previous existing workspace. |
+| `SUPER + S` / `SUPER + SHIFT + S` | Toggles the `magic` special workspace or moves the active window there. |
 
-| Shortcut                     | Command/Action                       | Description                                    |
-| :--------------------------- | :----------------------------------- | :--------------------------------------------- |
-| `SUPER + R`                  | `exec, $menu`                        | Opens the Rofi application launcher.           |
-| `SUPER + SHIFT + R`          | `exec, $shellMenu`                   | Executes your custom shell menu script.        |
-| `SUPER + CTRL + SHIFT + R`   | `exec, $terminalMenu`                | Executes your custom Rofi terminal history menu. |
-| `SUPER + V`                  | `exec, $clipHistMenu`                | Opens the cliphist menu for clipboard history. |
-| `SHIFT + 107` (Print Screen) | `exec, ~/.config/hypr/scripts/screenshot/captureAll.sh` | Takes a screenshot of the entire screen.     |
-| `107` (Print Screen)         | `exec, ~/.config/hypr/scripts/screenshot/captureArea.sh` | Takes a screenshot of a selected area.       |
-| `CTRL + Escape`              | `exec, gnome-system-monitor`         | Launches the GNOME System Monitor.             |
+## Launchers and utilities
 
-## Session Management
+| Shortcut | Description |
+| :-- | :-- |
+| `SUPER + R` | Opens the Rofi application launcher. |
+| `SUPER + SHIFT + R` | Opens the Archie shell menu. |
+| `SUPER + CTRL + SHIFT + R` | Opens the Rofi terminal-history menu. |
+| `SUPER + V` | Opens the cliphist menu. |
+| `SHIFT + Print` / `Print` | Captures the full screen or a selected area. |
+| `CTRL + Escape` | Launches GNOME System Monitor. |
 
-| Shortcut                     | Command/Action                                | Description                                        |
-| :--------------------------- | :-------------------------------------------- | :------------------------------------------------- |
-| `SUPER + M`                  | `exec, ~/.config/hypr/scripts/confirm-before-exit.sh exit` | Prompts for confirmation before exiting Hyprland. |
-| `SUPER + SHIFT + M`          | `exec, ~/.config/hypr/scripts/confirm-before-exit.sh poweroff` | Prompts for confirmation before powering off.     |
-| `SUPER + CTRL + M`           | `exec, ~/.config/hypr/scripts/confirm-berore-exit.sh reboot` | Prompts for confirmation before rebooting.        |
-| `Power Button`               | `exec, ~/.config/hypr/scripts/confirm-before-exit.sh poweroff` | Prompts for confirmation before powering off.     |
-| `SUPER + CTRL + ALT + R`     | `exec, hyprctl reload`                       | Reloads the Hyprland configuration.               |
-| `SUPER + CTRL + S`           | `exec, hyprctl dispatch dpms toggle`         | Toggles connected displays on or off using DPMS.  |
-| `SUPER + L`                  | `exec, hyprlock`                              | Locks the screen using hyprlock.                   |
-| `Lid Switch close`           | `exec, ~/.config/hypr/scripts/handle-lid-event.sh close` | Locks before hibernate, turns displays off in `lock` lid mode, or no-ops in `none` lid mode. |
-| `Lid Switch open`            | `exec, ~/.config/hypr/scripts/handle-lid-event.sh open` | Turns displays on and locks in `lock` lid mode, or no-ops in `none` lid mode. |
+## Session and brightness
 
-## Brightness Control
+| Shortcut | Description |
+| :-- | :-- |
+| `SUPER + M` | Prompts before exiting Hyprland. |
+| `SUPER + SHIFT + M` / `SUPER + CTRL + M` | Prompts before powering off or rebooting. |
+| `XF86PowerOff` | Prompts before powering off. |
+| `SUPER + CTRL + ALT + R` | Reloads the Hyprland configuration. |
+| `SUPER + CTRL + S` | Toggles display DPMS. |
+| `SUPER + L` | Locks with Hyprlock. |
+| `Lid Switch close/open` | Applies the configured lid-close policy. |
+| `SUPER + CTRL + KP_Add/KP_Subtract` | Increases/decreases brightness by 10%. |
+| `XF86MonBrightnessUp/Down` | Increases/decreases brightness by 10%. |
 
-| Shortcut                     | Command/Action                                       | Description                          |
-| :----------------------------- | :--------------------------------------------------- | :----------------------------------- |
-| `SUPER + CTRL + 86` (Numpad's `+`) | `exec, brightnessctl --device $backlightDevice set 10%+` | Increases screen brightness by 10%.  |
-| `SUPER + CTRL + 82` (Numpad's `-`) | `exec, brightnessctl --device $backlightDevice set 10%-` | Decreases screen brightness by 10%.  |
-| `233`                        | `exec, brightnessctl --device $backlightDevice set 10%+` | Increases screen brightness by 10%. (Built-in keyboard function key)  |
-| `232`                        | `exec, brightnessctl --device $backlightDevice set 10%-` | Decreases screen brightness by 10%. (Built-in keyboard function key) |
+## Mouse actions
 
-## Window Resizing and Movement (Mouse)
-
-| Shortcut                    | Command/Action       | Description                                    |
-| :-------------------------- | :------------------- | :--------------------------------------------- |
-| `SUPER + LMB` (mouse:272)   | `movewindow`         | Moves the active window by dragging with the left mouse button. |
-| `SUPER + RMB` (mouse:273)   | `resizewindow`       | Resizes the active window by dragging with the right mouse button. |
+| Shortcut | Description |
+| :-- | :-- |
+| `SUPER + LMB` (`mouse:272`) | Moves the active window while dragging. |
+| `SUPER + RMB` (`mouse:273`) | Resizes the active window while dragging. |

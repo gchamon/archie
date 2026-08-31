@@ -17,6 +17,7 @@ class GuiSettingsSnapshot:
     lid_behavior: str
     notifications: str
     notification_sounds: str
+    notification_sound: str
     shy_mode: ShyModeSettings
     kdeconnect: str
     power_profile: str
@@ -37,6 +38,7 @@ def serialize_gui_settings_snapshot(snapshot: GuiSettingsSnapshot) -> str:
             "lid_behavior": snapshot.lid_behavior,
             "notifications": snapshot.notifications,
             "notification_sounds": snapshot.notification_sounds,
+            "notification_sound": snapshot.notification_sound,
             "shy_mode": asdict(snapshot.shy_mode),
             "kdeconnect": snapshot.kdeconnect,
             "power_profile": snapshot.power_profile,
@@ -69,6 +71,7 @@ def deserialize_gui_settings_snapshot(payload: str) -> GuiSettingsSnapshot | Non
             lid_behavior=_require_str(data, "lid_behavior"),
             notifications=_require_str(data, "notifications"),
             notification_sounds=_require_str(data, "notification_sounds"),
+            notification_sound=_require_str(data, "notification_sound"),
             shy_mode=ShyModeSettings(
                 enabled=_require_bool(shy_mode, "enabled"),
                 replay_count=_require_int(shy_mode, "replay_count"),

@@ -2,7 +2,7 @@ These docs are tables that document in a readable and centralized manner the
 keyboard shortcuts available in my hyprland setup.
 
 In order to update the docs, you need to take into consideration only the
-shortcuts configured in ./hypr/hyprland.conf.
+shortcuts configured in ./deployment-packages/config/hypr/config/binds.lua.
 
 If you don't know the syntax for hyprland you should panic with a suitable message.
 

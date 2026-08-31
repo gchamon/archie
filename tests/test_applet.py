@@ -34,7 +34,13 @@ class AppletTooltipTest(unittest.TestCase):
                     "waybar-theme": "tokyonight",
                 },
                 ShyModeViewState(False, False, False, False, False),
+                running_version="0.1.0",
+                installed_version="0.1.0",
             ),
+            "Archie\n"
+            "  Version: 0.1.0\n"
+            "  Update: current\n"
+            "\n"
             "Hardware\n"
             "  Brightness: amdgpu_bl1 71%\n"
             "  Monitors: eDP-1 Built-in display: enabled (focused)\n"
@@ -65,7 +71,13 @@ class AppletTooltipTest(unittest.TestCase):
                     "power-profile": "",
                 },
                 ShyModeViewState(False, False, False, False, False),
+                running_version="0.1.0",
+                installed_version="0.1.0",
             ),
+            "Archie\n"
+            "  Version: 0.1.0\n"
+            "  Update: current\n"
+            "\n"
             "Hardware\n"
             "  Brightness: unavailable\n"
             "  Monitors: unavailable\n"
@@ -82,6 +94,15 @@ class AppletTooltipTest(unittest.TestCase):
             "  Shy mode: off\n"
             "  Share: off",
         )
+
+    def test_shows_restart_instruction_when_an_update_is_installed(self) -> None:
+        tooltip = format_tooltip(
+            running_version="0.1.0",
+            installed_version="0.2.0",
+        )
+
+        self.assertIn("Version: 0.1.0", tooltip)
+        self.assertIn("Update: restart to apply 0.2.0", tooltip)
 
 
 class AppletPrivacyStateTest(unittest.TestCase):
@@ -183,6 +204,16 @@ class AppletTooltipRefreshTest(unittest.TestCase):
         refresh.assert_called_once_with()
         invocation.return_value.assert_called_once_with(None)
 
+    def test_restart_requests_a_deferred_applet_restart(self) -> None:
+        notifier = ArchieStatusNotifier(object(), {}, Mock())
+        invocation = Mock()
+
+        with patch.object(notifier, "request_restart") as restart:
+            notifier.applet_method_call(None, "", "", "", "Restart", None, invocation)
+
+        restart.assert_called_once_with()
+        invocation.return_value.assert_called_once_with(None)
+
 
 class AppletGuiSnapshotTest(unittest.TestCase):
     def test_startup_requests_a_gui_snapshot(self) -> None:
@@ -238,6 +269,7 @@ def make_gui_snapshot() -> GuiSettingsSnapshot:
         lid_behavior="lock",
         notifications="on",
         notification_sounds="on",
+        notification_sound="default",
         shy_mode=ShyModeSettings(),
         kdeconnect="on",
         power_profile="balanced",

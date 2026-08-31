@@ -1,0 +1,5 @@
+hl.env("HYPRCURSOR_THEME", "Breeze5")
+hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_SIZE", "24")
+hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+hl.env("WLR_NO_HARDWARE_CURSORS", "1")

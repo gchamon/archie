@@ -1,8 +1,8 @@
 # Maintainer: Gabriel Chamon <gchamon@tuta.io>
-
 pkgname=archie-cli
-pkgver="$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$startdir/../../pyproject.toml")"
+pkgver=0.1.0
 pkgrel=1
+_commit=0000000000000000000000000000000000000000
 pkgdesc="Repository-owned maintenance CLI for Archie"
 arch=(any)
 url="https://gitlab.com/gabriel.chamon/archie"
@@ -10,17 +10,17 @@ license=(MIT)
 depends=("python>=3.14")
 makedepends=(python-installer uv)
 provides=(archie)
-conflicts=(archie)
-source=()
-sha256sums=()
+conflicts=(archie archie-cli-nightly)
+source=("archie-${_commit}.tar.gz::https://gitlab.com/gabriel.chamon/archie/-/archive/${_commit}/archie-${_commit}.tar.gz")
+sha256sums=('SKIP')
 
 build() {
-    cd "$startdir/../.."
+    cd "$srcdir/archie-$_commit"
     uv build --wheel --out-dir "$srcdir/dist"
 }
 
 package() {
-    cd "$startdir/../.."
+    cd "$srcdir/archie-$_commit"
     python -m installer --destdir="$pkgdir" "$srcdir"/dist/*.whl
     install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
     install -Dm644 docs/user/KEYBOARD_SHORTCUTS.md "$pkgdir/usr/share/doc/$pkgname/KEYBOARD_SHORTCUTS.md"

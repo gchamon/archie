@@ -50,6 +50,7 @@ SYSTEM_STATUS_SETTINGS = [
     "lid-close-behavior",
     "notifications",
     "notification-sounds",
+    "notification-sound",
     "shy-mode",
     "share-state",
     "kdeconnect",
@@ -121,6 +122,7 @@ def add_system_parser(
         ("lid-close-behavior", "Read lid close behavior.", "Read Archie-managed lid close behavior."),
         ("notifications", "Read dunst notification state.", "Read whether dunst notifications are on or off."),
         ("notification-sounds", "Read notification sound state.", "Read whether Dunst notification sounds are on or off."),
+        ("notification-sound", "Read the notification sound.", "Read the configured Dunst notification sound path."),
         ("shy-mode", "Read shy mode notification privacy settings.", "Read Archie-managed shy mode and replay settings."),
         ("share-state", "Read the managed screen-share state.", "Read whether the managed Hyprland portal is sharing a screen."),
         ("kdeconnect", "Read KDE Connect daemon state.", "Read whether the KDE Connect daemon is running."),
@@ -204,6 +206,14 @@ def add_system_parser(
         help="Use on to play notification sounds or off to silence them.",
     )
     notification_sounds_set_parser.set_defaults(func=run_system_set)
+
+    notification_sound_set_parser = set_subparsers.add_parser(
+        "notification-sound",
+        help="Change the Dunst notification sound.",
+        description="Use an absolute readable sound-file path or 'default'.",
+    )
+    notification_sound_set_parser.add_argument("value", help="An absolute sound-file path or 'default'.")
+    notification_sound_set_parser.set_defaults(func=run_system_set)
 
     shy_mode_set_parser = set_subparsers.add_parser(
         "shy-mode",
@@ -299,6 +309,9 @@ def run_system_get(
                 else OFF_VALUE
             )
             return 0
+        case "notification-sound":
+            print(load_notification_sound_path(notification_sounds_path) or "default")
+            return 0
         case "shy-mode":
             print(format_shy_mode_settings(load_shy_mode_settings(shy_mode_path)))
             return 0
@@ -337,6 +350,7 @@ def collect_system_status(
         "notification-sounds": lambda: ON_VALUE
         if load_notification_sounds_enabled(notification_sounds_path)
         else OFF_VALUE,
+        "notification-sound": lambda: load_notification_sound_path(notification_sounds_path) or "default",
         "shy-mode": lambda: ON_VALUE if load_shy_mode_settings(shy_mode_path).enabled else OFF_VALUE,
         "share-state": lambda: ON_VALUE if detect_share_active() else OFF_VALUE,
         "kdeconnect": detect_kdeconnect_state,
@@ -495,6 +509,13 @@ def run_system_set(
         case "notification-sounds":
             save_notification_sounds_enabled(args.value == ON_VALUE, notification_sounds_path)
             return 0
+        case "notification-sound":
+            try:
+                save_notification_sound_path(args.value, notification_sounds_path)
+            except ValueError as error:
+                print(f"archie system set notification-sound: {error}", file=sys.stderr)
+                return 2
+            return 0
         case "shy-mode":
             current = load_shy_mode_settings(shy_mode_path)
             settings = ShyModeSettings(
@@ -602,21 +623,50 @@ def notification_sounds_config_path() -> Path:
     return config_home / "archie/notification-sounds.json"
 
 
-def load_notification_sounds_enabled(path: Path | None = None) -> bool:
+def load_notification_sound_settings(path: Path | None = None) -> dict[str, object]:
     settings_path = path or notification_sounds_config_path()
     try:
         data = json.loads(settings_path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return True
-    return data.get("enabled") is not False if isinstance(data, dict) else True
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def load_notification_sounds_enabled(path: Path | None = None) -> bool:
+    return load_notification_sound_settings(path).get("enabled") is not False
+
+
+def load_notification_sound_path(path: Path | None = None) -> str | None:
+    sound_path = load_notification_sound_settings(path).get("sound_path")
+    return sound_path if isinstance(sound_path, str) and sound_path else None
 
 
 def save_notification_sounds_enabled(enabled: bool, path: Path | None = None) -> None:
+    settings = load_notification_sound_settings(path)
+    settings["enabled"] = enabled
+    save_notification_sound_settings(settings, path)
+
+
+def save_notification_sound_path(value: str, path: Path | None = None) -> None:
+    settings = load_notification_sound_settings(path)
+    if value == "default":
+        settings.pop("sound_path", None)
+    else:
+        sound_path = Path(value)
+        if not sound_path.is_absolute():
+            raise ValueError("sound path must be absolute or 'default'")
+        if not sound_path.is_file() or not os.access(sound_path, os.R_OK):
+            raise ValueError(f"sound file is not readable: {sound_path}")
+        settings["sound_path"] = str(sound_path)
+    save_notification_sound_settings(settings, path)
+
+
+def save_notification_sound_settings(settings: dict[str, object], path: Path | None = None) -> None:
     settings_path = path or notification_sounds_config_path()
     settings_path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = settings_path.with_suffix(f"{settings_path.suffix}.tmp")
     temporary_path.write_text(
-        json.dumps({"enabled": enabled}, indent=2, sort_keys=True) + "\n",
+        json.dumps(settings, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     temporary_path.replace(settings_path)

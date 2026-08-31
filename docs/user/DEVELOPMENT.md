@@ -100,6 +100,9 @@ GitHub. The pipeline expects these repository variables:
   example `git@github.com:gchamon/archie.git`
 - `GITHUB_DEPLOY_KEY_B64`: base64-encoded private deploy key with write access
   to the GitHub mirror repository
+- `AUR_SSH_PRIVATE_KEY_B64`: protected, masked single-line base64 encoding of
+  the private key authorized to update the `archie-cli` and
+  `archie-cli-nightly` AUR repositories
 
 The host migration itself is tracked in
 `docs/work-items/repository-hosting-01-gitlab-cutover.md`.

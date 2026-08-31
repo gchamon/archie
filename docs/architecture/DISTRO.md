@@ -86,7 +86,7 @@ Out of scope for v1:
 
 ### 5. Config Deployment Strategy
 - Replace manual symlink/rsync instructions with installer/post-install automation.
-- Preserve machine-specific overrides via generated `device.conf` template in installed system.
+- Preserve machine-specific overrides via generated `device.lua` template in installed system.
 - Ensure user-owned file permissions for home configs at end of install.
 
 ### 6. Hardware Strategy (Laptop-First)

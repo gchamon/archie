@@ -95,7 +95,7 @@ The helper runs the common first-run path from the canonical guide:
 - installs the common Archie package set
 - deploys the Stow packages into `~`, `~/.config`, `~/.local`, `/etc`, and
   optionally `/usr/share/xkeyboard-config-2`
-- scaffolds `device.conf`, `hyprpaper.conf`, and `overrides.sh` from the
+- scaffolds `device.lua`, `hyprpaper.conf`, and `overrides.sh` from the
   deployed `.dist` templates if they do not already exist
 - installs the zsh, theming, and keyring packages
 - deploys `p10k-lean` as the default Powerlevel10k theme
@@ -151,4 +151,4 @@ After the quickstart completes, use [`docs/user/GUIDE.md`](./GUIDE.md) for:
 - lid-close power behavior
 - power-button confirmation behavior
 - service customization
-- any manual review of `device.conf`, `hyprpaper.conf`, or `overrides.sh`
+- any manual review of `device.lua`, `hyprpaper.conf`, or `overrides.sh`

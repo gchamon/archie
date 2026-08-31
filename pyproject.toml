@@ -1,6 +1,6 @@
 [project]
 name = "archie"
-version = "0.1.0"
+version = "0.1.0a1"
 authors = [
     { name = "Gabriel Chamon", email = "gchamon@tuta.io" },
 ]
