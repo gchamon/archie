@@ -9,7 +9,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from archie.applet_bus import notify_applet_settings_changed
+from archie.applet_bus import (
+    get_applet_version,
+    notify_applet_settings_changed,
+    restart_applet,
+)
 from archie.gui_state import (
     GUI_SETTINGS_SNAPSHOT_ENV,
     GuiSettingsSnapshot,
@@ -31,6 +35,7 @@ from archie.system import (
     POWER_PROFILES,
     WAYBAR_THEMES,
 )
+from archie.version import applet_update_required, installed_archie_version
 
 LID_BEHAVIORS = [HIBERNATE_MODE, LOCK_MODE, NONE_MODE]
 TOGGLE_VALUES = [ON_VALUE, OFF_VALUE]
@@ -99,8 +104,9 @@ class ArchieControlsWindow:
         import gi
 
         gi.require_version("Gtk", "4.0")
-        from gi.repository import GLib, Gtk  # type: ignore[attr-defined]
+        from gi.repository import Gio, GLib, Gtk  # type: ignore[attr-defined]
 
+        self.Gio = Gio
         self.Gtk = Gtk
         self.GLib = GLib
         self.application = application
@@ -122,6 +128,7 @@ class ArchieControlsWindow:
         self.notification_sounds_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.notification_sounds_box.add_css_class("archie-lid-segments")
         self.notification_sounds_box.add_css_class("linked")
+        self.notification_sound_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.shy_mode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.shy_mode_box.add_css_class("archie-lid-segments")
         self.shy_mode_box.add_css_class("linked")
@@ -155,6 +162,21 @@ class ArchieControlsWindow:
         self.message_scroller.set_child(self.message_view)
         self.message_scroller.add_css_class("archie-message-scroller")
         self.confirm_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.applet_restart_pending = False
+        self.applet_restart_attempts = 0
+        self.update_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.update_bar.add_css_class("archie-update-bar")
+        self.archie_version_label = Gtk.Label()
+        self.archie_version_label.set_xalign(0)
+        self.archie_version_label.set_hexpand(True)
+        self.update_notice_label = Gtk.Label(label="Update installed. Restart the applet to apply it.")
+        self.update_notice_label.set_xalign(0)
+        self.restart_applet_button = Gtk.Button(label="Restart to update")
+        self.restart_applet_button.connect("clicked", self.on_restart_applet_clicked)
+        self.update_bar.append(self.archie_version_label)
+        self.update_bar.append(self.update_notice_label)
+        self.update_bar.append(self.restart_applet_button)
+        self.render_applet_update_state(None)
 
         self.window = Gtk.ApplicationWindow(application=application)
         self.window.set_title("Archie Controls")
@@ -168,6 +190,7 @@ class ArchieControlsWindow:
             self.render_settings_snapshot(snapshot, controls_enabled=False)
             self.set_status("Refreshing system settings…")
         self.GLib.timeout_add(50, self.refresh)
+        self.GLib.timeout_add(50, self.refresh_applet_update_state)
 
     def present(self) -> None:
         self.window.present()
@@ -214,6 +237,7 @@ class ArchieControlsWindow:
 
         root.append(self.message_scroller)
         root.append(self.confirm_box)
+        root.append(self.update_bar)
 
         return root
 
@@ -244,6 +268,11 @@ class ArchieControlsWindow:
         notification_sounds_label.set_xalign(0)
         options.append(notification_sounds_label)
         options.append(self.notification_sounds_box)
+
+        notification_sound_label = Gtk.Label(label="Notification sound:")
+        notification_sound_label.set_xalign(0)
+        options.append(notification_sound_label)
+        options.append(self.notification_sound_box)
 
         shy_mode_label = Gtk.Label(label="Shy mode:")
         shy_mode_label.set_xalign(0)
@@ -377,6 +406,51 @@ class ArchieControlsWindow:
         self.run_cli_async(load_gui_settings_snapshot, self.on_settings_snapshot_loaded)
         return False
 
+    def refresh_applet_update_state(self) -> bool:
+        self.run_cli_async(get_applet_version, self.on_applet_version_loaded)
+        return False
+
+    def on_applet_version_loaded(self, running_version: str | None) -> bool:
+        self.render_applet_update_state(running_version)
+        if not self.applet_restart_pending:
+            return False
+        if running_version == installed_archie_version():
+            self.applet_restart_pending = False
+            self.set_status("Applet restarted with the installed update.")
+        elif self.applet_restart_attempts < 10:
+            self.applet_restart_attempts += 1
+            self.GLib.timeout_add_seconds(1, self.refresh_applet_update_state)
+        else:
+            self.applet_restart_pending = False
+            self.set_status("Applet restart is taking longer than expected.")
+        return False
+
+    def render_applet_update_state(self, running_version: str | None) -> None:
+        installed_version = installed_archie_version()
+        self.archie_version_label.set_label(f"Archie {installed_version}")
+        update_pending = applet_update_required(running_version, installed_version)
+        self.update_notice_label.set_visible(update_pending)
+        self.restart_applet_button.set_visible(update_pending)
+        if update_pending:
+            self.update_bar.add_css_class("archie-update-pending")
+        else:
+            self.update_bar.remove_css_class("archie-update-pending")
+
+    def on_restart_applet_clicked(self, _button) -> None:
+        self.restart_applet_button.set_sensitive(False)
+        self.set_status("Restarting applet to apply the installed update…")
+        self.run_cli_async(restart_applet, self.on_restart_applet_done)
+
+    def on_restart_applet_done(self, restarted: bool) -> bool:
+        self.restart_applet_button.set_sensitive(True)
+        if not restarted:
+            self.set_status("Could not reach the running Archie applet.")
+            return False
+        self.applet_restart_pending = True
+        self.applet_restart_attempts = 0
+        self.GLib.timeout_add_seconds(1, self.refresh_applet_update_state)
+        return False
+
     def render_settings_loading(self) -> None:
         self.clear_box(self.system_settings_content)
         loading_box = self.Gtk.Box(orientation=self.Gtk.Orientation.VERTICAL)
@@ -401,6 +475,7 @@ class ArchieControlsWindow:
         self.clear_box(self.lid_box)
         self.clear_box(self.notifications_box)
         self.clear_box(self.notification_sounds_box)
+        self.clear_box(self.notification_sound_box)
         self.clear_box(self.shy_mode_box)
         self.clear_box(self.kdeconnect_box)
         self.clear_box(self.power_profile_box)
@@ -414,6 +489,7 @@ class ArchieControlsWindow:
         self.render_lid_behavior(snapshot.lid_behavior)
         self.render_notifications(snapshot.notifications)
         self.render_notification_sounds(snapshot.notification_sounds)
+        self.render_notification_sound(snapshot.notification_sound)
         self.render_shy_mode(snapshot.shy_mode)
         self.render_kdeconnect(snapshot.kdeconnect)
         self.render_power_profile(snapshot.power_profile)
@@ -430,6 +506,7 @@ class ArchieControlsWindow:
             self.lid_box,
             self.notifications_box,
             self.notification_sounds_box,
+            self.notification_sound_box,
             self.shy_mode_box,
             self.kdeconnect_box,
             self.power_profile_box,
@@ -617,6 +694,23 @@ class ArchieControlsWindow:
             self.on_notification_sounds_clicked,
         )
 
+    def render_notification_sound(self, value: str | None = None) -> None:
+        if value is None:
+            value = get_notification_sound()
+        label = self.Gtk.Label(label="Bundled default" if value == "default" else value)
+        label.set_xalign(0)
+        label.set_hexpand(True)
+        label.set_ellipsize(3)
+        label.set_tooltip_text("Bundled default" if value == "default" else value)
+        choose_button = self.Gtk.Button(label="Choose sound…")
+        choose_button.connect("clicked", self.on_choose_notification_sound)
+        reset_button = self.Gtk.Button(label="Reset to default")
+        reset_button.set_sensitive(value != "default")
+        reset_button.connect("clicked", self.on_reset_notification_sound)
+        self.notification_sound_box.append(label)
+        self.notification_sound_box.append(choose_button)
+        self.notification_sound_box.append(reset_button)
+
     def render_shy_mode(self, settings: ShyModeSettings | None = None) -> None:
         if settings is None:
             settings = get_shy_mode_settings()
@@ -661,6 +755,40 @@ class ArchieControlsWindow:
             self.set_status(f"Failed to set notification sounds: {result.stderr.strip()}")
         self.clear_box(self.notification_sounds_box)
         self.render_notification_sounds()
+
+    def on_choose_notification_sound(self, _button) -> None:
+        chooser = self.Gtk.FileChooserNative.new(
+            "Choose notification sound", self.window, self.Gtk.FileChooserAction.OPEN, "Choose sound", "Cancel"
+        )
+        sounds_directory = Path("/usr/share/sounds")
+        if sounds_directory.is_dir():
+            chooser.set_current_folder(self.Gio.File.new_for_path(str(sounds_directory)))
+        audio_filter = self.Gtk.FileFilter()
+        audio_filter.set_name("Audio files")
+        audio_filter.add_mime_type("audio/*")
+        chooser.add_filter(audio_filter)
+        chooser.connect("response", self.on_notification_sound_chosen)
+        chooser.show()
+
+    def on_notification_sound_chosen(self, chooser, response) -> None:
+        if response == self.Gtk.ResponseType.ACCEPT and (selected := chooser.get_file()):
+            path = selected.get_path()
+            if path is not None:
+                self.set_notification_sound(path)
+        chooser.destroy()
+
+    def on_reset_notification_sound(self, _button) -> None:
+        self.set_notification_sound("default")
+
+    def set_notification_sound(self, value: str) -> None:
+        result = run_cli(["archie", "system", "set", "notification-sound", value])
+        if result.returncode == 0:
+            self.set_status("Notification sound reset to bundled default." if value == "default" else "Notification sound updated.")
+            notify_applet_settings_changed()
+        else:
+            self.set_status(f"Could not use that sound: {result.stderr.strip()}")
+        self.clear_box(self.notification_sound_box)
+        self.render_notification_sound()
 
     def on_shy_mode_clicked(self, _button, value: str) -> None:
         result = run_cli(["archie", "system", "set", "shy-mode", value])
@@ -855,6 +983,11 @@ def get_notification_sounds_state() -> str:
     return result.stdout.strip()
 
 
+def get_notification_sound() -> str:
+    result = run_cli(["archie", "system", "get", "notification-sound"])
+    return result.stdout.strip() if result.returncode == 0 else "default"
+
+
 def get_shy_mode_settings() -> ShyModeSettings:
     result = run_cli(["archie", "system", "get", "shy-mode"])
     if result.returncode != 0:
@@ -913,6 +1046,7 @@ def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
         lid_behavior=get_lid_behavior(),
         notifications=get_notifications_state(),
         notification_sounds=get_notification_sounds_state(),
+        notification_sound=get_notification_sound(),
         shy_mode=get_shy_mode_settings(),
         kdeconnect=get_kdeconnect_state(),
         power_profile=get_power_profile(),

@@ -47,7 +47,7 @@ The following are intentionally still manual in this phase:
 - cloning Archie inside the guest
 - installing Archie-specific packages not required for the bootstrap baseline
 - running Stow deployment
-- machine-specific local file decisions such as `device.conf` values
+- machine-specific local file decisions such as `device.lua` values
 
 ## Prerequisites
 

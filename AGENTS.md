@@ -47,8 +47,9 @@ This repository contains the complete configuration for "Archie", a Hyprland-bas
 - **Deploy Local Package**: `stow --dir deployment-packages --target "$HOME/.local" local`
 - **Deploy `/etc` Package**: `sudo stow --dir deployment-packages --target /etc etc`
 - **Deploy XKB Package**: `sudo stow --dir deployment-packages --target /usr/share/xkeyboard-config-2 xkb`
-- **Reload Hyprland**: `hyprctl reload` (apply changes to `hyprland.conf` or sourced files)
-- **Get Monitor Info**: `hyprctl monitors` (useful for configuring `device.conf`)
+- **Reload Hyprland**: `hyprctl reload` (apply changes to `hyprland.lua` and its modules)
+- **Verify Hyprland Lua**: `Hyprland --verify-config --config "$HOME/.config/hypr/hyprland.lua"`
+- **Get Monitor Info**: `hyprctl monitors` (useful for configuring `device.lua`)
 - **Get Workspace Info**: `hyprctl workspaces`
 - **Check Backlight**: `brightnessctl -l`
 - **List Explicit Packages**: `yay -Qe` (synchronized hourly to `/etc/pkglist.txt` via cron)
@@ -96,7 +97,7 @@ Configuration verification is performed by reloading the respective service:
   - 2 spaces for Lua and YAML.
 - **File Naming**:
   - Kebab-case for scripts (`launch-waybar.sh`) and config files.
-  - Distribution templates use `.dist` suffix (`device.dist.conf`).
+  - Distribution templates use `.dist` suffix (`device.dist.lua`).
 - **Pathing**: Always use `$HOME` or `~` instead of hardcoded paths when referring to user directories.
 
 ### Shell Scripts (`bash`)
@@ -121,10 +122,10 @@ Configuration verification is performed by reloading the respective service:
 
 ### Hyprland Configuration
 
-- **Modularization**: Keep `hyprland.conf` clean by sourcing specific components using the `source = ~/.config/hypr/config/filename.conf` syntax.
-- **Device-Specifics**: Never commit changes to `hypr/config/device.conf`. Modify `hypr/config/device.dist.conf` if adding new template variables.
-- **Keybindings**: Follow the established `$mainMod` (SUPER) convention. Use `bindm` for mouse actions and `binde` for repeating keys (like volume/brightness).
-- **Window Rules**: Use `windowrulev2` for modern window management.
+- **Modularization**: Keep `hyprland.lua` as a loader and add independent modules under `hypr/config/` with `require()`.
+- **Device-Specifics**: Never commit `hypr/config/device.lua`. Modify `hypr/config/device.dist.lua` when adding template values.
+- **Keybindings**: Follow the `main_mod` (SUPER) convention and use `hl.bind()` with explicit flags for mouse or locked bindings.
+- **Window Rules**: Use `hl.window_rule()` with named match tables.
 
 ### Zsh Configuration
 
@@ -136,8 +137,8 @@ Configuration verification is performed by reloading the respective service:
 ## 3. Project Structure & Key Files
 
 - `hypr/`: Hyprland compositor settings.
-  - `hyprland.conf`: Main entry point.
-  - `config/`: Sourced modular configs (keybinds, window rules, etc.).
+  - `hyprland.lua`: Main entry point.
+  - `config/`: Required Lua modules (binds, appearance, input, rules, and startup).
   - `scripts/`: Helper scripts for session management and UI.
 - `deployment-packages/`: GNU Stow packages that deploy Archie into the target roots.
   - `home/`: Files deployed directly under `$HOME`, including `.zshrc` and `.p10k-portable.zsh`.
@@ -203,10 +204,10 @@ When preparing a release:
 
 ### Adding a New Keybinding
 
-1. Identify the relevant config file in `hypr/config/` (usually `keybinds.conf`).
-2. Follow the `$mainMod, <key>, <action>, <args>` pattern.
+1. Update `deployment-packages/config/hypr/config/binds.lua`.
+2. Follow the `hl.bind("SUPER + <key>", hl.dsp.<dispatcher>(...))` pattern.
 3. For multimedia keys, use the `XF86` names (e.g., `XF86AudioRaiseVolume`).
-4. Test with `hyprctl reload`.
+4. Test with `Hyprland --verify-config --config "$HOME/.config/hypr/hyprland.lua"` and `hyprctl reload`.
 
 ### Creating a New Utility Script
 

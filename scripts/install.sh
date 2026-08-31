@@ -671,14 +671,32 @@ copy_from_deployed_template() {
     printf '%s\n' "$target_path"
 }
 
+copy_deployed_template_to_target() {
+    local deployed_template="$1"
+    local target_path="$2"
+    local template_path=""
+
+    template_path="$(readlink -f "$deployed_template")"
+
+    if [[ -e "$target_path" || -L "$target_path" ]]; then
+        printf '  -> Keeping existing local file: %s\n' "$target_path" >&2
+        printf '%s\n' "$target_path"
+        return 0
+    fi
+
+    print_command cp "$template_path" "$target_path" >&2
+    cp "$template_path" "$target_path"
+    printf '%s\n' "$target_path"
+}
+
 scaffold_local_files() {
     log_step "Scaffold machine-local files from deployed templates"
 
-    DEVICE_CONF_PATH="$(copy_from_deployed_template "$HOME/.config/hypr/config/device.dist.conf" ".dist.conf" ".conf")"
+    DEVICE_LUA_PATH="$(copy_deployed_template_to_target "$HOME/.config/hypr/config/device.dist.lua" "$HOME/.config/hypr/config/device.lua")"
     HYPRPAPER_CONF_PATH="$(copy_from_deployed_template "$HOME/.config/hypr/hyprpaper.dist.conf" ".dist.conf" ".conf")"
     OVERRIDES_SH_PATH="$(copy_from_deployed_template "$HOME/.local/lib/zsh/overrides.dist.sh" ".dist.sh" ".sh")"
 
-    log_info "device.conf: $DEVICE_CONF_PATH"
+    log_info "device.lua: $DEVICE_LUA_PATH"
     log_info "hyprpaper.conf: $HYPRPAPER_CONF_PATH"
     log_info "overrides.sh: $OVERRIDES_SH_PATH"
 }
@@ -741,7 +759,7 @@ enable_system_services() {
 
 print_manual_follow_up() {
     log_step "Manual follow-up still required"
-    log_info "Review $DEVICE_CONF_PATH for monitor geometry and AQ_DRM_DEVICES."
+    log_info "Review $DEVICE_LUA_PATH for monitor geometry and AQ_DRM_DEVICES."
     log_info "Review $HYPRPAPER_CONF_PATH for wallpaper paths and optional external monitor mapping."
     log_info "Review $OVERRIDES_SH_PATH for any machine-specific zsh overrides."
     log_info "Inspect monitors with: hyprctl monitors"

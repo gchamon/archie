@@ -25,10 +25,12 @@ from archie.system import (
     format_system_status_json,
     install_lid_close_behavior,
     list_backlight_device_names,
+    load_notification_sound_path,
     load_notification_sounds_enabled,
     reload_logind_if_active,
     run_system_get,
     run_system_set,
+    save_notification_sound_path,
     set_brightness,
     set_kdeconnect,
 )
@@ -60,8 +62,17 @@ class NotificationSoundsCommandTest(unittest.TestCase):
                     ),
                     0,
                 )
-
             self.assertEqual(stdout.getvalue(), "off\n")
+
+    def test_custom_sound_path_is_persisted_and_requires_a_readable_absolute_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "notification-sounds.json"
+            sound_path = Path(temp_dir) / "sound.ogg"
+            sound_path.write_text("sound", encoding="utf-8")
+            save_notification_sound_path(str(sound_path), config_path)
+            self.assertEqual(load_notification_sound_path(config_path), str(sound_path))
+            with self.assertRaises(ValueError):
+                save_notification_sound_path("relative.ogg", config_path)
 
 
 class ShyModeCommandTest(unittest.TestCase):
@@ -172,6 +183,7 @@ class SystemStatusTest(unittest.TestCase):
             "lid-close-behavior",
             "notifications",
             "notification-sounds",
+            "notification-sound",
             "shy-mode",
             "share-state",
             "kdeconnect",

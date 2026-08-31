@@ -5,6 +5,7 @@ import logging.handlers
 import os
 import signal
 import subprocess
+import sys
 import threading
 import time
 from contextlib import ExitStack
@@ -12,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from archie.applet_bus import APPLET_BUS_NAME, APPLET_INTERFACE, APPLET_OBJECT_PATH
+from archie.applet_bus import APPLET_BUS_NAME, APPLET_OBJECT_PATH
 from archie.gui import load_gui_settings_snapshot
 from archie.gui_state import (
     GUI_SETTINGS_SNAPSHOT_ENV,
@@ -28,6 +29,7 @@ from archie.privacy import (
     load_shy_mode_settings,
 )
 from archie.system import collect_system_status, format_system_status
+from archie.version import installed_archie_version
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +50,10 @@ DBUSMENU_OBJECT_PATH = "/org/archie/menu"
 DBUSMENU_INTERFACE = "com.canonical.dbusmenu"
 
 MENU_ITEM_OPEN = 1
-MENU_ITEM_SEP = 2
-MENU_ITEM_QUIT = 3
+MENU_ITEM_RESTART = 2
+MENU_ITEM_SEP = 3
+MENU_ITEM_QUIT = 4
+RUNNING_VERSION = installed_archie_version()
 
 SNI_XML = """
 <node>
@@ -154,6 +158,10 @@ APPLET_XML = """
 <node>
   <interface name="com.gchamon.Archie.Applet">
     <method name="SettingsChanged"/>
+    <method name="GetVersion">
+      <arg name="version" type="s" direction="out"/>
+    </method>
+    <method name="Restart"/>
   </interface>
 </node>
 """
@@ -164,6 +172,8 @@ def format_tooltip(
     shy_state: ShyModeViewState | None = None,
     *,
     privacy_ready: bool = True,
+    running_version: str = RUNNING_VERSION,
+    installed_version: str | None = None,
 ) -> str:
     """Return a complete, best-effort snapshot of Archie-controlled settings."""
     values = dict(snapshot or {})
@@ -174,7 +184,12 @@ def format_tooltip(
         if not privacy_ready
         else format_shy_mode_status(shy_state)
     )
-    return format_system_status(values, shy_mode_status=status)
+    installed = installed_version if installed_version is not None else installed_archie_version()
+    update_status = "current" if running_version == installed else f"restart to apply {installed}"
+    return f"Archie\n  Version: {running_version}\n  Update: {update_status}\n\n" + format_system_status(
+        values,
+        shy_mode_status=status,
+    )
 
 
 def format_shy_mode_status(state: ShyModeViewState | None = None) -> str:
@@ -307,6 +322,12 @@ class ArchieStatusNotifier:
                 "enabled": GLib.Variant("b", True),
                 "visible": GLib.Variant("b", True),
             }
+        if item_id == MENU_ITEM_RESTART:
+            return {
+                "label": GLib.Variant("s", "Restart applet"),
+                "enabled": GLib.Variant("b", True),
+                "visible": GLib.Variant("b", True),
+            }
         if item_id == MENU_ITEM_SEP:
             return {
                 "type": GLib.Variant("s", "separator"),
@@ -343,6 +364,7 @@ class ArchieStatusNotifier:
             if recursion_depth != 0:
                 for child_id in (
                     MENU_ITEM_OPEN,
+                    MENU_ITEM_RESTART,
                     MENU_ITEM_SEP,
                     MENU_ITEM_QUIT,
                 ):
@@ -352,7 +374,7 @@ class ArchieStatusNotifier:
         elif method_name == "GetGroupProperties":
             ids, _property_names = parameters.unpack()
             if not ids:
-                ids = [0, MENU_ITEM_OPEN, MENU_ITEM_SEP, MENU_ITEM_QUIT]
+                ids = [0, MENU_ITEM_OPEN, MENU_ITEM_RESTART, MENU_ITEM_SEP, MENU_ITEM_QUIT]
             result = []
             for item_id in ids:
                 props = self._item_props(item_id)
@@ -371,6 +393,8 @@ class ArchieStatusNotifier:
             if event_id == "clicked":
                 if item_id == MENU_ITEM_OPEN:
                     self.open_gui()
+                elif item_id == MENU_ITEM_RESTART:
+                    self.request_restart()
                 elif item_id == MENU_ITEM_QUIT:
                     Gtk.main_quit()
             invocation.return_value(None)
@@ -380,6 +404,8 @@ class ArchieStatusNotifier:
                 if event_id == "clicked":
                     if item_id == MENU_ITEM_OPEN:
                         self.open_gui()
+                    elif item_id == MENU_ITEM_RESTART:
+                        self.request_restart()
                     elif item_id == MENU_ITEM_QUIT:
                         Gtk.main_quit()
             invocation.return_value(GLib.Variant("(ai)", ([],)))
@@ -423,7 +449,22 @@ class ArchieStatusNotifier:
     ) -> None:
         if method_name == "SettingsChanged":
             self.request_tooltip_refresh()
+        elif method_name == "GetVersion":
+            import gi
+
+            gi.require_version("GLib", "2.0")
+            from gi.repository import GLib  # type: ignore[attr-defined]
+
+            invocation.return_value(GLib.Variant("(s)", (RUNNING_VERSION,)))
+            return
+        elif method_name == "Restart":
+            self.request_restart()
         invocation.return_value(None)
+
+    def request_restart(self) -> None:
+        from gi.repository import GLib  # type: ignore[attr-defined]
+
+        GLib.idle_add(restart_applet_process)
 
     def request_privacy_refresh(self) -> bool:
         if self.privacy_refresh_in_progress:
@@ -713,6 +754,13 @@ def run_applet(_args: argparse.Namespace) -> int:
                 release_applet_bus_name(notifier.connection)
     logger.info("archie applet stopped")
     return 0
+
+
+def restart_applet_process() -> bool:
+    """Replace this process after the D-Bus response has been sent."""
+    logger.info("restarting Archie applet to load version %s", installed_archie_version())
+    os.execv(sys.argv[0], sys.argv)
+    return False
 
 
 def register_status_notifier_item(connection) -> None:

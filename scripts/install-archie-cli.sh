@@ -10,29 +10,32 @@ usage() {
     cat <<'EOF'
 Usage: ./scripts/install-archie-cli.sh
 
-Build and install archie-cli from this checkout's local PKGBUILD.
+Install archie-cli from AUR, or use ARCHIE_CLI_SOURCE=local to force a local build.
 EOF
 }
 
 main() {
     handle_help_and_no_args usage "$@"
 
-    if [[ ! -f "$REPO_ROOT/packaging/archie-cli/PKGBUILD" ]]; then
-        log_error "Could not find packaging/archie-cli/PKGBUILD in $REPO_ROOT"
-        exit 1
-    fi
-
-    require_command makepkg
-    log_step "Install archie-cli from local package"
-
-    if pacman -Q archie-cli >/dev/null 2>&1; then
-        log_info "archie-cli is already installed; reinstalling to pick up latest build"
-    fi
-
-    (
-        cd "$REPO_ROOT/packaging/archie-cli"
-        run_cmd makepkg -Cfsi --noconfirm
-    )
+    case "${ARCHIE_CLI_SOURCE:-aur}" in
+        aur)
+            require_command yay
+            log_step "Install archie-cli from AUR"
+            run_cmd yay -S --needed --noconfirm archie-cli
+            ;;
+        local)
+            require_command makepkg
+            log_step "Install archie-cli from local package"
+            (
+                cd "$REPO_ROOT/packaging/archie-cli"
+                run_cmd makepkg -Cfsi --noconfirm
+            )
+            ;;
+        *)
+            log_error "ARCHIE_CLI_SOURCE must be 'aur' or 'local'"
+            exit 2
+            ;;
+    esac
 }
 
 main "$@"

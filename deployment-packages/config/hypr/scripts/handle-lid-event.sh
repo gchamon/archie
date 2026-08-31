@@ -32,14 +32,14 @@ case "$action" in
             echo "[$(date --iso-8601=seconds)] starting hyprlock before hibernate"
             hyprlock &
         elif [[ "$lid_close_behavior" == "lock" ]]; then
-            echo "[$(date --iso-8601=seconds)] running hyprctl dispatch dpms off"
-            hyprctl dispatch dpms off
+            echo "[$(date --iso-8601=seconds)] disabling DPMS"
+            hyprctl dispatch 'hl.dsp.dpms({ action = "disable" })'
         fi
         ;;
     open)
         if [[ "$lid_close_behavior" == "lock" ]]; then
-            echo "[$(date --iso-8601=seconds)] running hyprctl dispatch dpms on"
-            hyprctl dispatch dpms on
+            echo "[$(date --iso-8601=seconds)] enabling DPMS"
+            hyprctl dispatch 'hl.dsp.dpms({ action = "enable" })'
             echo "[$(date --iso-8601=seconds)] starting hyprlock after lid open"
             hyprlock &
         fi

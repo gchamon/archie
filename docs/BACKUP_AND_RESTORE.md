@@ -73,7 +73,7 @@ mkdir -p ~/.config
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/'Calibre Library'/
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/aider/
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/calibre/
-sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/hypr/config/device.conf
+sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.config/hypr/config/device.lua
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.gitconfig
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.local/lib/
 sudo rsync -av {$RECOVERY_PATH_HOME/home/$USER,~}/.mozilla/

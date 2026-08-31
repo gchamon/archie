@@ -45,6 +45,18 @@
     padding: 8px;
 }
 
+.archie-update-bar {
+    min-height: 30px;
+    margin-top: 2px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background-color: alpha(currentColor, 0.08);
+}
+
+.archie-update-bar.archie-update-pending {
+    background-color: alpha(#40a02b, 0.28);
+}
+
 .archie-shortcuts-heading {
     font-size: 16px;
     font-weight: 700;

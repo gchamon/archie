@@ -9,6 +9,7 @@ from archie.cli import main
 from archie.gui import (
     filter_documentation_rows,
     filter_shortcut_rows,
+    get_notification_sound,
     get_notification_sounds_state,
     load_gui_settings_snapshot,
     load_gui_settings_snapshot_from_environment,
@@ -113,6 +114,12 @@ class NotificationSoundsGuiStateTest(unittest.TestCase):
                 ["archie", "system", "get", "notification-sounds"]
             )
 
+    def test_reads_notification_sound_from_the_system_cli(self) -> None:
+        with patch("archie.gui.run_cli") as run_cli:
+            run_cli.return_value = subprocess.CompletedProcess([], 0, "/usr/share/sounds/test.ogg\n", "")
+            self.assertEqual(get_notification_sound(), "/usr/share/sounds/test.ogg")
+            run_cli.assert_called_once_with(["archie", "system", "get", "notification-sound"])
+
 
 class GuiSettingsSnapshotTest(unittest.TestCase):
     def test_collects_settings_without_constructing_gtk_widgets(self) -> None:
@@ -126,6 +133,7 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
             patch("archie.gui.get_lid_behavior", return_value="lock"),
             patch("archie.gui.get_notifications_state", return_value="on"),
             patch("archie.gui.get_notification_sounds_state", return_value="off"),
+            patch("archie.gui.get_notification_sound", return_value="default"),
             patch("archie.gui.get_shy_mode_settings", return_value=shy_mode),
             patch("archie.gui.get_kdeconnect_state", return_value="on"),
             patch("archie.gui.get_power_profile", return_value="balanced"),
@@ -139,6 +147,7 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
         self.assertEqual(snapshot.lid_behavior, "lock")
         self.assertEqual(snapshot.notifications, "on")
         self.assertEqual(snapshot.notification_sounds, "off")
+        self.assertEqual(snapshot.notification_sound, "default")
         self.assertEqual(snapshot.shy_mode, shy_mode)
         self.assertEqual(snapshot.kdeconnect, "on")
         self.assertEqual(snapshot.power_profile, "balanced")
@@ -151,6 +160,7 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
             patch("archie.gui.get_lid_behavior", return_value="unknown"),
             patch("archie.gui.get_notifications_state", return_value="unknown"),
             patch("archie.gui.get_notification_sounds_state", return_value="unknown"),
+            patch("archie.gui.get_notification_sound", return_value="default"),
             patch("archie.gui.get_shy_mode_settings", return_value=ShyModeSettings()),
             patch("archie.gui.get_kdeconnect_state", return_value="unknown"),
             patch("archie.gui.get_power_profile", return_value="unknown"),
@@ -172,6 +182,7 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
             lid_behavior="lock",
             notifications="on",
             notification_sounds="off",
+            notification_sound="default",
             shy_mode=ShyModeSettings(enabled=True, replay_count=4, replay_interval=2.5),
             kdeconnect="on",
             power_profile="balanced",
@@ -189,6 +200,7 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
         self.assertEqual(restored.lid_behavior, snapshot.lid_behavior)
         self.assertEqual(restored.notifications, snapshot.notifications)
         self.assertEqual(restored.notification_sounds, snapshot.notification_sounds)
+        self.assertEqual(restored.notification_sound, snapshot.notification_sound)
         self.assertEqual(restored.shy_mode, snapshot.shy_mode)
         self.assertEqual(restored.kdeconnect, snapshot.kdeconnect)
         self.assertEqual(restored.power_profile, snapshot.power_profile)

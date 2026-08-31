@@ -35,7 +35,7 @@ symlinks because `systemd-logind.service` runs with `ProtectHome=yes`:
 The files that remain machine-specific and still stay outside Stow management
 do not change in this migration:
 
-- `~/.config/hypr/config/device.conf`
+- `~/.config/hypr/config/device.lua`
 - `~/.config/hypr/hyprpaper.conf`
 - `~/.local/lib/zsh/overrides.sh`
 
@@ -303,7 +303,7 @@ sudo stow --dir deployment-packages --target /usr/share/xkeyboard-config-2 xkb
 Preserve machine-specific local files that stay outside Stow management,
 including:
 
-- `~/.config/hypr/config/device.conf`
+- `~/.config/hypr/config/device.lua`
 - `~/.config/hypr/hyprpaper.conf`
 - `~/.local/lib/zsh/overrides.sh`
 

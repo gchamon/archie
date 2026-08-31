@@ -4,7 +4,9 @@ _archie() {
   local -a commands actions get_settings set_settings behaviors global_options status_options downgrade_options
 
   commands=(
+    'applet:Run the Archie tray applet'
     'downgrade:Resolve Arch Linux Archive package URLs for pacman -U'
+    'gui:Open Archie graphical controls'
     'system:Manage Archie-owned system policy'
   )
   actions=(
@@ -15,6 +17,8 @@ _archie() {
   get_settings=(
     'lid-close-behavior:Read lid close behavior'
     'notifications:Read dunst notification state'
+    'notification-sounds:Read notification sound state'
+    'notification-sound:Read notification sound path'
     'shy-mode:Read shy mode notification privacy settings'
     'share-state:Read screen-share state'
     'kdeconnect:Read KDE Connect daemon state'
@@ -26,6 +30,8 @@ _archie() {
   set_settings=(
     'lid-close-behavior:Manage lid close behavior'
     'notifications:Manage dunst notification state'
+    'notification-sounds:Manage notification sound state'
+    'notification-sound:Manage notification sound path'
     'shy-mode:Manage shy mode notification privacy'
     'kdeconnect:Manage KDE Connect backends'
     'power-profile:Manage active power profile'
