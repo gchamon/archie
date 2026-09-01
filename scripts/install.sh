@@ -754,7 +754,11 @@ main() {
     install_base_packages
     bootstrap_checkout_if_needed
     bootstrap_yay
-    run_yay_install --useask archie-cli
+    if package_is_installed archie-cli-nightly; then
+        log_step "Remove Archie CLI nightly package"
+        run_sudo_cmd pacman -R --noconfirm archie-cli-nightly
+    fi
+    run_yay_install archie-cli
     initialize_archie_store
     install_yay_packages
     install_zsh_packages
