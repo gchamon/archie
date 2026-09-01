@@ -37,7 +37,7 @@ commit="$(sed -n 's/^_commit=//p' "$package_dir/PKGBUILD")"
     exit 1
 }
 [[ "$commit" =~ ^[0-9a-f]{40}$ ]] || { echo "PKGBUILD has no immutable source commit" >&2; exit 1; }
-if [[ -n "${ARCHIE_CLI_PACKAGE_RELEASE:-}" ]]; then
+if [[ "$channel" != stable && -n "${ARCHIE_CLI_PACKAGE_RELEASE:-}" ]]; then
     [[ "$pkgrel" == "$ARCHIE_CLI_PACKAGE_RELEASE" ]] || {
         echo "PKGBUILD release does not match the CI package release" >&2
         exit 1

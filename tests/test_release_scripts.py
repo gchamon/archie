@@ -48,6 +48,19 @@ class ArchieCliReleaseVersionTest(unittest.TestCase):
             self.assertIn("pkgrel=284", rc_pkgbuild)
             self.run_verify(package_dir, "rc", "284")
 
+    def test_stable_verification_ignores_prerelease_pipeline_release_number(self) -> None:
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+        with tempfile.TemporaryDirectory() as temporary:
+            package_dir = Path(temporary) / "archie-cli"
+            package_dir.mkdir()
+            subprocess.run(["git", "init", "--initial-branch=master", str(package_dir)], check=True, capture_output=True)
+
+            self.run_prepare(package_dir, "stable", commit, "283")
+            stable_pkgbuild = (package_dir / "PKGBUILD").read_text()
+            self.assertIn("pkgver=0.2.0", stable_pkgbuild)
+            self.assertIn("pkgrel=1", stable_pkgbuild)
+            self.run_verify(package_dir, "stable", "283")
+
     def test_repeating_the_same_commit_keeps_package_release_idempotent(self) -> None:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         with tempfile.TemporaryDirectory() as temporary:
