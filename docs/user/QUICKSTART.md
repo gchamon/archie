@@ -13,7 +13,8 @@ This is the fastest Archie onboarding path. It is derived from
 [`docs/user/GUIDE.md`](./GUIDE.md), but [`docs/user/GUIDE.md`](./GUIDE.md) remains the
 canonical deployment reference.
 
-Use this when you want the common first-run setup with the repo-managed helper.
+Use this when you want the common first-run setup with the published Archie
+packages from AUR.
 Drop back to the full guide when you need migration details, Nvidia-specific
 setup, boot tuning, service customization, or any other machine-specific
 follow-up not covered here.
@@ -45,12 +46,6 @@ the checkout root:
 ```bash
 cd archie
 ./scripts/install.sh
-```
-
-To rebuild only the Archie command-line package from an existing checkout:
-
-```bash
-./scripts/install-archie-cli.sh
 ```
 
 Quickstart-specific environment variables are documented in

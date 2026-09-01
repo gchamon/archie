@@ -32,8 +32,9 @@ pending notifications without exposing their content during the share.
   configure both values; the GTK and applet controls use those defaults.
 - Replay uses Dunst's native `dunstctl history-pop` behavior and is naturally
   bounded by the history Dunst retains.
-- Store the enabled state and replay options in Archie-owned XDG configuration
-  so the CLI, GUI, and applet share the same persistent source of truth.
+- Store the enabled state and replay options in the shared Archie SQLite store
+  so the CLI, GUI, and applet share the same persistent source of truth across
+  user and root execution contexts.
 - The applet uses an orange lower-right circular badge, approximately 30% of
   the logo height, only once shy-managed sharing has suppressed one or more
   notifications. Clear it after replay. Use tooltip and menu text to convey

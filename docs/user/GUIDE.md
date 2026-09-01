@@ -76,13 +76,15 @@ yay -Scc
 
 ### 1.3 Install Essential Packages with Yay
 
-Install `archie-cli` from AUR. To build the checked-out source instead, set
-`ARCHIE_CLI_SOURCE=local`:
+Install `archie-cli` from AUR:
 
 ```bash
-./scripts/install-archie-cli.sh
-# ARCHIE_CLI_SOURCE=local ./scripts/install-archie-cli.sh
+yay -S --needed archie-cli
 ```
+
+If you are working from an Archie checkout and want to bypass AUR, run
+`./scripts/install-archie-cli.sh` from the repository root; it builds and
+installs the local package with `makepkg`.
 
 For an alpha build from an active merge request, install the nightly package.
 It replaces the stable package because both provide `archie`:
@@ -507,6 +509,20 @@ the tray applet:
 archie system status
 archie system status --format json
 archie system status --json
+```
+
+Archie stores its persistent desktop policies in the machine-wide SQLite store
+at `/var/lib/archie/store.sqlite3`, so the regular and `sudo` forms of these
+commands observe the same settings. The installer provisions the `archie`
+group for GUI and CLI writes; log out and back in after installation for the
+new group membership to take effect.
+
+Notification audio can be controlled from the CLI as well as the GUI:
+
+```bash
+archie system set notification-sounds off  # use on to re-enable
+archie system set notification-sound /absolute/path/to/sound.ogg
+archie system set notification-sound default
 ```
 
 To make every lid close event put the machine in Archie’s hibernate behavior:

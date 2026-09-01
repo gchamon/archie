@@ -48,6 +48,7 @@ ESSENTIAL_PACKAGES=(
     ripgrep
     rofi-wayland
     rsync
+    sqlite
     stow
     unzip
     waybar
@@ -84,8 +85,6 @@ KEYRING_PACKAGES=(
 )
 
 DEFAULT_P10K_PACKAGE="p10k-lean"
-DEFAULT_WAYBAR_THEME="cjbassi"
-WAYBAR_THEME_TO_APPLY="$DEFAULT_WAYBAR_THEME"
 GTK_THEME="Adwaita-dark"
 USER_STOW_BACKUP_ROOT="$HOME/archie-pre-stow-backup"
 SYSTEM_STOW_BACKUP_ROOT="/root/archie-pre-stow-backup"
@@ -119,26 +118,6 @@ apply_quickstart_env_defaults() {
     GTK_THEME="${ARCHIE_GTK_THEME:-Adwaita-dark}"
     USER_STOW_BACKUP_ROOT="${ARCHIE_USER_STOW_BACKUP_ROOT:-$HOME/archie-pre-stow-backup}"
     SYSTEM_STOW_BACKUP_ROOT="${ARCHIE_SYSTEM_STOW_BACKUP_ROOT:-/root/archie-pre-stow-backup}"
-}
-
-preserve_existing_waybar_theme() {
-    local theme_state_path="$HOME/.config/waybar/.archie-theme"
-    local existing_theme=""
-
-    if [[ ! -f "$theme_state_path" ]]; then
-        return
-    fi
-
-    existing_theme="$(<"$theme_state_path")"
-    case "$existing_theme" in
-        cjbassi|mechabar|tokyonight)
-            WAYBAR_THEME_TO_APPLY="$existing_theme"
-            log_info "Preserving existing Waybar theme: $WAYBAR_THEME_TO_APPLY"
-            ;;
-        *)
-            log_warn "Ignoring unsupported Waybar theme in $theme_state_path: ${existing_theme:-<empty>}"
-            ;;
-    esac
 }
 
 run_pacman_install() {
@@ -576,17 +555,16 @@ deploy_copy_deployed_file_sudo() {
     run_sudo_cmd install -m 0644 "$source_path" "$deployed_path"
 }
 
-seed_waybar_theme() {
-    log_step "Seed Waybar theme"
+initialize_archie_store() {
+    log_step "Initialize shared Archie store"
 
-    if ! command -v archie >/dev/null 2>&1; then
-        log_warn "archie is not available; skipping Waybar theme seeding"
-        return
+    if ! getent group archie >/dev/null; then
+        run_sudo_cmd groupadd --system archie
     fi
-
-    run_cmd mkdir -p "$HOME/.config/waybar"
-    run_cmd rm -f "$HOME/.config/waybar/config" "$HOME/.config/waybar/style.css"
-    run_cmd archie system set waybar-theme "$WAYBAR_THEME_TO_APPLY"
+    run_sudo_cmd usermod --append --groups archie "$USER"
+    run_sudo_cmd archie system initialize-store --legacy-home "$HOME"
+    log_info "Archie settings are stored in /var/lib/archie/store.sqlite3."
+    log_info "Log out and back in before changing policy without sudo."
 }
 
 reload_logind_if_active() {
@@ -773,11 +751,11 @@ print_manual_follow_up() {
 main() {
     load_repo_env_file "$REPO_ROOT/.env.sh" 'ARCHIE_*'
     apply_quickstart_env_defaults
-    preserve_existing_waybar_theme
     install_base_packages
     bootstrap_checkout_if_needed
     bootstrap_yay
-    run_cmd "$REPO_ROOT/scripts/install-archie-cli.sh"
+    run_yay_install archie-cli
+    initialize_archie_store
     install_yay_packages
     install_zsh_packages
     install_theme_packages
@@ -785,7 +763,6 @@ main() {
     install_keyring_packages
     backup_existing_stow_targets
     deploy_stow_packages
-    seed_waybar_theme
     deploy_copy_deployed_files
     scaffold_local_files
     ensure_required_home_folders

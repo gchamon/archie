@@ -9,6 +9,15 @@ from pathlib import Path
 from unittest.mock import patch
 
 from archie.cli import main
+from archie.store import (
+    NOTIFICATION_SOUND_SOURCE,
+    NOTIFICATION_SOUNDS_ENABLED,
+    SHY_MODE_ENABLED,
+    STORE_DATABASE_PATH,
+    WAYBAR_THEME,
+    PolicyStore,
+    StoreDatabase,
+)
 from archie.system import (
     HIBERNATE_MODE,
     LOCK_MODE,
@@ -23,10 +32,13 @@ from archie.system import (
     format_brightness_device,
     format_system_status,
     format_system_status_json,
+    initialize_store,
     install_lid_close_behavior,
     list_backlight_device_names,
     load_notification_sound_path,
     load_notification_sounds_enabled,
+    notification_sound_asset_path,
+    notification_sounds_config_path,
     reload_logind_if_active,
     run_system_get,
     run_system_set,
@@ -39,7 +51,7 @@ from archie.system import (
 class NotificationSoundsCommandTest(unittest.TestCase):
     def test_defaults_to_enabled_when_configuration_is_missing_or_invalid(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            path = Path(temp_dir) / "notification-sounds.json"
+            path = Path(temp_dir) / "store.sqlite3"
 
             self.assertTrue(load_notification_sounds_enabled(path))
             path.write_text("not json", encoding="utf-8")
@@ -51,7 +63,7 @@ class NotificationSoundsCommandTest(unittest.TestCase):
             args = argparse.Namespace(setting="notification-sounds", value="off")
 
             self.assertEqual(run_system_set(args, notification_sounds_path=path), 0)
-            self.assertEqual(path.read_text(encoding="utf-8"), '{\n  "enabled": false\n}\n')
+            self.assertTrue(path.read_bytes().startswith(b"SQLite format 3"))
 
             stdout = io.StringIO()
             with redirect_stdout(stdout):
@@ -71,8 +83,85 @@ class NotificationSoundsCommandTest(unittest.TestCase):
             sound_path.write_text("sound", encoding="utf-8")
             save_notification_sound_path(str(sound_path), config_path)
             self.assertEqual(load_notification_sound_path(config_path), str(sound_path))
+            self.assertEqual(
+                notification_sound_asset_path(config_path).read_text(encoding="utf-8"),
+                "sound",
+            )
             with self.assertRaises(ValueError):
                 save_notification_sound_path("relative.ogg", config_path)
+
+    def test_policy_path_does_not_depend_on_user_environment(self) -> None:
+        with patch.dict(
+            "os.environ",
+            {"HOME": "/root", "XDG_CONFIG_HOME": "/tmp/other"},
+        ):
+            self.assertEqual(
+                notification_sounds_config_path(),
+                STORE_DATABASE_PATH,
+            )
+
+
+class PolicyInitializationTest(unittest.TestCase):
+    def test_migrates_legacy_policy_and_materializes_shared_assets_once(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            legacy_home = root / "home"
+            archie_config = legacy_home / ".config/archie"
+            waybar_config = legacy_home / ".config/waybar"
+            archie_config.mkdir(parents=True)
+            waybar_config.mkdir(parents=True)
+            sound_path = legacy_home / "sound.ogg"
+            sound_path.write_text("custom sound", encoding="utf-8")
+            (archie_config / "notification-sounds.json").write_text(
+                json.dumps({"enabled": False, "sound_path": str(sound_path)}),
+                encoding="utf-8",
+            )
+            (archie_config / "shy-mode.json").write_text(
+                json.dumps(
+                    {"enabled": True, "replay_count": 6, "replay_interval": 2.5}
+                ),
+                encoding="utf-8",
+            )
+            (waybar_config / ".archie-theme").write_text(
+                "tokyonight\n", encoding="utf-8"
+            )
+            policy_path = root / "shared/store.sqlite3"
+            shared_config = root / "shared/waybar/config"
+            shared_style = root / "shared/waybar/style.css"
+
+            self.assertTrue(
+                initialize_store(
+                    legacy_home,
+                    policy_path=policy_path,
+                    waybar_config_path=shared_config,
+                    waybar_style_path=shared_style,
+                )
+            )
+
+            store = PolicyStore(StoreDatabase(policy_path))
+            self.assertEqual(store.get(NOTIFICATION_SOUNDS_ENABLED), "off")
+            self.assertEqual(store.get(NOTIFICATION_SOUND_SOURCE), str(sound_path))
+            self.assertEqual(store.get(SHY_MODE_ENABLED), "on")
+            self.assertEqual(store.get(WAYBAR_THEME), "tokyonight")
+            self.assertEqual(
+                notification_sound_asset_path(policy_path).read_text(encoding="utf-8"),
+                "custom sound",
+            )
+            self.assertTrue(shared_config.is_file())
+            self.assertTrue(shared_style.is_file())
+
+            (waybar_config / ".archie-theme").write_text(
+                "mechabar\n", encoding="utf-8"
+            )
+            self.assertFalse(
+                initialize_store(
+                    legacy_home,
+                    policy_path=policy_path,
+                    waybar_config_path=shared_config,
+                    waybar_style_path=shared_style,
+                )
+            )
+            self.assertEqual(store.get(WAYBAR_THEME), "tokyonight")
 
 
 class ShyModeCommandTest(unittest.TestCase):

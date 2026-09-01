@@ -27,13 +27,13 @@ class ShyModeSettingsTest(unittest.TestCase):
 
     def test_round_trips_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
-            path = Path(temp_dir) / "archie/shy-mode.json"
+            path = Path(temp_dir) / "archie/store.sqlite3"
             expected = ShyModeSettings(True, replay_count=7, replay_interval=2.5)
 
             save_shy_mode_settings(expected, path)
 
             self.assertEqual(load_shy_mode_settings(path), expected)
-            self.assertTrue(path.read_text(encoding="utf-8").endswith("\n"))
+            self.assertTrue(path.read_bytes().startswith(b"SQLite format 3"))
 
     def test_invalid_configuration_falls_back_safely(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -26,11 +26,14 @@ publish-archie-cli:
     matrix:
       - ARCHIE_CLI_CHANNEL: stable
         ARCHIE_CLI_AUR_PACKAGE: archie-cli
-      - ARCHIE_CLI_CHANNEL: nightly
+      - ARCHIE_CLI_CHANNEL: rc
+        ARCHIE_CLI_AUR_PACKAGE: archie-cli-nightly
+      - ARCHIE_CLI_CHANNEL: alpha
         ARCHIE_CLI_AUR_PACKAGE: archie-cli-nightly
   rules:
     - if: '$ARCHIE_CLI_CHANNEL == "stable" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-    - if: '$ARCHIE_CLI_CHANNEL == "nightly" && $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
+    - if: '$ARCHIE_CLI_CHANNEL == "rc" && $CI_COMMIT_BRANCH == "develop"'
+    - if: '$ARCHIE_CLI_CHANNEL == "alpha" && $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $CI_DEFAULT_BRANCH'
     - when: never
   before_script:
     - pacman -Sy --noconfirm --needed curl git openssh uv python-installer
@@ -42,10 +45,11 @@ publish-archie-cli:
     - chown -R aur-builder:aur-builder /home/aur-builder/.ssh
   script:
     - package_dir="/home/aur-builder/$ARCHIE_CLI_AUR_PACKAGE"
+    - source_commit="${CI_MERGE_REQUEST_SOURCE_BRANCH_SHA:-$CI_COMMIT_SHA}"
     - runuser -u aur-builder -- env HOME=/home/aur-builder git config --global --add safe.directory "$CI_PROJECT_DIR"
     - runuser -u aur-builder -- env HOME=/home/aur-builder git clone "ssh://aur@aur.archlinux.org/$ARCHIE_CLI_AUR_PACKAGE.git" "$package_dir"
     - runuser -u aur-builder -- git -C "$package_dir" config user.name 'Archie CI'
     - runuser -u aur-builder -- git -C "$package_dir" config user.email 'archie-ci@gitlab.com'
-    - runuser -u aur-builder -- env HOME=/home/aur-builder ARCHIE_CLI_CHANNEL="$ARCHIE_CLI_CHANNEL" ARCHIE_CLI_AUR_DIR="$package_dir" scripts/release/prepare-archie-cli-aur.sh "$CI_COMMIT_SHA"
-    - runuser -u aur-builder -- env HOME=/home/aur-builder ARCHIE_CLI_CHANNEL="$ARCHIE_CLI_CHANNEL" ARCHIE_CLI_AUR_DIR="$package_dir" scripts/release/verify-archie-cli-package.sh
-    - runuser -u aur-builder -- env HOME=/home/aur-builder ARCHIE_CLI_CHANNEL="$ARCHIE_CLI_CHANNEL" ARCHIE_CLI_AUR_DIR="$package_dir" ARCHIE_CLI_AUR_REMOTE=origin scripts/release/publish-archie-cli.sh "$CI_COMMIT_SHA"
+    - runuser -u aur-builder -- env HOME=/home/aur-builder ARCHIE_CLI_CHANNEL="$ARCHIE_CLI_CHANNEL" ARCHIE_CLI_PACKAGE_RELEASE="$CI_PIPELINE_IID" ARCHIE_CLI_AUR_DIR="$package_dir" scripts/release/prepare-archie-cli-aur.sh "$source_commit"
+    - runuser -u aur-builder -- env HOME=/home/aur-builder ARCHIE_CLI_CHANNEL="$ARCHIE_CLI_CHANNEL" ARCHIE_CLI_PACKAGE_RELEASE="$CI_PIPELINE_IID" ARCHIE_CLI_AUR_DIR="$package_dir" scripts/release/verify-archie-cli-package.sh
+    - runuser -u aur-builder -- env HOME=/home/aur-builder ARCHIE_CLI_CHANNEL="$ARCHIE_CLI_CHANNEL" ARCHIE_CLI_AUR_DIR="$package_dir" ARCHIE_CLI_AUR_REMOTE=origin scripts/release/publish-archie-cli.sh "$source_commit"
