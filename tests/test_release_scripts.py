@@ -1,12 +1,15 @@
 import os
 import subprocess
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PREPARE = ROOT / "scripts/release/prepare-archie-cli-aur.sh"
 VERIFY = ROOT / "scripts/release/verify-archie-cli-package.sh"
+with (ROOT / "pyproject.toml").open("rb") as file:
+    PROJECT_VERSION = tomllib.load(file)["project"]["version"]
 
 
 class ArchieCliReleaseVersionTest(unittest.TestCase):
@@ -37,14 +40,14 @@ class ArchieCliReleaseVersionTest(unittest.TestCase):
 
             self.run_prepare(package_dir, "alpha", commit, "283")
             alpha_pkgbuild = (package_dir / "PKGBUILD").read_text()
-            self.assertIn("pkgver=0.2.1a", alpha_pkgbuild)
+            self.assertIn(f"pkgver={PROJECT_VERSION}a", alpha_pkgbuild)
             self.assertIn("pkgrel=283", alpha_pkgbuild)
             self.assertIn(f"_commit={commit}", alpha_pkgbuild)
             self.run_verify(package_dir, "alpha", "283")
 
             self.run_prepare(package_dir, "rc", commit, "284")
             rc_pkgbuild = (package_dir / "PKGBUILD").read_text()
-            self.assertIn("pkgver=0.2.1rc", rc_pkgbuild)
+            self.assertIn(f"pkgver={PROJECT_VERSION}rc", rc_pkgbuild)
             self.assertIn("pkgrel=284", rc_pkgbuild)
             self.run_verify(package_dir, "rc", "284")
 
@@ -57,7 +60,7 @@ class ArchieCliReleaseVersionTest(unittest.TestCase):
 
             self.run_prepare(package_dir, "stable", commit, "283")
             stable_pkgbuild = (package_dir / "PKGBUILD").read_text()
-            self.assertIn("pkgver=0.2.1", stable_pkgbuild)
+            self.assertIn(f"pkgver={PROJECT_VERSION}", stable_pkgbuild)
             self.assertIn("pkgrel=1", stable_pkgbuild)
             self.run_verify(package_dir, "stable", "283")
 
