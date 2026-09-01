@@ -102,7 +102,11 @@ GitHub. The pipeline expects these repository variables:
   to the GitHub mirror repository
 - `AUR_SSH_PRIVATE_KEY_B64`: protected, masked single-line base64 encoding of
   the private key authorized to update the `archie-cli` and
-  `archie-cli-nightly` AUR repositories
+  `archie-cli-nightly` AUR repositories. The project version remains the stable
+  base version; CI derives stable, RC, and alpha package channels from the
+  pipeline context, uses the pipeline IID as `pkgrel`, and pins the source
+  commit separately. Merge requests publish alpha builds and
+  `develop` publishes RC builds through the nightly package.
 
 The host migration itself is tracked in
 `docs/work-items/repository-hosting-01-gitlab-cutover.md`.

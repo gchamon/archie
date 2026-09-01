@@ -1,14 +1,9 @@
 [project]
 name = "archie"
-version = "0.1.0a1"
-authors = [
-    { name = "Gabriel Chamon", email = "gchamon@tuta.io" },
-]
+version = "0.2.0"
+authors = [{ name = "Gabriel Chamon", email = "gchamon@tuta.io" }]
 requires-python = ">=3.14"
-dependencies = [
-    "pillow>=12.2.0",
-    "pygobject>=3.56.3",
-]
+dependencies = ["pillow>=12.2.0", "pygobject>=3.56.3"]
 
 [project.scripts]
 archie = "archie.cli:main"
@@ -18,11 +13,7 @@ requires = ["uv_build>=0.11.14,<0.12.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = [
-    "pyright>=1.1.409",
-    "pytest>=9.0.3",
-    "ruff>=0.16.2",
-]
+dev = ["pyright>=1.1.409", "pytest>=9.0.3", "ruff>=0.16.2"]
 
 [tool.pyright]
 venvPath = "."
@@ -32,8 +23,8 @@ venv = ".venv"
 module-root = "src"
 module-name = "archie"
 source-include = [
-    "src/archie/assets/*.png",
-    "src/archie/gui.css",
-    "src/archie/waybar-themes/*/config",
-    "src/archie/waybar-themes/*/style.css",
+  "src/archie/assets/*.png",
+  "src/archie/gui.css",
+  "src/archie/waybar-themes/*/config",
+  "src/archie/waybar-themes/*/style.css",
 ]

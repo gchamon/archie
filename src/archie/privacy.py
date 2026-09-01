@@ -1,9 +1,19 @@
 import json
-import os
 import subprocess
-from dataclasses import asdict, dataclass
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Protocol
+
+from archie.store import (
+    SHY_MODE_ENABLED,
+    SHY_MODE_REPLAY_COUNT,
+    SHY_MODE_REPLAY_INTERVAL,
+    STORE_DATABASE_PATH,
+    PolicyStore,
+    StoreDatabase,
+    StoreError,
+)
 
 DEFAULT_REPLAY_COUNT = 10
 DEFAULT_REPLAY_INTERVAL = 5.0
@@ -12,8 +22,7 @@ SHARE_NODE_NAME = "xdg-desktop-portal-hyprland"
 
 
 def shy_mode_config_path() -> Path:
-    config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    return config_home / "archie/shy-mode.json"
+    return STORE_DATABASE_PATH
 
 
 @dataclass(frozen=True)
@@ -24,31 +33,29 @@ class ShyModeSettings:
 
 
 def load_shy_mode_settings(path: Path | None = None) -> ShyModeSettings:
-    settings_path = path or shy_mode_config_path()
     try:
-        data = json.loads(settings_path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return ShyModeSettings()
-
-    try:
-        return ShyModeSettings(
-            enabled=bool(data["enabled"]),
-            replay_count=int(data["replay_count"]),
-            replay_interval=float(data["replay_interval"]),
+        values = PolicyStore(StoreDatabase(path or shy_mode_config_path())).get_many(
+            (SHY_MODE_ENABLED, SHY_MODE_REPLAY_COUNT, SHY_MODE_REPLAY_INTERVAL)
         )
-    except (KeyError, TypeError, ValueError):
+        if values[SHY_MODE_ENABLED] not in {"on", "off"}:
+            raise ValueError
+        return ShyModeSettings(
+            enabled=values[SHY_MODE_ENABLED] == "on",
+            replay_count=int(values[SHY_MODE_REPLAY_COUNT]),
+            replay_interval=float(values[SHY_MODE_REPLAY_INTERVAL]),
+        )
+    except (OSError, StoreError, ValueError):
         return ShyModeSettings()
 
 
 def save_shy_mode_settings(settings: ShyModeSettings, path: Path | None = None) -> None:
-    settings_path = path or shy_mode_config_path()
-    settings_path.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = settings_path.with_suffix(f"{settings_path.suffix}.tmp")
-    temporary_path.write_text(
-        json.dumps(asdict(settings), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+    PolicyStore(StoreDatabase(path or shy_mode_config_path())).set_many(
+        {
+            SHY_MODE_ENABLED: "on" if settings.enabled else "off",
+            SHY_MODE_REPLAY_COUNT: str(settings.replay_count),
+            SHY_MODE_REPLAY_INTERVAL: f"{settings.replay_interval:g}",
+        }
     )
-    temporary_path.replace(settings_path)
 
 
 def format_shy_mode_settings(settings: ShyModeSettings) -> str:

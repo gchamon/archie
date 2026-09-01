@@ -1,11 +1,14 @@
 #!/bin/bash
 
-CONFIG_FILES="$HOME/.config/waybar/config $HOME/.config/waybar/style.css"
+set -euo pipefail
+
+WAYBAR_CONFIG="/var/lib/archie/waybar/config"
+WAYBAR_STYLE="/var/lib/archie/waybar/style.css"
 
 trap "killall waybar" EXIT
 
 while true; do
-    waybar &
-    inotifywait -e create,modify $CONFIG_FILES
+    waybar --config "$WAYBAR_CONFIG" --style "$WAYBAR_STYLE" &
+    inotifywait -e create,modify "$WAYBAR_CONFIG" "$WAYBAR_STYLE"
     killall waybar
 done

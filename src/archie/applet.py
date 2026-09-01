@@ -184,9 +184,7 @@ def format_tooltip(
         if not privacy_ready
         else format_shy_mode_status(shy_state)
     )
-    installed = installed_version if installed_version is not None else installed_archie_version()
-    update_status = "current" if running_version == installed else f"restart to apply {installed}"
-    return f"Archie\n  Version: {running_version}\n  Update: {update_status}\n\n" + format_system_status(
+    return f"Archie Controls v{running_version}\n\n" + format_system_status(
         values,
         shy_mode_status=status,
     )

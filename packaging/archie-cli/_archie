@@ -1,7 +1,7 @@
 #compdef archie
 
 _archie() {
-  local -a commands actions get_settings set_settings behaviors global_options status_options downgrade_options
+  local -a commands actions get_settings set_settings behaviors global_options status_options initialize_options downgrade_options
 
   commands=(
     'applet:Run the Archie tray applet'
@@ -11,6 +11,7 @@ _archie() {
   )
   actions=(
     'get:Read an Archie-owned system setting'
+    'initialize-store:Initialize shared Archie store'
     'status:Summarize current system status'
     'set:Change an Archie-owned system setting'
   )
@@ -52,6 +53,10 @@ _archie() {
     '(-f --format -j --json)'{-f,--format}'[output format]:format:(table json)'
     '(-f --format -j --json)'{-j,--json}'[render as JSON]'
   )
+  initialize_options=(
+    '--help:show help and exit'
+    '--legacy-home[absolute legacy home directory]:directory:_directories'
+  )
   downgrade_options=(
     '--help:show help and exit'
     '--to:target time: YYYY-MM-DD, 7d, or 4h'
@@ -66,11 +71,11 @@ _archie() {
         _describe -t options 'downgrade option' downgrade_options
         ;;
       system)
-        if [[ "$words[3]" == status ]]; then
-          _describe -t options 'system status option' status_options
-        else
-          _describe -t options 'archie option' global_options
-        fi
+        case "$words[3]" in
+          status) _describe -t options 'system status option' status_options ;;
+          initialize-store) _describe -t options 'store initialization option' initialize_options ;;
+          *) _describe -t options 'archie option' global_options ;;
+        esac
         ;;
       *)
         _describe -t options 'archie option' global_options

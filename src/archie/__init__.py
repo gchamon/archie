@@ -1,1 +1,1 @@
-"""Repository-owned maintenance tooling for Archie."""
+"""Archlinux system operation and maintenance CLI/applet."""

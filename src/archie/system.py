@@ -3,6 +3,7 @@ import configparser
 import importlib.resources
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -12,6 +13,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Protocol
 
+from archie.argparse import add_command_subparsers
 from archie.monitor import MonitorOutput, list_monitors_quiet
 from archie.privacy import (
     DEFAULT_DUNST_HISTORY_LIMIT,
@@ -21,11 +23,24 @@ from archie.privacy import (
     load_shy_mode_settings,
     save_shy_mode_settings,
 )
+from archie.store import (
+    NOTIFICATION_SOUND_SOURCE,
+    NOTIFICATION_SOUNDS_ENABLED,
+    POLICY_DEFAULTS,
+    SHY_MODE_ENABLED,
+    SHY_MODE_REPLAY_COUNT,
+    SHY_MODE_REPLAY_INTERVAL,
+    STORE_DATABASE_PATH,
+    WAYBAR_THEME,
+    PolicyStore,
+    StoreDatabase,
+    StoreError,
+)
 
 LID_CLOSE_CONF_PATH = Path("/etc/systemd/logind.conf.d/lid-close.conf")
-WAYBAR_THEME_STATE_PATH = Path.home() / ".config/waybar/.archie-theme"
-WAYBAR_CONFIG_PATH = Path.home() / ".config/waybar/config"
-WAYBAR_STYLE_PATH = Path.home() / ".config/waybar/style.css"
+WAYBAR_THEME_STATE_PATH = STORE_DATABASE_PATH
+WAYBAR_CONFIG_PATH = Path("/var/lib/archie/waybar/config")
+WAYBAR_STYLE_PATH = Path("/var/lib/archie/waybar/style.css")
 BACKLIGHT_PATH = Path("/sys/class/backlight")
 
 HIBERNATE_MODE = "hibernate"
@@ -110,14 +125,14 @@ def add_system_parser(
         help="Manage Archie-owned system policy.",
         description="Inspect or change Archie-owned system policy.",
     )
-    system_subparsers = parser.add_subparsers(dest="system_command", required=True)
+    system_subparsers = add_command_subparsers(parser, dest="system_command", metavar="COMMAND")
 
     get_parser = system_subparsers.add_parser(
         "get",
         help="Read an Archie-owned system setting.",
         description="Read an Archie-owned system setting.",
     )
-    get_subparsers = get_parser.add_subparsers(dest="setting", required=True)
+    get_subparsers = add_command_subparsers(get_parser, dest="setting", metavar="setting")
     for setting, help_text, description in (
         ("lid-close-behavior", "Read lid close behavior.", "Read Archie-managed lid close behavior."),
         ("notifications", "Read dunst notification state.", "Read whether dunst notifications are on or off."),
@@ -159,11 +174,24 @@ def add_system_parser(
     )
     status_parser.set_defaults(func=run_system_status)
 
+    initialize_parser = system_subparsers.add_parser(
+        "initialize-store",
+        help="Initialize the shared Archie store.",
+        description="Initialize the shared store and migrate one user's legacy settings.",
+    )
+    initialize_parser.add_argument(
+        "--legacy-home",
+        type=Path,
+        required=True,
+        help="Absolute home directory containing legacy Archie settings.",
+    )
+    initialize_parser.set_defaults(func=run_system_initialize_store)
+
     set_parser = system_subparsers.add_parser(
         "set",
         help="Change an Archie-owned system setting.",
     )
-    set_subparsers = set_parser.add_subparsers(dest="setting", required=True)
+    set_subparsers = add_command_subparsers(set_parser, dest="setting", metavar="setting")
 
     lid_set_parser = set_subparsers.add_parser(
         "lid-close-behavior",
@@ -546,6 +574,22 @@ def run_system_set(
             return 2
 
 
+def run_system_initialize_store(args: argparse.Namespace) -> int:
+    legacy_home = args.legacy_home
+    if not legacy_home.is_absolute():
+        print(
+            "archie system initialize-store: --legacy-home must be absolute",
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        initialize_store(legacy_home)
+    except (OSError, StoreError, ValueError) as error:
+        print(f"archie system initialize-store: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
 # --- lid-close-behavior ---
 
 
@@ -619,17 +663,22 @@ def reload_logind_if_active(*, executor: Executor | None = None) -> int:
 
 
 def notification_sounds_config_path() -> Path:
-    config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    return config_home / "archie/notification-sounds.json"
+    return STORE_DATABASE_PATH
 
 
 def load_notification_sound_settings(path: Path | None = None) -> dict[str, object]:
-    settings_path = path or notification_sounds_config_path()
     try:
-        data = json.loads(settings_path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        values = PolicyStore(StoreDatabase(path or notification_sounds_config_path())).get_many(
+            (NOTIFICATION_SOUNDS_ENABLED, NOTIFICATION_SOUND_SOURCE)
+        )
+    except (OSError, StoreError):
         return {}
-    return data if isinstance(data, dict) else {}
+    return {
+        "enabled": values[NOTIFICATION_SOUNDS_ENABLED] != OFF_VALUE,
+        "sound_path": None
+        if values[NOTIFICATION_SOUND_SOURCE] == "default"
+        else values[NOTIFICATION_SOUND_SOURCE],
+    }
 
 
 def load_notification_sounds_enabled(path: Path | None = None) -> bool:
@@ -642,34 +691,136 @@ def load_notification_sound_path(path: Path | None = None) -> str | None:
 
 
 def save_notification_sounds_enabled(enabled: bool, path: Path | None = None) -> None:
-    settings = load_notification_sound_settings(path)
-    settings["enabled"] = enabled
-    save_notification_sound_settings(settings, path)
+    PolicyStore(StoreDatabase(path or notification_sounds_config_path())).set(
+        NOTIFICATION_SOUNDS_ENABLED,
+        ON_VALUE if enabled else OFF_VALUE,
+    )
 
 
 def save_notification_sound_path(value: str, path: Path | None = None) -> None:
-    settings = load_notification_sound_settings(path)
+    policy_path = path or notification_sounds_config_path()
+    asset_path = notification_sound_asset_path(policy_path)
     if value == "default":
-        settings.pop("sound_path", None)
+        PolicyStore(StoreDatabase(policy_path)).set(NOTIFICATION_SOUND_SOURCE, "default")
+        asset_path.unlink(missing_ok=True)
     else:
         sound_path = Path(value)
         if not sound_path.is_absolute():
             raise ValueError("sound path must be absolute or 'default'")
         if not sound_path.is_file() or not os.access(sound_path, os.R_OK):
             raise ValueError(f"sound file is not readable: {sound_path}")
-        settings["sound_path"] = str(sound_path)
-    save_notification_sound_settings(settings, path)
+        copy_notification_sound_asset(sound_path, asset_path)
+        PolicyStore(StoreDatabase(policy_path)).set(NOTIFICATION_SOUND_SOURCE, str(sound_path))
 
 
 def save_notification_sound_settings(settings: dict[str, object], path: Path | None = None) -> None:
-    settings_path = path or notification_sounds_config_path()
-    settings_path.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = settings_path.with_suffix(f"{settings_path.suffix}.tmp")
-    temporary_path.write_text(
-        json.dumps(settings, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+    save_notification_sounds_enabled(
+        settings.get("enabled") is not False,
+        path,
     )
-    temporary_path.replace(settings_path)
+    save_notification_sound_path(str(settings.get("sound_path") or "default"), path)
+
+
+def notification_sound_asset_path(policy_path: Path | None = None) -> Path:
+    return (policy_path or STORE_DATABASE_PATH).parent / "notification-sound"
+
+
+def copy_notification_sound_asset(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = destination.with_suffix(".tmp")
+    shutil.copyfile(source, temporary_path)
+    temporary_path.chmod(0o664)
+    temporary_path.replace(destination)
+
+
+def initialize_store(
+    legacy_home: Path,
+    *,
+    policy_path: Path = STORE_DATABASE_PATH,
+    waybar_config_path: Path = WAYBAR_CONFIG_PATH,
+    waybar_style_path: Path = WAYBAR_STYLE_PATH,
+) -> bool:
+    store = PolicyStore(StoreDatabase(policy_path))
+    initialized = False
+    if not store.is_initialized():
+        values, legacy_sound = load_legacy_policy(legacy_home)
+        if legacy_sound is not None:
+            copy_notification_sound_asset(
+                legacy_sound,
+                notification_sound_asset_path(policy_path),
+            )
+        initialized = store.initialize(values)
+
+    theme = store.get(WAYBAR_THEME)
+    if theme not in WAYBAR_THEMES:
+        theme = DEFAULT_THEME
+    result = set_waybar_theme(
+        theme,
+        waybar_theme_state_path=policy_path,
+        waybar_config_path=waybar_config_path,
+        waybar_style_path=waybar_style_path,
+    )
+    if result != 0:
+        raise ValueError(f"could not materialize Waybar theme {theme!r}")
+    return initialized
+
+
+def load_legacy_policy(legacy_home: Path) -> tuple[dict[str, str], Path | None]:
+    values = dict(POLICY_DEFAULTS)
+    legacy_sound: Path | None = None
+
+    notification_data = read_json_object(
+        legacy_home / ".config/archie/notification-sounds.json"
+    )
+    if notification_data.get("enabled") is False:
+        values[NOTIFICATION_SOUNDS_ENABLED] = OFF_VALUE
+    sound_value = notification_data.get("sound_path")
+    if isinstance(sound_value, str) and sound_value:
+        candidate = Path(sound_value)
+        if candidate.is_absolute() and candidate.is_file() and os.access(candidate, os.R_OK):
+            values[NOTIFICATION_SOUND_SOURCE] = str(candidate)
+            legacy_sound = candidate
+
+    shy_data = read_json_object(legacy_home / ".config/archie/shy-mode.json")
+    try:
+        enabled = shy_data["enabled"]
+        replay_count_value = shy_data["replay_count"]
+        replay_interval_value = shy_data["replay_interval"]
+        if not isinstance(replay_count_value, (int, float, str)) or isinstance(
+            replay_count_value, bool
+        ):
+            raise TypeError
+        if not isinstance(replay_interval_value, (int, float, str)) or isinstance(
+            replay_interval_value, bool
+        ):
+            raise TypeError
+        replay_count = int(replay_count_value)
+        replay_interval = float(replay_interval_value)
+        if not isinstance(enabled, bool) or replay_count <= 0 or replay_interval <= 0:
+            raise ValueError
+        values[SHY_MODE_ENABLED] = ON_VALUE if enabled else OFF_VALUE
+        values[SHY_MODE_REPLAY_COUNT] = str(replay_count)
+        values[SHY_MODE_REPLAY_INTERVAL] = f"{replay_interval:g}"
+    except (KeyError, TypeError, ValueError):
+        pass
+
+    try:
+        theme = (legacy_home / ".config/waybar/.archie-theme").read_text(
+            encoding="utf-8"
+        ).strip()
+    except OSError:
+        theme = DEFAULT_THEME
+    if theme in WAYBAR_THEMES:
+        values[WAYBAR_THEME] = theme
+    return values, legacy_sound
+
+
+def read_json_object(path: Path) -> dict[str, object]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def detect_notifications_state() -> str:
@@ -863,8 +1014,9 @@ WAYBAR_THEMES_RESOURCE = "waybar-themes"
 
 def detect_waybar_theme(waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH) -> str:
     try:
-        return waybar_theme_state_path.read_text(encoding="utf-8").strip()
-    except FileNotFoundError:
+        theme = PolicyStore(StoreDatabase(waybar_theme_state_path)).get(WAYBAR_THEME)
+        return theme if theme in WAYBAR_THEMES else DEFAULT_THEME
+    except (OSError, StoreError):
         return DEFAULT_THEME
 
 
@@ -895,10 +1047,17 @@ def set_waybar_theme(
         return 1
 
     waybar_config_path.parent.mkdir(parents=True, exist_ok=True)
-    waybar_config_path.write_text(config_text, encoding="utf-8")
-    waybar_style_path.write_text(style_text, encoding="utf-8")
-    waybar_theme_state_path.write_text(theme, encoding="utf-8")
+    write_shared_text(waybar_config_path, config_text)
+    write_shared_text(waybar_style_path, style_text)
+    PolicyStore(StoreDatabase(waybar_theme_state_path)).set(WAYBAR_THEME, theme)
     return 0
+
+
+def write_shared_text(path: Path, content: str) -> None:
+    temporary_path = path.with_suffix(f"{path.suffix}.tmp")
+    temporary_path.write_text(content, encoding="utf-8")
+    temporary_path.chmod(0o664)
+    temporary_path.replace(path)
 
 
 # --- shared ---

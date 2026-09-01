@@ -9,8 +9,8 @@ commit="${1:-$(git -C "$repo_root" rev-parse HEAD)}"
 
 case "$channel" in
     stable) package_dir="${ARCHIE_CLI_AUR_DIR:-$repo_root/../archie-cli}" ;;
-    nightly) package_dir="${ARCHIE_CLI_AUR_DIR:-$repo_root/../archie-cli-nightly}" ;;
-    *) echo "ARCHIE_CLI_CHANNEL must be 'stable' or 'nightly'" >&2; exit 2 ;;
+    alpha|nightly|rc) package_dir="${ARCHIE_CLI_AUR_DIR:-$repo_root/../archie-cli-nightly}" ;;
+    *) echo "ARCHIE_CLI_CHANNEL must be 'stable', 'rc', or 'alpha'" >&2; exit 2 ;;
 esac
 remote="${ARCHIE_CLI_AUR_REMOTE:-aur}"
 

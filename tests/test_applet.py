@@ -37,9 +37,7 @@ class AppletTooltipTest(unittest.TestCase):
                 running_version="0.1.0",
                 installed_version="0.1.0",
             ),
-            "Archie\n"
-            "  Version: 0.1.0\n"
-            "  Update: current\n"
+            "Archie Controls v0.1.0\n"
             "\n"
             "Hardware\n"
             "  Brightness: amdgpu_bl1 71%\n"
@@ -74,9 +72,7 @@ class AppletTooltipTest(unittest.TestCase):
                 running_version="0.1.0",
                 installed_version="0.1.0",
             ),
-            "Archie\n"
-            "  Version: 0.1.0\n"
-            "  Update: current\n"
+            "Archie Controls v0.1.0\n"
             "\n"
             "Hardware\n"
             "  Brightness: unavailable\n"
@@ -95,14 +91,14 @@ class AppletTooltipTest(unittest.TestCase):
             "  Share: off",
         )
 
-    def test_shows_restart_instruction_when_an_update_is_installed(self) -> None:
+    def test_uses_running_version_in_compact_header(self) -> None:
         tooltip = format_tooltip(
             running_version="0.1.0",
             installed_version="0.2.0",
         )
 
-        self.assertIn("Version: 0.1.0", tooltip)
-        self.assertIn("Update: restart to apply 0.2.0", tooltip)
+        self.assertTrue(tooltip.startswith("Archie Controls v0.1.0\n\n"))
+        self.assertNotIn("Update:", tooltip)
 
 
 class AppletPrivacyStateTest(unittest.TestCase):

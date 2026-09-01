@@ -27,6 +27,34 @@ from archie.privacy import ShyModeSettings
 
 
 class CliExposureTest(unittest.TestCase):
+    def test_help_uses_command_metavar_instead_of_root_choice_tuple(self) -> None:
+        stdout = io.StringIO()
+        with self.assertRaises(SystemExit) as error, redirect_stdout(stdout):
+            main(["--help"])
+
+        self.assertEqual(error.exception.code, 0)
+        self.assertIn("Archie system operational and maintenance tools.", stdout.getvalue())
+        self.assertIn("positional arguments:\n  COMMAND", stdout.getvalue())
+        self.assertNotIn("{applet,downgrade,gui,system}", stdout.getvalue())
+
+    def test_nested_help_hides_long_setting_choice_tuple(self) -> None:
+        stdout = io.StringIO()
+        with self.assertRaises(SystemExit) as error, redirect_stdout(stdout):
+            main(["system", "get", "--help"])
+
+        self.assertEqual(error.exception.code, 0)
+        self.assertIn("usage: archie system get [-h] setting ...", stdout.getvalue())
+        self.assertNotIn("{lid-close-behavior,notifications", stdout.getvalue())
+
+    def test_parse_error_restores_setting_choices_for_diagnostics(self) -> None:
+        stderr = io.StringIO()
+        with self.assertRaises(SystemExit) as error, redirect_stderr(stderr):
+            main(["system", "get"])
+
+        self.assertEqual(error.exception.code, 2)
+        self.assertIn("{lid-close-behavior,notifications", stderr.getvalue())
+        self.assertIn("the following arguments are required: setting", stderr.getvalue())
+
     def test_help_all_includes_gui_and_applet_commands(self) -> None:
         stdout = io.StringIO()
         stderr = io.StringIO()

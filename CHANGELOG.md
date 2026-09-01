@@ -3,19 +3,40 @@
 <!--toc:start-->
 
 - [Changelog](#changelog)
-  - [[2.0] - 2025-11-03](#20-2025-11-03)
+  - [[0.2.0] - 2026-09-01](#020-2026-09-01)
     - [Changed](#changed)
     - [Added](#added)
     - [Fixed](#fixed)
-  - [[1.2] - 2025-06-30](#12-2025-06-30)
+  - [[2.0] - 2025-11-03](#20-2025-11-03)
     - [Changed](#changed-1)
     - [Added](#added-1)
     - [Fixed](#fixed-1)
-  - [[1.1] - 2025-06-12](#11-2025-06-12)
+  - [[1.2] - 2025-06-30](#12-2025-06-30)
     - [Changed](#changed-2)
     - [Added](#added-2)
+    - [Fixed](#fixed-2)
+  - [[1.1] - 2025-06-12](#11-2025-06-12)
+    - [Changed](#changed-3)
+    - [Added](#added-3)
   - [[1.0] - 2025-06-12](#10-2025-06-12)
 <!--toc:end-->
+
+## [0.2.0] - 2026-09-01
+
+### Changed
+
+- Move CLI, GUI, Dunst, and Waybar policy state to the shared machine-wide store ([central store](https://gitlab.com/gabriel.chamon/archie/-/tree/fix/archie-cli-central-store/src/archie/store))
+- Derive stable, RC, and alpha CLI package channels from CI context while keeping the repository version stable ([release packaging](https://gitlab.com/gabriel.chamon/archie/-/tree/fix/archie-cli-central-store/scripts/release))
+
+### Added
+
+- Add migration support for existing per-user policy and Waybar state
+- Add shared-store provisioning and permissions for non-root CLI and GUI access
+
+### Fixed
+
+- Avoid AUR build failures caused by inaccessible GitLab repository archive downloads ([AUR templates](https://gitlab.com/gabriel.chamon/archie/-/tree/fix/archie-cli-central-store/packaging/archie-cli))
+- Simplify the applet tooltip to show the running Archie Controls version
 
 ## [2.0] - 2025-11-03
 
@@ -71,6 +92,7 @@ _If you are upgrading: please see [docs/user/MIGRATING.md](docs/user/MIGRATING.m
 _First release._
 
 [2.0]: https://gitlab.com/gabriel.chamon/archie/-/tags/v2.0
+[0.2.0]: https://gitlab.com/gabriel.chamon/archie/-/tags/v0.2.0
 [1.2]: https://gitlab.com/gabriel.chamon/archie/-/tags/v1.2
 [1.1]: https://gitlab.com/gabriel.chamon/archie/-/tags/v1.1
 [1.0]: https://gitlab.com/gabriel.chamon/archie/-/tags/v1.0

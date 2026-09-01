@@ -2,6 +2,7 @@ import argparse
 from collections.abc import Sequence
 
 from archie.applet import add_applet_parser
+from archie.argparse import ArchieArgumentParser, add_command_subparsers
 from archie.downgrade import add_downgrade_parser
 from archie.gui import add_gui_parser
 from archie.system import add_system_parser
@@ -20,9 +21,9 @@ class HelpAllAction(argparse.Action):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = ArchieArgumentParser(
         prog="archie",
-        description="Archie repository maintenance tools.",
+        description="Archie system operational and maintenance tools.",
     )
     parser.add_argument(
         "--help-all",
@@ -30,7 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs=0,
         help="Show all commands hierarchically and exit.",
     )
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = add_command_subparsers(parser, dest="command", metavar="COMMAND")
     add_applet_parser(subparsers)
     add_downgrade_parser(subparsers)
     add_gui_parser(subparsers)
