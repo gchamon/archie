@@ -59,6 +59,7 @@ class ArchieCliReleaseVersionTest(unittest.TestCase):
             stable_pkgbuild = (package_dir / "PKGBUILD").read_text()
             self.assertIn("pkgver=0.2.0", stable_pkgbuild)
             self.assertIn("pkgrel=1", stable_pkgbuild)
+            self.assertIn("replaces=(archie-cli-nightly)", stable_pkgbuild)
             self.run_verify(package_dir, "stable", "283")
 
     def test_repeating_the_same_commit_keeps_package_release_idempotent(self) -> None:

@@ -79,7 +79,7 @@ yay -Scc
 Install `archie-cli` from AUR:
 
 ```bash
-yay -S --needed archie-cli
+yay -S --needed --noconfirm archie-cli
 ```
 
 If you are working from an Archie checkout and want to bypass AUR, run
