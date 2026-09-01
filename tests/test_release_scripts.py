@@ -37,14 +37,14 @@ class ArchieCliReleaseVersionTest(unittest.TestCase):
 
             self.run_prepare(package_dir, "alpha", commit, "283")
             alpha_pkgbuild = (package_dir / "PKGBUILD").read_text()
-            self.assertIn("pkgver=0.2.0a", alpha_pkgbuild)
+            self.assertIn("pkgver=0.2.1a", alpha_pkgbuild)
             self.assertIn("pkgrel=283", alpha_pkgbuild)
             self.assertIn(f"_commit={commit}", alpha_pkgbuild)
             self.run_verify(package_dir, "alpha", "283")
 
             self.run_prepare(package_dir, "rc", commit, "284")
             rc_pkgbuild = (package_dir / "PKGBUILD").read_text()
-            self.assertIn("pkgver=0.2.0rc", rc_pkgbuild)
+            self.assertIn("pkgver=0.2.1rc", rc_pkgbuild)
             self.assertIn("pkgrel=284", rc_pkgbuild)
             self.run_verify(package_dir, "rc", "284")
 
@@ -57,7 +57,7 @@ class ArchieCliReleaseVersionTest(unittest.TestCase):
 
             self.run_prepare(package_dir, "stable", commit, "283")
             stable_pkgbuild = (package_dir / "PKGBUILD").read_text()
-            self.assertIn("pkgver=0.2.0", stable_pkgbuild)
+            self.assertIn("pkgver=0.2.1", stable_pkgbuild)
             self.assertIn("pkgrel=1", stable_pkgbuild)
             self.run_verify(package_dir, "stable", "283")
 

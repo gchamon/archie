@@ -172,10 +172,8 @@ def format_tooltip(
     shy_state: ShyModeViewState | None = None,
     *,
     privacy_ready: bool = True,
-    running_version: str = RUNNING_VERSION,
-    installed_version: str | None = None,
 ) -> str:
-    """Return a complete, best-effort snapshot of Archie-controlled settings."""
+    """Return a best-effort snapshot of Archie-controlled settings."""
     values = dict(snapshot or {})
     if privacy_ready and shy_state is not None:
         values["share-state"] = "on" if shy_state.sharing else "off"
@@ -184,10 +182,14 @@ def format_tooltip(
         if not privacy_ready
         else format_shy_mode_status(shy_state)
     )
-    return f"Archie Controls v{running_version}\n\n" + format_system_status(
+    return format_system_status(
         values,
         shy_mode_status=status,
     )
+
+
+def format_tooltip_title(version: str = RUNNING_VERSION) -> str:
+    return f"Archie Controls v{version}"
 
 
 def format_shy_mode_status(state: ShyModeViewState | None = None) -> str:
@@ -282,7 +284,7 @@ class ArchieStatusNotifier:
         values = {
             "Category": GLib.Variant("s", "Hardware"),
             "Id": GLib.Variant("s", "archie"),
-            "Title": GLib.Variant("s", "Archie Controls"),
+            "Title": GLib.Variant("s", format_tooltip_title()),
             "Status": GLib.Variant("s", "Active"),
             "WindowId": GLib.Variant("i", 0),
             "IconName": GLib.Variant("s", "archie-controls"),
@@ -297,7 +299,7 @@ class ArchieStatusNotifier:
                 (
                     "",
                     [],
-                    "Archie Controls",
+                    format_tooltip_title(),
                     format_tooltip(self.snapshot, self.shy_state, privacy_ready=self.privacy_ready),
                 ),
             ),

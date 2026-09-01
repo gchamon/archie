@@ -6,6 +6,7 @@ from archie.applet import (
     ArchieStatusNotifier,
     format_shy_mode_status,
     format_tooltip,
+    format_tooltip_title,
     load_applet_snapshot,
     select_applet_icon,
 )
@@ -34,11 +35,7 @@ class AppletTooltipTest(unittest.TestCase):
                     "waybar-theme": "tokyonight",
                 },
                 ShyModeViewState(False, False, False, False, False),
-                running_version="0.1.0",
-                installed_version="0.1.0",
             ),
-            "Archie Controls v0.1.0\n"
-            "\n"
             "Hardware\n"
             "  Brightness: amdgpu_bl1 71%\n"
             "  Monitors: eDP-1 Built-in display: enabled (focused)\n"
@@ -69,11 +66,7 @@ class AppletTooltipTest(unittest.TestCase):
                     "power-profile": "",
                 },
                 ShyModeViewState(False, False, False, False, False),
-                running_version="0.1.0",
-                installed_version="0.1.0",
             ),
-            "Archie Controls v0.1.0\n"
-            "\n"
             "Hardware\n"
             "  Brightness: unavailable\n"
             "  Monitors: unavailable\n"
@@ -91,14 +84,12 @@ class AppletTooltipTest(unittest.TestCase):
             "  Share: off",
         )
 
-    def test_uses_running_version_in_compact_header(self) -> None:
-        tooltip = format_tooltip(
-            running_version="0.1.0",
-            installed_version="0.2.0",
+    def test_formats_versioned_tooltip_title(self) -> None:
+        self.assertEqual(format_tooltip_title("0.1.0"), "Archie Controls v0.1.0")
+        self.assertNotIn(
+            "Archie Controls",
+            format_tooltip({}, ShyModeViewState(False, False, False, False, False)),
         )
-
-        self.assertTrue(tooltip.startswith("Archie Controls v0.1.0\n\n"))
-        self.assertNotIn("Update:", tooltip)
 
 
 class AppletPrivacyStateTest(unittest.TestCase):
