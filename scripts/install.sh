@@ -754,7 +754,7 @@ main() {
     install_base_packages
     bootstrap_checkout_if_needed
     bootstrap_yay
-    run_yay_install archie-cli
+    run_yay_install --useask archie-cli
     initialize_archie_store
     install_yay_packages
     install_zsh_packages

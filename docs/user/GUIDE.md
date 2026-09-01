@@ -79,15 +79,14 @@ yay -Scc
 Install `archie-cli` from AUR:
 
 ```bash
-yay -S --needed --noconfirm archie-cli
+yay -S --needed archie-cli
 ```
 
 If you are working from an Archie checkout and want to bypass AUR, run
 `./scripts/install-archie-cli.sh` from the repository root; it builds and
 installs the local package with `makepkg`.
 
-For an alpha build from an active merge request, install the nightly package.
-It replaces the stable package because both provide `archie`:
+For an alpha build from an active merge request, install the nightly package:
 
 ```bash
 yay -S archie-cli-nightly

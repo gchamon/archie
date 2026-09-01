@@ -11,7 +11,6 @@ depends=("python>=3.14" sqlite)
 makedepends=(python-installer uv)
 provides=(archie)
 conflicts=(archie)
-replaces=(archie-cli-nightly)
 source=()
 sha256sums=()
 
