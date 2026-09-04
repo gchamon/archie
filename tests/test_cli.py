@@ -1,12 +1,17 @@
 import io
 import os
 import subprocess
+import tempfile
+import threading
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
-from unittest.mock import patch
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 from archie.cli import main
 from archie.gui import (
+    ArchieControlsWindow,
+    can_write_store,
     filter_documentation_rows,
     filter_shortcut_rows,
     get_notification_sound,
@@ -15,7 +20,9 @@ from archie.gui import (
     load_gui_settings_snapshot_from_environment,
     parse_brightness_devices,
     parse_markdown_table,
+    selected_font_family,
     snap_brightness_percent,
+    store_write_warning,
 )
 from archie.gui_state import (
     GuiSettingsSnapshot,
@@ -149,16 +156,105 @@ class NotificationSoundsGuiStateTest(unittest.TestCase):
             run_cli.assert_called_once_with(["archie", "system", "get", "notification-sound"])
 
 
+class GuiStoreAccessTest(unittest.TestCase):
+    def test_reports_missing_store(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "store.sqlite3"
+
+            self.assertFalse(can_write_store(path))
+            warning = store_write_warning(path)
+            self.assertTrue(warning is not None and "store is missing" in warning)
+
+    def test_reports_store_permission_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "store.sqlite3"
+            path.touch()
+
+            with patch("archie.gui.os.access", return_value=False):
+                self.assertFalse(can_write_store(path))
+                warning = store_write_warning(path)
+
+            self.assertTrue(
+                warning is not None and "log out and back in or reboot" in warning
+            )
+
+
+class GuiRefreshTest(unittest.TestCase):
+    def test_cached_controls_remain_visible_and_interactive_during_refresh(self) -> None:
+        window = object.__new__(ArchieControlsWindow)
+        window.settings_loading = False
+        window.settings_visible = True
+        window.settings_revision = 4
+        window.render_settings_loading = Mock()
+        window.run_cli_async = Mock()
+
+        self.assertFalse(window.refresh())
+
+        window.render_settings_loading.assert_not_called()
+        refresh_loader, refresh_callback = window.run_cli_async.call_args.args
+        self.assertIs(refresh_loader, load_gui_settings_snapshot)
+        window.on_settings_snapshot_loaded = Mock(return_value=False)
+        snapshot = Mock()
+        refresh_callback(snapshot)
+        window.on_settings_snapshot_loaded.assert_called_once_with(snapshot, 4)
+
+    def test_stale_refresh_waits_for_active_setting_change(self) -> None:
+        window = object.__new__(ArchieControlsWindow)
+        window.settings_loading = True
+        window.settings_revision = 2
+        window.settings_changes_in_progress = 1
+        window.settings_refresh_pending = False
+        window.refresh = Mock()
+        window.render_settings_snapshot = Mock()
+
+        self.assertFalse(window.on_settings_snapshot_loaded(Mock(), 1))
+
+        self.assertTrue(window.settings_refresh_pending)
+        window.refresh.assert_not_called()
+        window.render_settings_snapshot.assert_not_called()
+
+        window.finish_settings_change()
+        self.assertEqual(window.settings_changes_in_progress, 0)
+        self.assertFalse(window.settings_refresh_pending)
+        window.refresh.assert_called_once_with()
+
+    def test_current_refresh_replaces_the_cached_snapshot(self) -> None:
+        window = object.__new__(ArchieControlsWindow)
+        window.settings_loading = True
+        window.settings_revision = 2
+        window.settings_changes_in_progress = 0
+        window.settings_refresh_pending = False
+        window.render_settings_snapshot = Mock()
+        snapshot = Mock()
+
+        self.assertFalse(window.on_settings_snapshot_loaded(snapshot, 2))
+
+        window.render_settings_snapshot.assert_called_once_with(
+            snapshot, controls_enabled=True
+        )
+
+
 class GuiSettingsSnapshotTest(unittest.TestCase):
     def test_collects_settings_without_constructing_gtk_widgets(self) -> None:
         brightness = subprocess.CompletedProcess([], 0, "amdgpu_bl1\t71\t181\t255\n", "")
         shy_mode = ShyModeSettings(enabled=True, replay_count=4, replay_interval=2.5)
         monitors = [object()]
+        readers_started = threading.Barrier(2)
+
+        def synchronized(value):
+            readers_started.wait(timeout=1)
+            return value
 
         with (
-            patch("archie.gui.get_brightness_devices", return_value=brightness),
+            patch(
+                "archie.gui.get_brightness_devices",
+                side_effect=lambda: synchronized(brightness),
+            ),
             patch("archie.gui.list_monitors", return_value=monitors),
-            patch("archie.gui.get_lid_behavior", return_value="lock"),
+            patch(
+                "archie.gui.get_lid_behavior",
+                side_effect=lambda: synchronized("lock"),
+            ),
             patch("archie.gui.get_notifications_state", return_value="on"),
             patch("archie.gui.get_notification_sounds_state", return_value="off"),
             patch("archie.gui.get_notification_sound", return_value="default"),
@@ -166,6 +262,14 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
             patch("archie.gui.get_kdeconnect_state", return_value="on"),
             patch("archie.gui.get_power_profile", return_value="balanced"),
             patch("archie.gui.get_waybar_theme", return_value="tokyonight"),
+            patch(
+                "archie.gui.get_waybar_font",
+                side_effect=lambda prefix: {
+                    "waybar-font": ("JetBrains Mono", 18),
+                    "waybar-menu-font": ("Cantarell", 16),
+                    "waybar-tooltip-font": ("Adwaita Sans", 14),
+                }[prefix],
+            ),
         ):
             snapshot = load_gui_settings_snapshot()
 
@@ -180,6 +284,12 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
         self.assertEqual(snapshot.kdeconnect, "on")
         self.assertEqual(snapshot.power_profile, "balanced")
         self.assertEqual(snapshot.waybar_theme, "tokyonight")
+        self.assertEqual(snapshot.waybar_font_family, "JetBrains Mono")
+        self.assertEqual(snapshot.waybar_font_size, 18)
+        self.assertEqual(snapshot.waybar_menu_font_family, "Cantarell")
+        self.assertEqual(snapshot.waybar_menu_font_size, 16)
+        self.assertEqual(snapshot.waybar_tooltip_font_family, "Adwaita Sans")
+        self.assertEqual(snapshot.waybar_tooltip_font_size, 14)
 
     def test_keeps_other_settings_when_monitor_discovery_fails(self) -> None:
         with (
@@ -193,6 +303,7 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
             patch("archie.gui.get_kdeconnect_state", return_value="unknown"),
             patch("archie.gui.get_power_profile", return_value="unknown"),
             patch("archie.gui.get_waybar_theme", return_value="unknown"),
+            patch("archie.gui.get_waybar_font", return_value=("MesloLGM Nerd Font", 20)),
         ):
             snapshot = load_gui_settings_snapshot()
 
@@ -215,6 +326,12 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
             kdeconnect="on",
             power_profile="balanced",
             waybar_theme="tokyonight",
+            waybar_font_family="JetBrains Mono",
+            waybar_font_size=18,
+            waybar_menu_font_family="Cantarell",
+            waybar_menu_font_size=16,
+            waybar_tooltip_font_family="MesloLGM Nerd Font",
+            waybar_tooltip_font_size=20,
         )
 
         restored = deserialize_gui_settings_snapshot(serialize_gui_settings_snapshot(snapshot))
@@ -233,6 +350,20 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
         self.assertEqual(restored.kdeconnect, snapshot.kdeconnect)
         self.assertEqual(restored.power_profile, snapshot.power_profile)
         self.assertEqual(restored.waybar_theme, snapshot.waybar_theme)
+        self.assertEqual(restored.waybar_font_family, snapshot.waybar_font_family)
+        self.assertEqual(restored.waybar_font_size, snapshot.waybar_font_size)
+        self.assertEqual(restored.waybar_menu_font_family, snapshot.waybar_menu_font_family)
+        self.assertEqual(restored.waybar_menu_font_size, snapshot.waybar_menu_font_size)
+        self.assertEqual(restored.waybar_tooltip_font_family, snapshot.waybar_tooltip_font_family)
+        self.assertEqual(restored.waybar_tooltip_font_size, snapshot.waybar_tooltip_font_size)
+
+    def test_font_selector_uses_only_the_selected_family(self) -> None:
+        description = Mock()
+        description.get_family.return_value = "JetBrains Mono"
+        font_button = Mock()
+        font_button.get_font_desc.return_value = description
+
+        self.assertEqual(selected_font_family(font_button), "JetBrains Mono")
 
     def test_ignores_malformed_applet_snapshot_environment(self) -> None:
         with patch.dict(os.environ, {"ARCHIE_GUI_SETTINGS_SNAPSHOT": "not json"}, clear=False):

@@ -8,6 +8,12 @@ SHY_MODE_ENABLED = "privacy.shy-mode.enabled"
 SHY_MODE_REPLAY_COUNT = "privacy.shy-mode.replay-count"
 SHY_MODE_REPLAY_INTERVAL = "privacy.shy-mode.replay-interval"
 WAYBAR_THEME = "desktop.waybar.theme"
+WAYBAR_FONT_FAMILY = "desktop.waybar.font-family"
+WAYBAR_FONT_SIZE = "desktop.waybar.font-size"
+WAYBAR_MENU_FONT_FAMILY = "desktop.waybar.menu-font-family"
+WAYBAR_MENU_FONT_SIZE = "desktop.waybar.menu-font-size"
+WAYBAR_TOOLTIP_FONT_FAMILY = "desktop.waybar.tooltip-font-family"
+WAYBAR_TOOLTIP_FONT_SIZE = "desktop.waybar.tooltip-font-size"
 
 POLICY_DEFAULTS: dict[str, str] = {
     NOTIFICATION_SOUNDS_ENABLED: "on",
@@ -16,6 +22,12 @@ POLICY_DEFAULTS: dict[str, str] = {
     SHY_MODE_REPLAY_COUNT: "10",
     SHY_MODE_REPLAY_INTERVAL: "5",
     WAYBAR_THEME: "cjbassi",
+    WAYBAR_FONT_FAMILY: "MesloLGM Nerd Font",
+    WAYBAR_FONT_SIZE: "20",
+    WAYBAR_MENU_FONT_FAMILY: "MesloLGM Nerd Font",
+    WAYBAR_MENU_FONT_SIZE: "20",
+    WAYBAR_TOOLTIP_FONT_FAMILY: "MesloLGM Nerd Font",
+    WAYBAR_TOOLTIP_FONT_SIZE: "20",
 }
 
 

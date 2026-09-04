@@ -1,1 +1,3 @@
 d /var/lib/archie 2775 root archie -
+f /var/lib/archie/store.sqlite3 0664 root archie - -
+d /var/lib/archie/waybar 2775 root archie -

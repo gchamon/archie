@@ -6,7 +6,7 @@ from archie.monitor import MonitorOutput
 from archie.privacy import ShyModeSettings
 
 GUI_SETTINGS_SNAPSHOT_ENV = "ARCHIE_GUI_SETTINGS_SNAPSHOT"
-GUI_SETTINGS_SNAPSHOT_VERSION = 1
+GUI_SETTINGS_SNAPSHOT_VERSION = 3
 
 
 @dataclass(frozen=True)
@@ -22,6 +22,12 @@ class GuiSettingsSnapshot:
     kdeconnect: str
     power_profile: str
     waybar_theme: str
+    waybar_font_family: str
+    waybar_font_size: int
+    waybar_menu_font_family: str
+    waybar_menu_font_size: int
+    waybar_tooltip_font_family: str
+    waybar_tooltip_font_size: int
 
 
 def serialize_gui_settings_snapshot(snapshot: GuiSettingsSnapshot) -> str:
@@ -43,6 +49,12 @@ def serialize_gui_settings_snapshot(snapshot: GuiSettingsSnapshot) -> str:
             "kdeconnect": snapshot.kdeconnect,
             "power_profile": snapshot.power_profile,
             "waybar_theme": snapshot.waybar_theme,
+            "waybar_font_family": snapshot.waybar_font_family,
+            "waybar_font_size": snapshot.waybar_font_size,
+            "waybar_menu_font_family": snapshot.waybar_menu_font_family,
+            "waybar_menu_font_size": snapshot.waybar_menu_font_size,
+            "waybar_tooltip_font_family": snapshot.waybar_tooltip_font_family,
+            "waybar_tooltip_font_size": snapshot.waybar_tooltip_font_size,
         },
         separators=(",", ":"),
     )
@@ -80,6 +92,12 @@ def deserialize_gui_settings_snapshot(payload: str) -> GuiSettingsSnapshot | Non
             kdeconnect=_require_str(data, "kdeconnect"),
             power_profile=_require_str(data, "power_profile"),
             waybar_theme=_require_str(data, "waybar_theme"),
+            waybar_font_family=_require_str(data, "waybar_font_family"),
+            waybar_font_size=_require_int(data, "waybar_font_size"),
+            waybar_menu_font_family=_require_str(data, "waybar_menu_font_family"),
+            waybar_menu_font_size=_require_int(data, "waybar_menu_font_size"),
+            waybar_tooltip_font_family=_require_str(data, "waybar_tooltip_font_family"),
+            waybar_tooltip_font_size=_require_int(data, "waybar_tooltip_font_size"),
         )
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         return None

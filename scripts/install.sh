@@ -564,7 +564,7 @@ initialize_archie_store() {
     run_sudo_cmd usermod --append --groups archie "$USER"
     run_sudo_cmd archie system initialize-store --legacy-home "$HOME"
     log_info "Archie settings are stored in /var/lib/archie/store.sqlite3."
-    log_info "Log out and back in before changing policy without sudo."
+    log_info "Log out and back in, or reboot, before changing policy without sudo."
 }
 
 reload_logind_if_active() {
