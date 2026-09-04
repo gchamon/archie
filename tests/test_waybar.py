@@ -72,6 +72,45 @@ esac
 
 
 class ManagedWaybarThemesTest(unittest.TestCase):
+    def test_waybar_launcher_watches_the_replaced_style_path(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        launcher = (
+            root / "deployment-packages/config/hypr/scripts/launch-waybar.sh"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("--event moved_to", launcher)
+        self.assertIn("--include '.*/style\\.css$'", launcher)
+        self.assertNotIn("killall waybar", launcher)
+
+    def test_theme_styles_do_not_reset_native_menu_controls(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        deployment_root = root / "deployment-packages/config/waybar/themes"
+        package_root = root / "src/archie/waybar-themes"
+
+        for theme in ("cjbassi", "mechabar", "tokyonight"):
+            with self.subTest(theme=theme):
+                deployment_style = (deployment_root / theme / "style.css").read_text(
+                    encoding="utf-8"
+                )
+                package_style = (package_root / theme / "style.css").read_text(
+                    encoding="utf-8"
+                )
+
+                self.assertEqual(deployment_style, package_style)
+                self.assertNotIn("\n* {", f"\n{deployment_style}")
+                self.assertNotIn("window#waybar *", deployment_style)
+                self.assertNotIn("menu *", deployment_style)
+
+    def test_mechabar_preserves_its_module_spacing(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        style = (root / "src/archie/waybar-themes/mechabar/style.css").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("padding: 0 10px;", style)
+        self.assertIn("margin: 4px 2px;", style)
+        self.assertIn("border-radius: 8px;", style)
+
     def test_every_theme_declares_and_styles_the_mic_indicator(self) -> None:
         root = Path(__file__).resolve().parents[1]
         for theme_root in (

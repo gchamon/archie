@@ -14,7 +14,13 @@ from archie.store import (
     NOTIFICATION_SOUNDS_ENABLED,
     SHY_MODE_ENABLED,
     STORE_DATABASE_PATH,
+    WAYBAR_FONT_FAMILY,
+    WAYBAR_FONT_SIZE,
+    WAYBAR_MENU_FONT_FAMILY,
+    WAYBAR_MENU_FONT_SIZE,
     WAYBAR_THEME,
+    WAYBAR_TOOLTIP_FONT_FAMILY,
+    WAYBAR_TOOLTIP_FONT_SIZE,
     PolicyStore,
     StoreDatabase,
 )
@@ -26,6 +32,8 @@ from archie.system import (
     ON_VALUE,
     UNKNOWN_MODE,
     BrightnessDevice,
+    WaybarFont,
+    WaybarTypography,
     clamp_brightness_percent,
     detect_kdeconnect_state,
     detect_lid_close_behavior,
@@ -40,11 +48,14 @@ from archie.system import (
     notification_sound_asset_path,
     notification_sounds_config_path,
     reload_logind_if_active,
+    render_waybar_style,
     run_system_get,
     run_system_set,
     save_notification_sound_path,
     set_brightness,
     set_kdeconnect,
+    set_waybar_font_setting,
+    set_waybar_theme,
 )
 
 
@@ -60,6 +71,7 @@ class NotificationSoundsCommandTest(unittest.TestCase):
     def test_get_and_set_persist_sound_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "notification-sounds.json"
+            path.touch()
             args = argparse.Namespace(setting="notification-sounds", value="off")
 
             self.assertEqual(run_system_set(args, notification_sounds_path=path), 0)
@@ -79,6 +91,7 @@ class NotificationSoundsCommandTest(unittest.TestCase):
     def test_custom_sound_path_is_persisted_and_requires_a_readable_absolute_file(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             config_path = Path(temp_dir) / "notification-sounds.json"
+            config_path.touch()
             sound_path = Path(temp_dir) / "sound.ogg"
             sound_path.write_text("sound", encoding="utf-8")
             save_notification_sound_path(str(sound_path), config_path)
@@ -126,6 +139,8 @@ class PolicyInitializationTest(unittest.TestCase):
                 "tokyonight\n", encoding="utf-8"
             )
             policy_path = root / "shared/store.sqlite3"
+            policy_path.parent.mkdir(parents=True)
+            policy_path.touch()
             shared_config = root / "shared/waybar/config"
             shared_style = root / "shared/waybar/style.css"
 
@@ -164,10 +179,140 @@ class PolicyInitializationTest(unittest.TestCase):
             self.assertEqual(store.get(WAYBAR_THEME), "tokyonight")
 
 
+class WaybarTypographyTest(unittest.TestCase):
+    def test_custom_fonts_are_persisted_and_materialized(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            store_path = root / "store.sqlite3"
+            store_path.touch()
+            style_path = root / "waybar/style.css"
+            style_path.parent.mkdir()
+
+            settings = (
+                ("waybar-font-family", "JetBrains Mono"),
+                ("waybar-font-size", 16),
+                ("waybar-menu-font-family", "Cantarell"),
+                ("waybar-menu-font-size", 14),
+                ("waybar-tooltip-font-family", "Adwaita Sans"),
+                ("waybar-tooltip-font-size", 12),
+            )
+            for setting, value in settings:
+                self.assertEqual(
+                    set_waybar_font_setting(
+                        setting,
+                        value,
+                        waybar_theme_state_path=store_path,
+                        waybar_style_path=style_path,
+                    ),
+                    0,
+                )
+
+            store = PolicyStore(StoreDatabase(store_path))
+            self.assertEqual(store.get(WAYBAR_FONT_FAMILY), "JetBrains Mono")
+            self.assertEqual(store.get(WAYBAR_FONT_SIZE), "16")
+            self.assertEqual(store.get(WAYBAR_MENU_FONT_FAMILY), "Cantarell")
+            self.assertEqual(store.get(WAYBAR_MENU_FONT_SIZE), "14")
+            self.assertEqual(store.get(WAYBAR_TOOLTIP_FONT_FAMILY), "Adwaita Sans")
+            self.assertEqual(store.get(WAYBAR_TOOLTIP_FONT_SIZE), "12")
+
+            config_path = root / "waybar/config"
+            self.assertEqual(
+                set_waybar_theme(
+                    "mechabar",
+                    waybar_theme_state_path=store_path,
+                    waybar_config_path=config_path,
+                    waybar_style_path=style_path,
+                ),
+                0,
+            )
+            style = style_path.read_text(encoding="utf-8")
+            self.assertIn('font-family: "JetBrains Mono", monospace;', style)
+            self.assertIn('font-family: "Cantarell", monospace;', style)
+            self.assertIn('font-family: "Adwaita Sans", monospace;', style)
+
+            for setting, value in settings:
+                stdout = io.StringIO()
+                with redirect_stdout(stdout):
+                    self.assertEqual(
+                        run_system_get(
+                            argparse.Namespace(setting=setting),
+                            waybar_theme_state_path=store_path,
+                        ),
+                        0,
+                    )
+                self.assertEqual(stdout.getvalue(), f"{value}\n")
+
+    def test_rendered_typography_does_not_style_menu_control_descendants(self) -> None:
+        style = render_waybar_style(
+            "window#waybar { color: red; }\n",
+            WaybarTypography(
+                elements=WaybarFont("Elements", 18),
+                menus=WaybarFont("Menus", 16),
+                tooltips=WaybarFont("Tooltips", 14),
+            ),
+        )
+
+        self.assertIn("window#waybar .module", style)
+        self.assertIn("menu,\nmenuitem {", style)
+        self.assertIn("tooltip,\ntooltip label {", style)
+        self.assertNotIn("menu *", style)
+        self.assertNotIn("tooltip *", style)
+        self.assertNotIn("check", style)
+        self.assertNotIn("radio", style)
+
+    def test_cli_accepts_all_waybar_font_settings(self) -> None:
+        for setting, value in (
+            ("waybar-font-family", "JetBrains Mono"),
+            ("waybar-font-size", "16"),
+            ("waybar-menu-font-family", "Cantarell"),
+            ("waybar-menu-font-size", "14"),
+            ("waybar-tooltip-font-family", "Adwaita Sans"),
+            ("waybar-tooltip-font-size", "12"),
+        ):
+            with self.subTest(setting=setting):
+                with patch("archie.system.set_waybar_font_setting", return_value=0) as setter:
+                    self.assertEqual(main(["system", "set", setting, value]), 0)
+                self.assertEqual(
+                    setter.call_args.args,
+                    (setting, value if setting.endswith("family") else int(value)),
+                )
+
+    def test_cli_reads_all_waybar_font_settings(self) -> None:
+        for setting in (
+            "waybar-font-family",
+            "waybar-font-size",
+            "waybar-menu-font-family",
+            "waybar-menu-font-size",
+            "waybar-tooltip-font-family",
+            "waybar-tooltip-font-size",
+        ):
+            with self.subTest(setting=setting):
+                stdout = io.StringIO()
+                with (
+                    patch("archie.system.get_waybar_font_setting", return_value="configured") as getter,
+                    redirect_stdout(stdout),
+                ):
+                    self.assertEqual(main(["system", "get", setting]), 0)
+                self.assertEqual(stdout.getvalue(), "configured\n")
+                self.assertEqual(getter.call_args.args[0], setting)
+
+    def test_cli_rejects_invalid_waybar_font_values(self) -> None:
+        for arguments in (
+            ["system", "set", "waybar-font-family", "bad;font"],
+            ["system", "set", "waybar-menu-font-size", "5"],
+            ["system", "set", "waybar-tooltip-font-size", "73"],
+        ):
+            with self.subTest(arguments=arguments):
+                with self.assertRaises(SystemExit) as error:
+                    main(arguments)
+                self.assertEqual(error.exception.code, 2)
+
+
 class ShyModeCommandTest(unittest.TestCase):
     def test_get_and_set_persist_replay_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "shy-mode.json"
+            path.touch()
             args = argparse.Namespace(
                 setting="shy-mode",
                 value="on",
@@ -191,6 +336,7 @@ class ShyModeCommandTest(unittest.TestCase):
     def test_set_off_preserves_replay_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "shy-mode.json"
+            path.touch()
             run_system_set(
                 argparse.Namespace(
                     setting="shy-mode",

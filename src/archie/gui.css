@@ -28,6 +28,16 @@
     min-height: 32px;
 }
 
+.archie-setting-row {
+    border-radius: 6px;
+    padding: 3px 6px;
+    transition: background-color 90ms ease-out;
+}
+
+.archie-setting-row:hover {
+    background-color: alpha(currentColor, 0.08);
+}
+
 .archie-loading-pill {
     min-height: 34px;
     opacity: 0.65;

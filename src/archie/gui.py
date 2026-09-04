@@ -5,6 +5,7 @@ import signal
 import subprocess
 import threading
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -26,6 +27,7 @@ from archie.monitor import (
     restore_monitors,
 )
 from archie.privacy import ShyModeSettings
+from archie.store import STORE_DATABASE_PATH
 from archie.system import (
     HIBERNATE_MODE,
     LOCK_MODE,
@@ -104,19 +106,24 @@ class ArchieControlsWindow:
         import gi
 
         gi.require_version("Gtk", "4.0")
-        from gi.repository import Gio, GLib, Gtk  # type: ignore[attr-defined]
+        from gi.repository import Gio, GLib, Gtk, Pango  # type: ignore[attr-defined]
 
         self.Gio = Gio
         self.Gtk = Gtk
         self.GLib = GLib
+        self.Pango = Pango
         self.application = application
         self.monitors: list[MonitorOutput] = []
         self.pending_snapshot: list[MonitorOutput] | None = None
         self.pending_timeout_id: int | None = None
         self.brightness_timeout_ids: dict[str, int] = {}
         self.documentation_tabs: dict[str, tuple[str, object]] = {}
+        self.store_write_warning: str | None = None
         self.settings_loading = False
         self.settings_visible = False
+        self.settings_revision = 0
+        self.settings_changes_in_progress = 0
+        self.settings_refresh_pending = False
         self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.monitor_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.lid_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
@@ -145,6 +152,10 @@ class ArchieControlsWindow:
         self.waybar_theme_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.waybar_theme_box.add_css_class("archie-lid-segments")
         self.waybar_theme_box.add_css_class("linked")
+        self.waybar_font_dialog = Gtk.FontDialog()
+        self.waybar_font_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.waybar_menu_font_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.waybar_tooltip_font_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.message_buffer = Gtk.TextBuffer()
         self.message_view = Gtk.TextView(buffer=self.message_buffer)
         self.message_view.set_editable(False)
@@ -185,10 +196,8 @@ class ArchieControlsWindow:
         self.install_css()
         self.window.set_child(self.build_content())
         self._install_copy_shortcut()
-        self.set_status("Loading system settings…")
         if snapshot := load_gui_settings_snapshot_from_environment():
-            self.render_settings_snapshot(snapshot, controls_enabled=False)
-            self.set_status("Refreshing system settings…")
+            self.render_settings_snapshot(snapshot, controls_enabled=True)
         self.GLib.timeout_add(50, self.refresh)
         self.GLib.timeout_add(50, self.refresh_applet_update_state)
 
@@ -235,6 +244,9 @@ class ArchieControlsWindow:
         root.append(self.system_settings_content)
         self.render_settings_loading()
 
+        logs_label = Gtk.Label(label="Logs:")
+        logs_label.set_xalign(0)
+        root.append(logs_label)
         root.append(self.message_scroller)
         root.append(self.confirm_box)
         root.append(self.update_bar)
@@ -243,63 +255,38 @@ class ArchieControlsWindow:
 
     def build_system_settings_options(self):
         Gtk = self.Gtk
-        options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
-        brightness_label = Gtk.Label(label="Screen brightness:")
-        brightness_label.set_xalign(0)
-        options.append(brightness_label)
-        options.append(self.brightness_box)
-
-        monitor_label = Gtk.Label(label="Monitors:")
-        monitor_label.set_xalign(0)
-        options.append(monitor_label)
-        options.append(self.monitor_box)
-
-        lid_label = Gtk.Label(label="Lid close behavior:")
-        lid_label.set_xalign(0)
-        options.append(lid_label)
-        options.append(self.lid_box)
-
-        notifications_label = Gtk.Label(label="Notifications:")
-        notifications_label.set_xalign(0)
-        options.append(notifications_label)
-        options.append(self.notifications_box)
-
-        notification_sounds_label = Gtk.Label(label="Notification sounds:")
-        notification_sounds_label.set_xalign(0)
-        options.append(notification_sounds_label)
-        options.append(self.notification_sounds_box)
-
-        notification_sound_label = Gtk.Label(label="Notification sound:")
-        notification_sound_label.set_xalign(0)
-        options.append(notification_sound_label)
-        options.append(self.notification_sound_box)
-
-        shy_mode_label = Gtk.Label(label="Shy mode:")
-        shy_mode_label.set_xalign(0)
-        options.append(shy_mode_label)
-        options.append(self.shy_mode_box)
+        options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        options.append(self.build_setting_row("Screen brightness:", self.brightness_box))
+        options.append(self.build_setting_row("Monitors:", self.monitor_box))
+        options.append(self.build_setting_row("Lid close behavior:", self.lid_box))
+        options.append(self.build_setting_row("Notifications:", self.notifications_box))
+        options.append(self.build_setting_row("Notification sounds:", self.notification_sounds_box))
+        options.append(self.build_setting_row("Notification sound:", self.notification_sound_box))
+        options.append(self.build_setting_row("Shy mode:", self.shy_mode_box))
         options.append(self.shy_mode_status)
-
-        kdeconnect_label = Gtk.Label(label="KDE Connect:")
-        kdeconnect_label.set_xalign(0)
-        options.append(kdeconnect_label)
-        options.append(self.kdeconnect_box)
-
-        power_profile_label = Gtk.Label(label="Power profile:")
-        power_profile_label.set_xalign(0)
-        options.append(power_profile_label)
-        options.append(self.power_profile_box)
-
-        waybar_theme_label = Gtk.Label(label="Waybar theme:")
-        waybar_theme_label.set_xalign(0)
-        options.append(waybar_theme_label)
-        options.append(self.waybar_theme_box)
+        options.append(self.build_setting_row("KDE Connect:", self.kdeconnect_box))
+        options.append(self.build_setting_row("Power profile:", self.power_profile_box))
+        options.append(self.build_setting_row("Waybar theme:", self.waybar_theme_box))
+        options.append(self.build_setting_row("Waybar elements:", self.waybar_font_box))
+        options.append(self.build_setting_row("Context menus:", self.waybar_menu_font_box))
+        options.append(self.build_setting_row("Tooltips:", self.waybar_tooltip_font_box))
 
         options_scroller = Gtk.ScrolledWindow()
         options_scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         options_scroller.set_vexpand(True)
         options_scroller.set_child(options)
         return options_scroller
+
+    def build_setting_row(self, label_text: str, control):
+        row = self.Gtk.Box(orientation=self.Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("archie-setting-row")
+        label = self.Gtk.Label(label=label_text)
+        label.set_xalign(0)
+        label.set_hexpand(True)
+        control.set_halign(self.Gtk.Align.END)
+        row.append(label)
+        row.append(control)
+        return row
 
     def build_documentation_table_tab(self, tab_id: str, search_placeholder: str, read_markdown):
         Gtk = self.Gtk
@@ -399,11 +386,13 @@ class ArchieControlsWindow:
         if self.settings_loading:
             return False
         self.settings_loading = True
-        if self.settings_visible:
-            self.set_system_settings_sensitive(False)
-        else:
+        if not self.settings_visible:
             self.render_settings_loading()
-        self.run_cli_async(load_gui_settings_snapshot, self.on_settings_snapshot_loaded)
+        refresh_revision = self.settings_revision
+        self.run_cli_async(
+            load_gui_settings_snapshot,
+            lambda snapshot: self.on_settings_snapshot_loaded(snapshot, refresh_revision),
+        )
         return False
 
     def refresh_applet_update_state(self) -> bool:
@@ -464,10 +453,28 @@ class ArchieControlsWindow:
         loading_box.append(loading_pill)
         self.system_settings_content.append(loading_box)
 
-    def on_settings_snapshot_loaded(self, snapshot: GuiSettingsSnapshot) -> bool:
+    def on_settings_snapshot_loaded(
+        self, snapshot: GuiSettingsSnapshot, refresh_revision: int
+    ) -> bool:
         self.settings_loading = False
+        if refresh_revision != self.settings_revision:
+            if self.settings_changes_in_progress:
+                self.settings_refresh_pending = True
+            else:
+                self.refresh()
+            return False
         self.render_settings_snapshot(snapshot, controls_enabled=True)
         return False
+
+    def begin_settings_change(self) -> None:
+        self.settings_revision += 1
+        self.settings_changes_in_progress += 1
+
+    def finish_settings_change(self) -> None:
+        self.settings_changes_in_progress -= 1
+        if self.settings_changes_in_progress == 0 and self.settings_refresh_pending:
+            self.settings_refresh_pending = False
+            self.refresh()
 
     def render_settings_snapshot(self, snapshot: GuiSettingsSnapshot, *, controls_enabled: bool) -> None:
         self.clear_box(self.brightness_box)
@@ -480,6 +487,9 @@ class ArchieControlsWindow:
         self.clear_box(self.kdeconnect_box)
         self.clear_box(self.power_profile_box)
         self.clear_box(self.waybar_theme_box)
+        self.clear_box(self.waybar_font_box)
+        self.clear_box(self.waybar_menu_font_box)
+        self.clear_box(self.waybar_tooltip_font_box)
         self.render_brightness(snapshot.brightness_result)
         self.monitors = snapshot.monitors
         if snapshot.monitor_error is None:
@@ -494,10 +504,40 @@ class ArchieControlsWindow:
         self.render_kdeconnect(snapshot.kdeconnect)
         self.render_power_profile(snapshot.power_profile)
         self.render_waybar_theme(snapshot.waybar_theme)
+        self.render_waybar_font(
+            self.waybar_font_box,
+            "Waybar elements",
+            "waybar-font",
+            snapshot.waybar_font_family,
+            snapshot.waybar_font_size,
+        )
+        self.render_waybar_font(
+            self.waybar_menu_font_box,
+            "Context menu",
+            "waybar-menu-font",
+            snapshot.waybar_menu_font_family,
+            snapshot.waybar_menu_font_size,
+        )
+        self.render_waybar_font(
+            self.waybar_tooltip_font_box,
+            "Tooltip",
+            "waybar-tooltip-font",
+            snapshot.waybar_tooltip_font_family,
+            snapshot.waybar_tooltip_font_size,
+        )
         self.clear_box(self.system_settings_content)
         self.system_settings_content.append(self.build_system_settings_options())
         self.settings_visible = True
         self.set_system_settings_sensitive(controls_enabled)
+        self.report_store_write_access()
+
+    def report_store_write_access(self) -> None:
+        warning = store_write_warning()
+        if warning == self.store_write_warning:
+            return
+        self.store_write_warning = warning
+        if warning is not None:
+            self.set_status(warning)
 
     def set_system_settings_sensitive(self, sensitive: bool) -> None:
         for box in (
@@ -511,6 +551,9 @@ class ArchieControlsWindow:
             self.kdeconnect_box,
             self.power_profile_box,
             self.waybar_theme_box,
+            self.waybar_font_box,
+            self.waybar_menu_font_box,
+            self.waybar_tooltip_font_box,
         ):
             self.set_box_sensitive(box, sensitive)
 
@@ -564,7 +607,7 @@ class ArchieControlsWindow:
             page_size=0,
         )
         scale = Gtk.Scale(orientation=Gtk.Orientation.HORIZONTAL, adjustment=adjustment)
-        scale.set_hexpand(True)
+        scale.set_size_request(220, -1)
         scale.set_digits(0)
         scale.set_draw_value(False)
         scale.connect("value-changed", self.on_brightness_changed, device.name)
@@ -597,16 +640,19 @@ class ArchieControlsWindow:
         if self.pending_snapshot is not None:
             self.set_status("Confirm or revert the current monitor change first.")
             return
+        self.begin_settings_change()
         try:
             self.pending_snapshot = apply_monitor_toggle(self.monitors, monitor_name)
         except Exception as error:
             self.set_status(str(error))
+            self.finish_settings_change()
             return
         notify_applet_settings_changed()
         self.set_status("Confirm monitor layout within 10 seconds.")
         self.render_confirmation()
         self.pending_timeout_id = self.add_timeout(10, self.revert_pending_change)
         self.refresh_monitor_buttons_only()
+        self.finish_settings_change()
 
     def render_confirmation(self) -> None:
         self.clear_box(self.confirm_box)
@@ -627,18 +673,21 @@ class ArchieControlsWindow:
 
     def revert_pending_change(self, *_args) -> bool:
         if self.pending_snapshot is not None:
+            self.begin_settings_change()
             try:
                 restore_monitors(self.pending_snapshot)
                 notify_applet_settings_changed()
                 self.set_status("Monitor layout restored.")
             except Exception as error:
                 self.set_status(f"Restore failed: {error}")
+            self.finish_settings_change()
         self.pending_snapshot = None
         self.clear_box(self.confirm_box)
         self.refresh()
         return False
 
     def on_lid_clicked(self, _button, behavior: str) -> None:
+        self.begin_settings_change()
         self.set_box_sensitive(self.lid_box, False)
         self.set_status(f"Setting lid close behavior to {behavior}...")
         self.run_cli_async(
@@ -654,6 +703,7 @@ class ArchieControlsWindow:
             self.set_status(lid_error_message(result))
         self.clear_box(self.lid_box)
         self.render_lid_behavior()
+        self.finish_settings_change()
         return False
 
     def render_toggle_row(self, box, active_value: str, on_clicked) -> None:
@@ -736,7 +786,31 @@ class ArchieControlsWindow:
             active = get_waybar_theme()
         self.render_segmented_row(self.waybar_theme_box, WAYBAR_THEMES, active, self.on_waybar_theme_clicked)
 
+    def render_waybar_font(
+        self, container, surface_label: str, setting_prefix: str, family: str, size: int
+    ) -> None:
+        font_button = self.Gtk.FontDialogButton.new(self.waybar_font_dialog)
+        font_button.set_size_request(190, -1)
+        font_button.set_font_desc(self.Pango.FontDescription.from_string(family))
+        size_adjustment = self.Gtk.Adjustment(value=size, lower=6, upper=72, step_increment=1)
+        size_spin = self.Gtk.SpinButton(adjustment=size_adjustment)
+        size_spin.set_tooltip_text(f"{surface_label} font size in pixels")
+        apply_button = self.Gtk.Button(label="Apply")
+        apply_button.connect(
+            "clicked",
+            self.on_waybar_font_apply,
+            container,
+            surface_label,
+            setting_prefix,
+            font_button,
+            size_spin,
+        )
+        container.append(font_button)
+        container.append(size_spin)
+        container.append(apply_button)
+
     def on_notifications_clicked(self, _button, value: str) -> None:
+        self.begin_settings_change()
         result = run_cli(["archie", "system", "set", "notifications", value])
         if result.returncode == 0:
             self.set_status(f"Notifications set to {value}.")
@@ -745,8 +819,10 @@ class ArchieControlsWindow:
             self.set_status(f"Failed to set notifications: {result.stderr.strip()}")
         self.clear_box(self.notifications_box)
         self.render_notifications()
+        self.finish_settings_change()
 
     def on_notification_sounds_clicked(self, _button, value: str) -> None:
+        self.begin_settings_change()
         result = run_cli(["archie", "system", "set", "notification-sounds", value])
         if result.returncode == 0:
             self.set_status(f"Notification sounds set to {value}.")
@@ -755,6 +831,7 @@ class ArchieControlsWindow:
             self.set_status(f"Failed to set notification sounds: {result.stderr.strip()}")
         self.clear_box(self.notification_sounds_box)
         self.render_notification_sounds()
+        self.finish_settings_change()
 
     def on_choose_notification_sound(self, _button) -> None:
         chooser = self.Gtk.FileChooserNative.new(
@@ -781,6 +858,7 @@ class ArchieControlsWindow:
         self.set_notification_sound("default")
 
     def set_notification_sound(self, value: str) -> None:
+        self.begin_settings_change()
         result = run_cli(["archie", "system", "set", "notification-sound", value])
         if result.returncode == 0:
             self.set_status("Notification sound reset to bundled default." if value == "default" else "Notification sound updated.")
@@ -789,8 +867,10 @@ class ArchieControlsWindow:
             self.set_status(f"Could not use that sound: {result.stderr.strip()}")
         self.clear_box(self.notification_sound_box)
         self.render_notification_sound()
+        self.finish_settings_change()
 
     def on_shy_mode_clicked(self, _button, value: str) -> None:
+        self.begin_settings_change()
         result = run_cli(["archie", "system", "set", "shy-mode", value])
         if result.returncode == 0:
             self.set_status(f"Shy mode set to {value}.")
@@ -799,8 +879,10 @@ class ArchieControlsWindow:
             self.set_status(f"Failed to set shy mode: {result.stderr.strip()}")
         self.clear_box(self.shy_mode_box)
         self.render_shy_mode()
+        self.finish_settings_change()
 
     def on_kdeconnect_clicked(self, _button, value: str) -> None:
+        self.begin_settings_change()
         result = run_cli(["archie", "system", "set", "kdeconnect", value])
         if result.returncode == 0:
             self.set_status(f"KDE Connect set to {value}.")
@@ -809,8 +891,10 @@ class ArchieControlsWindow:
             self.set_status(f"Failed to set KDE Connect: {result.stderr.strip()}")
         self.clear_box(self.kdeconnect_box)
         self.render_kdeconnect()
+        self.finish_settings_change()
 
     def on_power_profile_clicked(self, _button, value: str) -> None:
+        self.begin_settings_change()
         result = run_cli(["archie", "system", "set", "power-profile", value])
         if result.returncode == 0:
             self.set_status(f"Power profile set to {value}.")
@@ -819,8 +903,10 @@ class ArchieControlsWindow:
             self.set_status(f"Failed to set power profile: {result.stderr.strip()}")
         self.clear_box(self.power_profile_box)
         self.render_power_profile()
+        self.finish_settings_change()
 
     def on_waybar_theme_clicked(self, _button, value: str) -> None:
+        self.begin_settings_change()
         result = run_cli(["archie", "system", "set", "waybar-theme", value])
         if result.returncode == 0:
             self.set_status(f"Waybar theme set to {value}.")
@@ -829,6 +915,27 @@ class ArchieControlsWindow:
             self.set_status(f"Failed to set waybar theme: {result.stderr.strip()}")
         self.clear_box(self.waybar_theme_box)
         self.render_waybar_theme()
+        self.finish_settings_change()
+
+    def on_waybar_font_apply(
+        self, _button, container, surface_label: str, setting_prefix: str, font_button, size_spin
+    ) -> None:
+        self.begin_settings_change()
+        family = selected_font_family(font_button)
+        size = str(size_spin.get_value_as_int())
+        family_result = run_cli(["archie", "system", "set", f"{setting_prefix}-family", family])
+        size_result = run_cli(["archie", "system", "set", f"{setting_prefix}-size", size])
+        if family_result.returncode == 0 and size_result.returncode == 0:
+            self.set_status(f"{surface_label} font updated.")
+        else:
+            detail = family_result.stderr.strip() or size_result.stderr.strip()
+            self.set_status(f"Failed to update {surface_label.lower()} font: {detail}")
+        self.clear_box(container)
+        updated_family, updated_size = get_waybar_font(setting_prefix)
+        self.render_waybar_font(
+            container, surface_label, setting_prefix, updated_family, updated_size
+        )
+        self.finish_settings_change()
 
     def on_brightness_label_changed(self, scale, label) -> None:
         label.set_label(f"{brightness_scale_value(scale)}%")
@@ -840,6 +947,8 @@ class ArchieControlsWindow:
             return
         if timeout_id := self.brightness_timeout_ids.pop(device_name, None):
             self.GLib.source_remove(timeout_id)
+        else:
+            self.begin_settings_change()
         timeout_id = self.GLib.timeout_add(
             BRIGHTNESS_DEBOUNCE_MS,
             self.commit_brightness_change,
@@ -856,6 +965,7 @@ class ArchieControlsWindow:
             notify_applet_settings_changed()
         else:
             self.set_status(f"Failed to set brightness for {device_name}: {result.stderr.strip()}")
+        self.finish_settings_change()
         return False
 
     def refresh_monitor_buttons_only(self) -> None:
@@ -1028,29 +1138,98 @@ def get_waybar_theme() -> str:
     return result.stdout.strip()
 
 
+def get_waybar_font(setting_prefix: str) -> tuple[str, int]:
+    family = run_cli(["archie", "system", "get", f"{setting_prefix}-family"])
+    size = run_cli(["archie", "system", "get", f"{setting_prefix}-size"])
+    if family.returncode != 0 or size.returncode != 0:
+        return "MesloLGM Nerd Font", 20
+    try:
+        return family.stdout.strip(), int(size.stdout.strip())
+    except ValueError:
+        return "MesloLGM Nerd Font", 20
+
+
+def selected_font_family(font_button) -> str:
+    font_description = font_button.get_font_desc()
+    return (font_description.get_family() if font_description is not None else "") or ""
+
+
 def get_brightness_devices() -> subprocess.CompletedProcess[str]:
     return run_cli(["archie", "system", "get", "brightness"])
 
 
+def can_write_store(path: Path = STORE_DATABASE_PATH) -> bool:
+    return (
+        path.is_file()
+        and os.access(path, os.W_OK)
+        and os.access(path.parent, os.W_OK | os.X_OK)
+    )
+
+
+def store_write_warning(path: Path = STORE_DATABASE_PATH) -> str | None:
+    if not path.is_file():
+        return "Archie shared store is missing; reinstall the Archie CLI package to provision it."
+    if not can_write_store(path):
+        return (
+            "Archie cannot write its shared store; log out and back in or reboot "
+            "to apply the archie group membership."
+        )
+    return None
+
+
 def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
-    try:
-        monitors = list_monitors()
-        monitor_error = None
-    except Exception as error:
-        monitors = []
-        monitor_error = str(error)
+    with ThreadPoolExecutor(max_workers=13) as executor:
+        monitors_future = executor.submit(list_monitors)
+        brightness_future = executor.submit(get_brightness_devices)
+        lid_behavior_future = executor.submit(get_lid_behavior)
+        notifications_future = executor.submit(get_notifications_state)
+        notification_sounds_future = executor.submit(get_notification_sounds_state)
+        notification_sound_future = executor.submit(get_notification_sound)
+        shy_mode_future = executor.submit(get_shy_mode_settings)
+        kdeconnect_future = executor.submit(get_kdeconnect_state)
+        power_profile_future = executor.submit(get_power_profile)
+        waybar_theme_future = executor.submit(get_waybar_theme)
+        waybar_font_future = executor.submit(get_waybar_font, "waybar-font")
+        waybar_menu_font_future = executor.submit(get_waybar_font, "waybar-menu-font")
+        waybar_tooltip_font_future = executor.submit(
+            get_waybar_font, "waybar-tooltip-font"
+        )
+        try:
+            monitors = monitors_future.result()
+            monitor_error = None
+        except Exception as error:
+            monitors = []
+            monitor_error = str(error)
+        brightness = brightness_future.result()
+        lid_behavior = lid_behavior_future.result()
+        notifications = notifications_future.result()
+        notification_sounds = notification_sounds_future.result()
+        notification_sound = notification_sound_future.result()
+        shy_mode = shy_mode_future.result()
+        kdeconnect = kdeconnect_future.result()
+        power_profile = power_profile_future.result()
+        waybar_theme = waybar_theme_future.result()
+        waybar_font = waybar_font_future.result()
+        waybar_menu_font = waybar_menu_font_future.result()
+        waybar_tooltip_font = waybar_tooltip_font_future.result()
     return GuiSettingsSnapshot(
-        brightness_result=get_brightness_devices(),
+        brightness_result=brightness,
         monitors=monitors,
         monitor_error=monitor_error,
-        lid_behavior=get_lid_behavior(),
-        notifications=get_notifications_state(),
-        notification_sounds=get_notification_sounds_state(),
-        notification_sound=get_notification_sound(),
-        shy_mode=get_shy_mode_settings(),
-        kdeconnect=get_kdeconnect_state(),
-        power_profile=get_power_profile(),
-        waybar_theme=get_waybar_theme(),
+        lid_behavior=lid_behavior,
+        notifications=notifications,
+        notification_sounds=notification_sounds,
+        notification_sound=notification_sound,
+        shy_mode=shy_mode,
+        kdeconnect=kdeconnect,
+        power_profile=power_profile,
+        waybar_theme=waybar_theme,
+        waybar_font_family=waybar_font[0],
+        waybar_font_size=waybar_font[1],
+        waybar_menu_font_family=waybar_menu_font[0],
+        waybar_menu_font_size=waybar_menu_font[1],
+        waybar_tooltip_font_family=waybar_tooltip_font[0],
+        waybar_tooltip_font_size=waybar_tooltip_font[1],
     )
 
 

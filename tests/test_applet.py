@@ -3,11 +3,17 @@ import unittest
 from unittest.mock import Mock, patch
 
 from archie.applet import (
+    MENU_ITEM_LID_HIBERNATE,
+    MENU_ITEM_LID_LOCK,
+    MENU_ITEM_NOTIFICATION_SOUNDS,
+    MENU_ITEM_NOTIFICATIONS,
     ArchieStatusNotifier,
     format_shy_mode_status,
     format_tooltip,
     format_tooltip_title,
     load_applet_snapshot,
+    menu_action_value,
+    menu_toggle_state,
     select_applet_icon,
 )
 from archie.gui_state import GUI_SETTINGS_SNAPSHOT_ENV, GuiSettingsSnapshot
@@ -93,6 +99,68 @@ class AppletTooltipTest(unittest.TestCase):
 
 
 class AppletPrivacyStateTest(unittest.TestCase):
+    def test_menu_switches_emit_native_toggle_properties(self) -> None:
+        notifier = ArchieStatusNotifier(object(), {}, Mock())
+        notifier.snapshot = {
+            "lid-close-behavior": "lock",
+            "notifications": "on",
+            "notification-sounds": "off",
+        }
+
+        expected = {
+            MENU_ITEM_LID_HIBERNATE: ("radio", 0),
+            MENU_ITEM_LID_LOCK: ("radio", 1),
+            MENU_ITEM_NOTIFICATIONS: ("checkmark", 1),
+            MENU_ITEM_NOTIFICATION_SOUNDS: ("checkmark", 0),
+        }
+        for item_id, (toggle_type, toggle_state) in expected.items():
+            with self.subTest(item_id=item_id):
+                properties = notifier._item_props(item_id)
+
+                self.assertIsNotNone(properties)
+                assert properties is not None
+                self.assertEqual(properties["toggle-type"].unpack(), toggle_type)
+                self.assertEqual(properties["toggle-state"].unpack(), toggle_state)
+
+    def test_menu_switches_follow_snapshot_values(self) -> None:
+        snapshot = {
+            "lid-close-behavior": "lock",
+            "notifications": "on",
+            "notification-sounds": "off",
+        }
+
+        self.assertEqual(menu_toggle_state(MENU_ITEM_LID_HIBERNATE, snapshot), 0)
+        self.assertEqual(menu_toggle_state(MENU_ITEM_LID_LOCK, snapshot), 1)
+        self.assertEqual(menu_toggle_state(MENU_ITEM_NOTIFICATIONS, snapshot), 1)
+        self.assertEqual(menu_toggle_state(MENU_ITEM_NOTIFICATION_SOUNDS, snapshot), 0)
+
+    def test_menu_switches_invert_or_set_expected_values(self) -> None:
+        snapshot = {
+            "lid-close-behavior": "hibernate",
+            "notifications": "on",
+            "notification-sounds": "off",
+        }
+
+        self.assertEqual(menu_action_value(MENU_ITEM_LID_LOCK, snapshot), "lock")
+        self.assertEqual(menu_action_value(MENU_ITEM_NOTIFICATIONS, snapshot), "off")
+        self.assertEqual(menu_action_value(MENU_ITEM_NOTIFICATION_SOUNDS, snapshot), "on")
+
+    def test_menu_switches_are_unavailable_for_unknown_values(self) -> None:
+        snapshot = {
+            "lid-close-behavior": "unknown",
+            "notifications": "unknown",
+            "notification-sounds": "unknown",
+        }
+
+        self.assertIsNone(menu_toggle_state(MENU_ITEM_LID_HIBERNATE, snapshot))
+        self.assertIsNone(menu_action_value(MENU_ITEM_LID_HIBERNATE, snapshot))
+        self.assertIsNone(menu_toggle_state(MENU_ITEM_LID_LOCK, snapshot))
+        self.assertIsNone(menu_action_value(MENU_ITEM_LID_LOCK, snapshot))
+        self.assertIsNone(menu_toggle_state(MENU_ITEM_NOTIFICATIONS, snapshot))
+        self.assertIsNone(menu_action_value(MENU_ITEM_NOTIFICATIONS, snapshot))
+        self.assertIsNone(menu_toggle_state(MENU_ITEM_NOTIFICATION_SOUNDS, snapshot))
+        self.assertIsNone(menu_action_value(MENU_ITEM_NOTIFICATION_SOUNDS, snapshot))
+
     @patch("archie.applet.collect_system_status")
     def test_loads_tooltip_values_in_process(self, collect) -> None:
         collect.return_value = ({"brightness": [], "share-state": "on"}, {})
@@ -261,4 +329,10 @@ def make_gui_snapshot() -> GuiSettingsSnapshot:
         kdeconnect="on",
         power_profile="balanced",
         waybar_theme="tokyonight",
+        waybar_font_family="MesloLGM Nerd Font",
+        waybar_font_size=20,
+        waybar_menu_font_family="MesloLGM Nerd Font",
+        waybar_menu_font_size=20,
+        waybar_tooltip_font_family="MesloLGM Nerd Font",
+        waybar_tooltip_font_size=20,
     )

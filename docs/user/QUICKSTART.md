@@ -98,9 +98,9 @@ The helper runs the common first-run path from the canonical guide:
 - deploys the lid-close systemd override by default as a real copied file
 - deploys the power-button confirmation systemd override by default through a
   real copied file
-- seeds Waybar's active `config` and `style.css` by calling
-  `archie system set waybar-theme cjbassi`, which rewrites them as real files
-  so theme changes do not dirty tracked Stow package files
+- initializes the shared Archie store and materializes Waybar's active `config`
+  and `style.css` under `/var/lib/archie/waybar/`, so theme changes do not dirty
+  tracked Stow package files
 - optionally deploys the Nvidia system overrides through a separate Stow
   package, including `nvidia_drm` modeset and Nvidia-only DKMS throttling with
   `parallel_jobs=2`

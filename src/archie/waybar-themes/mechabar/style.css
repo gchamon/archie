@@ -15,17 +15,12 @@
 @define-color teal    #94e2d5;
 @define-color sky     #89dceb;
 
-* {
-    font-size: 20px;
-    font-family: "MesloLGM Nerd Font", monospace;
+window#waybar {
     border: none;
     border-radius: 0;
     min-height: 0;
     margin: 0;
     padding: 0;
-}
-
-window#waybar {
     background: @mantle;
     color: @text;
 }
@@ -42,12 +37,17 @@ window#waybar {
 #custom-cam,
 #custom-mic {
     background: @base;
+    border: none;
+    min-height: 0;
     padding: 0 10px;
     margin: 4px 2px;
     border-radius: 8px;
 }
 
 #workspaces button {
+    border: none;
+    min-height: 0;
+    margin: 0;
     padding: 0 4px;
     color: @subtext1;
     border-radius: 6px;

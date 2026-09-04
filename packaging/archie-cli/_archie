@@ -25,6 +25,8 @@ _archie() {
     'kdeconnect:Read KDE Connect daemon state'
     'power-profile:Read active power profile'
     'waybar-theme:Read active Waybar theme'
+    'waybar-tooltip-font-family:Read Waybar tooltip font family'
+    'waybar-tooltip-font-size:Read Waybar tooltip font size'
     'brightness:Read screen brightness state'
     'monitors:Read Hyprland monitor state'
   )
@@ -37,6 +39,8 @@ _archie() {
     'kdeconnect:Manage KDE Connect backends'
     'power-profile:Manage active power profile'
     'waybar-theme:Manage active Waybar theme'
+    'waybar-tooltip-font-family:Manage Waybar tooltip font family'
+    'waybar-tooltip-font-size:Manage Waybar tooltip font size'
     'brightness:Manage screen brightness'
   )
   behaviors=(

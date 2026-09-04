@@ -11,18 +11,12 @@
 @define-color cyan       #2ac3de;
 @define-color orange     #ff9e64;
 
-* {
-    font-size: 20px;
-    font-family: "MesloLGM Nerd Font", monospace;
-    font-weight: 700;
+window#waybar {
     border: none;
     border-radius: 0;
     min-height: 0;
     margin: 0;
     padding: 0;
-}
-
-window#waybar {
     background: transparent;
     color: @fg;
 }
@@ -39,15 +33,25 @@ window#waybar {
 #custom-cam,
 #custom-mic {
     background: @module-bg;
+    border: none;
+    min-height: 0;
     padding: 1px 7px;
     margin: 3px 2px;
     border-radius: 6px;
 }
 
 #workspaces button {
+    border: none;
+    min-height: 0;
+    margin: 0;
     padding: 0 4px;
     color: @inactive;
     border-radius: 4px;
+}
+
+window#waybar .module,
+window#waybar #workspaces button {
+    font-weight: 700;
 }
 
 #workspaces button.active {

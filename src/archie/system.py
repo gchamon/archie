@@ -31,7 +31,13 @@ from archie.store import (
     SHY_MODE_REPLAY_COUNT,
     SHY_MODE_REPLAY_INTERVAL,
     STORE_DATABASE_PATH,
+    WAYBAR_FONT_FAMILY,
+    WAYBAR_FONT_SIZE,
+    WAYBAR_MENU_FONT_FAMILY,
+    WAYBAR_MENU_FONT_SIZE,
     WAYBAR_THEME,
+    WAYBAR_TOOLTIP_FONT_FAMILY,
+    WAYBAR_TOOLTIP_FONT_SIZE,
     PolicyStore,
     StoreDatabase,
     StoreError,
@@ -60,6 +66,8 @@ DEFAULT_THEME = "cjbassi"
 MECHABAR_THEME = "mechabar"
 TOKYONIGHT_THEME = "tokyonight"
 WAYBAR_THEMES = [DEFAULT_THEME, MECHABAR_THEME, TOKYONIGHT_THEME]
+WAYBAR_FONT_MIN_SIZE = 6
+WAYBAR_FONT_MAX_SIZE = 72
 
 SYSTEM_STATUS_SETTINGS = [
     "lid-close-behavior",
@@ -143,6 +151,12 @@ def add_system_parser(
         ("kdeconnect", "Read KDE Connect daemon state.", "Read whether the KDE Connect daemon is running."),
         ("power-profile", "Read the active power profile.", "Read the active power profile via power-profiles-daemon."),
         ("waybar-theme", "Read the active waybar theme.", "Read the Archie-managed waybar theme."),
+        ("waybar-font-family", "Read the Waybar element font family.", "Read the Archie-managed Waybar element font family."),
+        ("waybar-font-size", "Read the Waybar element font size.", "Read the Archie-managed Waybar element font size in pixels."),
+        ("waybar-menu-font-family", "Read the Waybar context-menu font family.", "Read the Archie-managed Waybar context-menu font family."),
+        ("waybar-menu-font-size", "Read the Waybar context-menu font size.", "Read the Archie-managed Waybar context-menu font size in pixels."),
+        ("waybar-tooltip-font-family", "Read the Waybar tooltip font family.", "Read the Archie-managed Waybar tooltip font family."),
+        ("waybar-tooltip-font-size", "Read the Waybar tooltip font size.", "Read the Archie-managed Waybar tooltip font size in pixels."),
         ("brightness", "Read screen brightness state.", "Read screen backlight brightness state."),
     ):
         setting_parser = get_subparsers.add_parser(
@@ -304,6 +318,18 @@ def add_system_parser(
     )
     waybar_theme_set_parser.set_defaults(func=run_system_set)
 
+    for setting, help_text, value_help, value_type in (
+        ("waybar-font-family", "Change the Waybar element font family.", "Installed font family name.", valid_waybar_font_family),
+        ("waybar-font-size", "Change the Waybar element font size.", f"Font size in pixels ({WAYBAR_FONT_MIN_SIZE}-{WAYBAR_FONT_MAX_SIZE}).", valid_waybar_font_size),
+        ("waybar-menu-font-family", "Change the Waybar context-menu font family.", "Installed font family name.", valid_waybar_font_family),
+        ("waybar-menu-font-size", "Change the Waybar context-menu font size.", f"Font size in pixels ({WAYBAR_FONT_MIN_SIZE}-{WAYBAR_FONT_MAX_SIZE}).", valid_waybar_font_size),
+        ("waybar-tooltip-font-family", "Change the Waybar tooltip font family.", "Installed font family name.", valid_waybar_font_family),
+        ("waybar-tooltip-font-size", "Change the Waybar tooltip font size.", f"Font size in pixels ({WAYBAR_FONT_MIN_SIZE}-{WAYBAR_FONT_MAX_SIZE}).", valid_waybar_font_size),
+    ):
+        font_parser = set_subparsers.add_parser(setting, help=help_text, description=help_text)
+        font_parser.add_argument("value", type=value_type, help=value_help)
+        font_parser.set_defaults(func=run_system_set)
+
     brightness_set_parser = set_subparsers.add_parser(
         "brightness",
         help="Change screen brightness.",
@@ -353,6 +379,9 @@ def run_system_get(
             return detect_power_profile()
         case "waybar-theme":
             print(detect_waybar_theme(waybar_theme_state_path))
+            return 0
+        case "waybar-font-family" | "waybar-font-size" | "waybar-menu-font-family" | "waybar-menu-font-size" | "waybar-tooltip-font-family" | "waybar-tooltip-font-size":
+            print(get_waybar_font_setting(args.setting, waybar_theme_state_path))
             return 0
         case "brightness":
             return print_brightness_state(backlight_path)
@@ -535,14 +564,18 @@ def run_system_set(
         case "notifications":
             return set_notifications(args.value, executor=execute)
         case "notification-sounds":
-            save_notification_sounds_enabled(args.value == ON_VALUE, notification_sounds_path)
+            try:
+                save_notification_sounds_enabled(args.value == ON_VALUE, notification_sounds_path)
+            except (OSError, StoreError) as error:
+                print(f"archie system set notification-sounds: {error}", file=sys.stderr)
+                return 1
             return 0
         case "notification-sound":
             try:
                 save_notification_sound_path(args.value, notification_sounds_path)
-            except ValueError as error:
+            except (OSError, StoreError, ValueError) as error:
                 print(f"archie system set notification-sound: {error}", file=sys.stderr)
-                return 2
+                return 2 if isinstance(error, ValueError) else 1
             return 0
         case "shy-mode":
             current = load_shy_mode_settings(shy_mode_path)
@@ -551,19 +584,38 @@ def run_system_set(
                 replay_count=args.replay_count or current.replay_count,
                 replay_interval=args.replay_interval or current.replay_interval,
             )
-            save_shy_mode_settings(settings, shy_mode_path)
+            try:
+                save_shy_mode_settings(settings, shy_mode_path)
+            except (OSError, StoreError) as error:
+                print(f"archie system set shy-mode: {error}", file=sys.stderr)
+                return 1
             return 0
         case "kdeconnect":
             return set_kdeconnect(args.value)
         case "power-profile":
             return set_power_profile(args.value, executor=execute)
         case "waybar-theme":
-            return set_waybar_theme(
-                args.value,
-                waybar_theme_state_path=waybar_theme_state_path,
-                waybar_config_path=waybar_config_path,
-                waybar_style_path=waybar_style_path,
-            )
+            try:
+                return set_waybar_theme(
+                    args.value,
+                    waybar_theme_state_path=waybar_theme_state_path,
+                    waybar_config_path=waybar_config_path,
+                    waybar_style_path=waybar_style_path,
+                )
+            except (OSError, StoreError) as error:
+                print(f"archie system set waybar-theme: {error}", file=sys.stderr)
+                return 1
+        case "waybar-font-family" | "waybar-font-size" | "waybar-menu-font-family" | "waybar-menu-font-size" | "waybar-tooltip-font-family" | "waybar-tooltip-font-size":
+            try:
+                return set_waybar_font_setting(
+                    args.setting,
+                    args.value,
+                    waybar_theme_state_path=waybar_theme_state_path,
+                    waybar_style_path=waybar_style_path,
+                )
+            except (OSError, StoreError, ValueError) as error:
+                print(f"archie system set {args.setting}: {error}", file=sys.stderr)
+                return 1
         case "brightness":
             return set_brightness(args.device, args.percent, executor=execute)
         case _:
@@ -740,7 +792,9 @@ def initialize_store(
     waybar_config_path: Path = WAYBAR_CONFIG_PATH,
     waybar_style_path: Path = WAYBAR_STYLE_PATH,
 ) -> bool:
-    store = PolicyStore(StoreDatabase(policy_path))
+    database = StoreDatabase(policy_path)
+    database.ensure_schema()
+    store = PolicyStore(database)
     initialized = False
     if not store.is_initialized():
         values, legacy_sound = load_legacy_policy(legacy_home)
@@ -1012,6 +1066,53 @@ def set_brightness(
 WAYBAR_THEMES_RESOURCE = "waybar-themes"
 
 
+@dataclass(frozen=True)
+class WaybarFont:
+    family: str
+    size: int
+
+
+@dataclass(frozen=True)
+class WaybarTypography:
+    elements: WaybarFont
+    menus: WaybarFont
+    tooltips: WaybarFont
+
+
+WAYBAR_FONT_POLICY_BY_SETTING = {
+    "waybar-font-family": WAYBAR_FONT_FAMILY,
+    "waybar-font-size": WAYBAR_FONT_SIZE,
+    "waybar-menu-font-family": WAYBAR_MENU_FONT_FAMILY,
+    "waybar-menu-font-size": WAYBAR_MENU_FONT_SIZE,
+    "waybar-tooltip-font-family": WAYBAR_TOOLTIP_FONT_FAMILY,
+    "waybar-tooltip-font-size": WAYBAR_TOOLTIP_FONT_SIZE,
+}
+
+
+def get_waybar_typography(path: Path = WAYBAR_THEME_STATE_PATH) -> WaybarTypography:
+    values = PolicyStore(StoreDatabase(path)).get_many(
+        (
+            WAYBAR_FONT_FAMILY,
+            WAYBAR_FONT_SIZE,
+            WAYBAR_MENU_FONT_FAMILY,
+            WAYBAR_MENU_FONT_SIZE,
+            WAYBAR_TOOLTIP_FONT_FAMILY,
+            WAYBAR_TOOLTIP_FONT_SIZE,
+        )
+    )
+    return WaybarTypography(
+        elements=WaybarFont(values[WAYBAR_FONT_FAMILY], int(values[WAYBAR_FONT_SIZE])),
+        menus=WaybarFont(values[WAYBAR_MENU_FONT_FAMILY], int(values[WAYBAR_MENU_FONT_SIZE])),
+        tooltips=WaybarFont(
+            values[WAYBAR_TOOLTIP_FONT_FAMILY], int(values[WAYBAR_TOOLTIP_FONT_SIZE])
+        ),
+    )
+
+
+def get_waybar_font_setting(setting: str, path: Path = WAYBAR_THEME_STATE_PATH) -> str:
+    return PolicyStore(StoreDatabase(path)).get(WAYBAR_FONT_POLICY_BY_SETTING[setting])
+
+
 def detect_waybar_theme(waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH) -> str:
     try:
         theme = PolicyStore(StoreDatabase(waybar_theme_state_path)).get(WAYBAR_THEME)
@@ -1048,9 +1149,68 @@ def set_waybar_theme(
 
     waybar_config_path.parent.mkdir(parents=True, exist_ok=True)
     write_shared_text(waybar_config_path, config_text)
-    write_shared_text(waybar_style_path, style_text)
+    write_shared_text(
+        waybar_style_path,
+        render_waybar_style(style_text, get_waybar_typography(waybar_theme_state_path)),
+    )
     PolicyStore(StoreDatabase(waybar_theme_state_path)).set(WAYBAR_THEME, theme)
     return 0
+
+
+def set_waybar_font_setting(
+    setting: str,
+    value: str | int,
+    *,
+    waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
+    waybar_style_path: Path = WAYBAR_STYLE_PATH,
+) -> int:
+    style_text = _read_waybar_theme_resource(
+        detect_waybar_theme(waybar_theme_state_path), "style.css"
+    )
+    if style_text is None:
+        raise ValueError("active Waybar theme files are not available")
+    policy_key = WAYBAR_FONT_POLICY_BY_SETTING[setting]
+    PolicyStore(StoreDatabase(waybar_theme_state_path)).set(policy_key, str(value))
+    write_shared_text(
+        waybar_style_path,
+        render_waybar_style(style_text, get_waybar_typography(waybar_theme_state_path)),
+    )
+    return 0
+
+
+def render_waybar_style(style_text: str, typography: WaybarTypography) -> str:
+    return (
+        style_text.rstrip()
+        + "\n\n/* Archie-managed Waybar element typography. */\n"
+        + "window#waybar,\nwindow#waybar .module,\n"
+        + "window#waybar #workspaces button {\n"
+        + f'  font-family: "{typography.elements.family}", monospace;\n'
+        + f"  font-size: {typography.elements.size}px;\n}}\n"
+        + "\n/* Archie-managed context-menu typography. */\n"
+        + "menu,\nmenuitem {\n"
+        + f'  font-family: "{typography.menus.family}", monospace;\n'
+        + f"  font-size: {typography.menus.size}px;\n}}\n"
+        + "\n/* Archie-managed tooltip typography. */\n"
+        + "tooltip,\ntooltip label {\n"
+        + f'  font-family: "{typography.tooltips.family}", monospace;\n'
+        + f"  font-size: {typography.tooltips.size}px;\n}}\n"
+    )
+
+
+def valid_waybar_font_family(value: str) -> str:
+    if not value.strip() or any(character in value for character in ('\n', '\r', '"', "'", ";", "{", "}")):
+        raise argparse.ArgumentTypeError("font family must be a plain non-empty family name")
+    return value.strip()
+
+
+def valid_waybar_font_size(value: str) -> int:
+    try:
+        size = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("font size must be an integer") from error
+    if not WAYBAR_FONT_MIN_SIZE <= size <= WAYBAR_FONT_MAX_SIZE:
+        raise argparse.ArgumentTypeError(f"font size must be {WAYBAR_FONT_MIN_SIZE}-{WAYBAR_FONT_MAX_SIZE}")
+    return size
 
 
 def write_shared_text(path: Path, content: str) -> None:

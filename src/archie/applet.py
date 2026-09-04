@@ -8,13 +8,14 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Mapping
 from contextlib import ExitStack
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from archie.applet_bus import APPLET_BUS_NAME, APPLET_OBJECT_PATH
-from archie.gui import load_gui_settings_snapshot
+from archie.gui import load_gui_settings_snapshot, run_cli, set_lid_behavior
 from archie.gui_state import (
     GUI_SETTINGS_SNAPSHOT_ENV,
     GuiSettingsSnapshot,
@@ -53,6 +54,16 @@ MENU_ITEM_OPEN = 1
 MENU_ITEM_RESTART = 2
 MENU_ITEM_SEP = 3
 MENU_ITEM_QUIT = 4
+MENU_ITEM_LID_HIBERNATE = 5
+MENU_ITEM_LID_LOCK = 6
+MENU_ITEM_NOTIFICATIONS = 7
+MENU_ITEM_NOTIFICATION_SOUNDS = 8
+MENU_QUICK_SWITCH_IDS = (
+    MENU_ITEM_LID_HIBERNATE,
+    MENU_ITEM_LID_LOCK,
+    MENU_ITEM_NOTIFICATIONS,
+    MENU_ITEM_NOTIFICATION_SOUNDS,
+)
 RUNNING_VERSION = installed_archie_version()
 
 SNI_XML = """
@@ -228,6 +239,36 @@ def load_applet_snapshot() -> dict[str, object]:
     return snapshot
 
 
+def menu_toggle_state(item_id: int, snapshot: Mapping[str, object]) -> int | None:
+    if item_id == MENU_ITEM_LID_HIBERNATE:
+        value = snapshot.get("lid-close-behavior")
+        return None if value not in {"hibernate", "lock"} else int(value == "hibernate")
+    if item_id == MENU_ITEM_LID_LOCK:
+        value = snapshot.get("lid-close-behavior")
+        return None if value not in {"hibernate", "lock"} else int(value == "lock")
+    if item_id == MENU_ITEM_NOTIFICATIONS:
+        value = snapshot.get("notifications")
+        return None if value not in {"on", "off"} else int(value == "on")
+    if item_id == MENU_ITEM_NOTIFICATION_SOUNDS:
+        value = snapshot.get("notification-sounds")
+        return None if value not in {"on", "off"} else int(value == "on")
+    return None
+
+
+def menu_action_value(item_id: int, snapshot: Mapping[str, object]) -> str | None:
+    if item_id == MENU_ITEM_LID_HIBERNATE:
+        return "hibernate" if menu_toggle_state(item_id, snapshot) is not None else None
+    if item_id == MENU_ITEM_LID_LOCK:
+        return "lock" if menu_toggle_state(item_id, snapshot) is not None else None
+    if item_id == MENU_ITEM_NOTIFICATIONS:
+        value = snapshot.get("notifications")
+        return {"on": "off", "off": "on"}.get(str(value))
+    if item_id == MENU_ITEM_NOTIFICATION_SOUNDS:
+        value = snapshot.get("notification-sounds")
+        return {"on": "off", "off": "on"}.get(str(value))
+    return None
+
+
 @dataclass
 class ArchieStatusNotifier:
     connection: Any
@@ -243,6 +284,7 @@ class ArchieStatusNotifier:
     tooltip_refresh_in_progress: bool = False
     gui_snapshot: GuiSettingsSnapshot | None = None
     gui_snapshot_refresh_in_progress: bool = False
+    menu_action_in_progress: bool = False
 
     def on_method_call(
         self,
@@ -328,6 +370,28 @@ class ArchieStatusNotifier:
                 "enabled": GLib.Variant("b", True),
                 "visible": GLib.Variant("b", True),
             }
+        if item_id in MENU_QUICK_SWITCH_IDS:
+            labels = {
+                MENU_ITEM_LID_HIBERNATE: "Lid close: Hibernate",
+                MENU_ITEM_LID_LOCK: "Lid close: Lock",
+                MENU_ITEM_NOTIFICATIONS: "Notifications",
+                MENU_ITEM_NOTIFICATION_SOUNDS: "Notification sounds",
+            }
+            toggle_state = menu_toggle_state(item_id, self.snapshot)
+            return {
+                "label": GLib.Variant("s", labels[item_id]),
+                "enabled": GLib.Variant(
+                    "b", toggle_state is not None and not self.menu_action_in_progress
+                ),
+                "visible": GLib.Variant("b", True),
+                "toggle-type": GLib.Variant(
+                    "s",
+                    "radio"
+                    if item_id in {MENU_ITEM_LID_HIBERNATE, MENU_ITEM_LID_LOCK}
+                    else "checkmark",
+                ),
+                "toggle-state": GLib.Variant("i", toggle_state or 0),
+            }
         if item_id == MENU_ITEM_SEP:
             return {
                 "type": GLib.Variant("s", "separator"),
@@ -364,6 +428,10 @@ class ArchieStatusNotifier:
             if recursion_depth != 0:
                 for child_id in (
                     MENU_ITEM_OPEN,
+                    MENU_ITEM_LID_HIBERNATE,
+                    MENU_ITEM_LID_LOCK,
+                    MENU_ITEM_NOTIFICATIONS,
+                    MENU_ITEM_NOTIFICATION_SOUNDS,
                     MENU_ITEM_RESTART,
                     MENU_ITEM_SEP,
                     MENU_ITEM_QUIT,
@@ -374,7 +442,14 @@ class ArchieStatusNotifier:
         elif method_name == "GetGroupProperties":
             ids, _property_names = parameters.unpack()
             if not ids:
-                ids = [0, MENU_ITEM_OPEN, MENU_ITEM_RESTART, MENU_ITEM_SEP, MENU_ITEM_QUIT]
+                ids = [
+                    0,
+                    MENU_ITEM_OPEN,
+                    *MENU_QUICK_SWITCH_IDS,
+                    MENU_ITEM_RESTART,
+                    MENU_ITEM_SEP,
+                    MENU_ITEM_QUIT,
+                ]
             result = []
             for item_id in ids:
                 props = self._item_props(item_id)
@@ -393,6 +468,8 @@ class ArchieStatusNotifier:
             if event_id == "clicked":
                 if item_id == MENU_ITEM_OPEN:
                     self.open_gui()
+                elif item_id in MENU_QUICK_SWITCH_IDS:
+                    self.start_menu_action(item_id)
                 elif item_id == MENU_ITEM_RESTART:
                     self.request_restart()
                 elif item_id == MENU_ITEM_QUIT:
@@ -404,6 +481,8 @@ class ArchieStatusNotifier:
                 if event_id == "clicked":
                     if item_id == MENU_ITEM_OPEN:
                         self.open_gui()
+                    elif item_id in MENU_QUICK_SWITCH_IDS:
+                        self.start_menu_action(item_id)
                     elif item_id == MENU_ITEM_RESTART:
                         self.request_restart()
                     elif item_id == MENU_ITEM_QUIT:
@@ -576,6 +655,46 @@ class ArchieStatusNotifier:
 
     def open_gui(self) -> None:
         _open_gui(self.gui_snapshot)
+
+    def start_menu_action(self, item_id: int) -> None:
+        if self.menu_action_in_progress:
+            return
+        value = menu_action_value(item_id, self.snapshot)
+        if value is None:
+            return
+        self.menu_action_in_progress = True
+        self.emit_state_changed()
+
+        def worker() -> None:
+            try:
+                if item_id in {MENU_ITEM_LID_HIBERNATE, MENU_ITEM_LID_LOCK}:
+                    result = set_lid_behavior(value)
+                else:
+                    setting = (
+                        "notifications"
+                        if item_id == MENU_ITEM_NOTIFICATIONS
+                        else "notification-sounds"
+                    )
+                    result = run_cli(["archie", "system", "set", setting, value])
+            except Exception:
+                logger.exception("could not apply applet menu action")
+                result = subprocess.CompletedProcess([], 1, "", "menu action failed")
+            from gi.repository import GLib  # type: ignore[attr-defined]
+
+            GLib.idle_add(self.finish_menu_action, item_id, result)
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def finish_menu_action(
+        self, item_id: int, result: subprocess.CompletedProcess[str]
+    ) -> bool:
+        self.menu_action_in_progress = False
+        if result.returncode != 0:
+            detail = result.stderr.strip() or f"exit {result.returncode}"
+            logger.warning("applet menu action %s failed: %s", item_id, detail)
+        self.emit_state_changed()
+        self.request_tooltip_refresh()
+        return False
 
     def apply_status_snapshot(self, snapshot: dict[str, object]) -> bool:
         if snapshot != self.snapshot:

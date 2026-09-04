@@ -12,7 +12,6 @@ Paths under `etc/` are copied to their matching absolute paths under `/etc`.
 cannot be Stow symlinks pointing into `$HOME`.
 
 Paths under `home/` are copied to matching paths under `$HOME`. Waybar's active
-`config` and `style.css` are seeded by `archie system set waybar-theme` during
-install, which rewrites `~/.config/waybar/config` and
-`~/.config/waybar/style.css` as real files so theme changes do not modify
-tracked Stow package files.
+`config` and `style.css` are materialized under `/var/lib/archie/waybar/` by
+`archie system set waybar-theme`, so theme changes do not modify tracked Stow
+package files.

@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from collections.abc import Iterable, Sequence
 from pathlib import Path
@@ -26,33 +25,33 @@ class StoreDatabase:
             return []
         try:
             with self._connect() as connection:
+                if connection.execute("PRAGMA user_version").fetchone()[0] == 0:
+                    return []
                 self._verify_schema(connection)
                 return connection.execute(query, parameters).fetchall()
         except sqlite3.Error as error:
             raise StoreError(f"could not read store: {error}") from error
 
     def execute_many(self, query: str, rows: Iterable[Sequence[object]]) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._require_store_file()
         try:
-            with self._connect(create=True) as connection:
+            with self._connect() as connection:
                 self._initialize_schema(connection)
                 connection.execute("BEGIN IMMEDIATE")
                 connection.executemany(query, rows)
                 connection.commit()
         except sqlite3.Error as error:
             raise StoreError(f"could not write store: {error}") from error
-        self.path.chmod(0o664)
 
     def ensure_table(self, ddl: str) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._require_store_file()
         try:
-            with self._connect(create=True) as connection:
+            with self._connect() as connection:
                 self._initialize_schema(connection)
                 connection.execute(ddl)
                 connection.commit()
         except sqlite3.Error as error:
             raise StoreError(f"could not initialize store table: {error}") from error
-        self.path.chmod(0o664)
 
     def has_rows(self, table: str) -> bool:
         if not self.table_exists(table):
@@ -68,25 +67,21 @@ class StoreDatabase:
         return bool(rows)
 
     def ensure_schema(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._require_store_file()
         try:
-            with self._connect(create=True) as connection:
+            with self._connect() as connection:
                 self._initialize_schema(connection)
         except sqlite3.Error as error:
             raise StoreError(f"could not initialize store: {error}") from error
-        self.path.chmod(0o664)
 
-    def _connect(self, *, create: bool = False) -> sqlite3.Connection:
-        if create:
-            previous_umask = os.umask(0o002)
-            try:
-                connection = sqlite3.connect(self.path, timeout=2)
-            finally:
-                os.umask(previous_umask)
-        else:
-            connection = sqlite3.connect(self.path, timeout=2)
+    def _connect(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(self.path, timeout=2)
         connection.execute("PRAGMA busy_timeout = 2000")
         return connection
+
+    def _require_store_file(self) -> None:
+        if not self.path.is_file():
+            raise StoreError(f"store database is not ready: {self.path}")
 
     def _initialize_schema(self, connection: sqlite3.Connection) -> None:
         version = int(connection.execute("PRAGMA user_version").fetchone()[0])

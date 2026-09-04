@@ -28,6 +28,8 @@ class ShyModeSettingsTest(unittest.TestCase):
     def test_round_trips_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "archie/store.sqlite3"
+            path.parent.mkdir(parents=True)
+            path.touch()
             expected = ShyModeSettings(True, replay_count=7, replay_interval=2.5)
 
             save_shy_mode_settings(expected, path)

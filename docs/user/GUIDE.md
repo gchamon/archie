@@ -210,18 +210,18 @@ sudo install -Dm644 copy-deployed-files/etc/systemd/logind.conf.d/power-button-c
 sudo systemctl kill -s HUP systemd-logind.service
 ```
 
-Waybar's active `config` and `style.css` are seeded by Archie during install.
-Fresh installs use the default `cjbassi` theme; later runs preserve the
-previous Archie-selected theme. These are real mutable files because Archie
-rewrites them when switching themes:
+Waybar's active `config` and `style.css` are materialized by Archie under
+`/var/lib/archie/waybar/` during install. Fresh installs use the default
+`cjbassi` theme; later runs preserve the previous Archie-selected theme. These
+are real mutable files because Archie rewrites them when switching themes:
 
 ```bash
 archie system set waybar-theme cjbassi
 ```
 
 Tracked Waybar theme sources remain in the repository, but the live files under
-`~/.config/waybar/` are real mutable files so changing the theme does not dirty
-the checked-out Stow package.
+`/var/lib/archie/waybar/` are real mutable files so changing the theme does not
+dirty the checked-out Stow package.
 
 ### 2.2 System specific configuration
 
@@ -513,8 +513,8 @@ archie system status --json
 Archie stores its persistent desktop policies in the machine-wide SQLite store
 at `/var/lib/archie/store.sqlite3`, so the regular and `sudo` forms of these
 commands observe the same settings. The installer provisions the `archie`
-group for GUI and CLI writes; log out and back in after installation for the
-new group membership to take effect.
+group for GUI and CLI writes; log out and back in or reboot after installation
+for the new group membership to take effect.
 
 Notification audio can be controlled from the CLI as well as the GUI:
 
