@@ -306,7 +306,7 @@ def run_command(command: list[str]) -> int:
 
 
 def parse_target(value: str | None, *, now: dt.datetime | None = None) -> dt.datetime:
-    current = now or dt.datetime.now()
+    current = now or dt.datetime.now().astimezone().replace(tzinfo=None)
     if value is None:
         return current
 
@@ -404,7 +404,7 @@ def parse_archive_timestamp(date_value: str, time_value: str) -> dt.datetime:
 
     day, month_name, year = date_value.split("-", 2)
     month = _MONTHS[month_name.lower()]
-    return dt.datetime(int(year), month, int(day), hour, minute)
+    return dt.datetime.combine(dt.date(int(year), month, int(day)), dt.time(hour, minute))
 
 
 def package_filename_matches(filename: str, package: str) -> bool:
@@ -432,4 +432,3 @@ def package_filename_version(filename: str, package: str) -> str | None:
 
     version = name_version_release.removeprefix(f"{package}-")
     return version or None
-

@@ -1,6 +1,6 @@
 [project]
 name = "archie"
-version = "0.2.3"
+version = "0.2.4"
 authors = [{ name = "Gabriel Chamon", email = "gchamon@tuta.io" }]
 requires-python = ">=3.14"
 dependencies = ["pillow>=12.2.0", "pygobject>=3.56.3"]
@@ -13,11 +13,23 @@ requires = ["uv_build>=0.11.14,<0.12.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = ["pyright>=1.1.409", "pytest>=9.0.3", "ruff>=0.16.2"]
+dev = ["pyright>=1.1.411", "pytest>=9.0.3", "pytest-cov>=6.0.0", "ruff>=0.16.2"]
 
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+
+[tool.ruff.lint]
+extend-select = ["C90"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.pytest.ini_options]
+filterwarnings = [
+  "error",
+  "ignore:GLib\\.unix_signal_add_full is deprecated; use GLibUnix\\.signal_add_full instead:gi.PyGIDeprecationWarning",
+]
 
 [tool.uv.build-backend]
 module-root = "src"

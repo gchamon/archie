@@ -5,8 +5,14 @@ from unittest.mock import Mock, patch
 from archie.applet import (
     MENU_ITEM_LID_HIBERNATE,
     MENU_ITEM_LID_LOCK,
+    MENU_ITEM_LOGOUT,
     MENU_ITEM_NOTIFICATION_SOUNDS,
     MENU_ITEM_NOTIFICATIONS,
+    MENU_ITEM_OPEN,
+    MENU_ITEM_POWEROFF,
+    MENU_ITEM_QUIT,
+    MENU_ITEM_REBOOT,
+    MENU_ITEM_RESTART,
     ArchieStatusNotifier,
     format_shy_mode_status,
     format_tooltip,
@@ -90,8 +96,9 @@ class AppletTooltipTest(unittest.TestCase):
             "  Share: off",
         )
 
-    def test_formats_versioned_tooltip_title(self) -> None:
-        self.assertEqual(format_tooltip_title("0.1.0"), "Archie Controls v0.1.0")
+    def test_formats_tooltip_title(self) -> None:
+        self.assertEqual(format_tooltip_title(), "Archie Applet")
+        self.assertEqual(format_tooltip_title("0.1.0"), "Archie Applet v0.1.0")
         self.assertNotIn(
             "Archie Controls",
             format_tooltip({}, ShyModeViewState(False, False, False, False, False)),
@@ -160,6 +167,59 @@ class AppletPrivacyStateTest(unittest.TestCase):
         self.assertIsNone(menu_action_value(MENU_ITEM_NOTIFICATIONS, snapshot))
         self.assertIsNone(menu_toggle_state(MENU_ITEM_NOTIFICATION_SOUNDS, snapshot))
         self.assertIsNone(menu_action_value(MENU_ITEM_NOTIFICATION_SOUNDS, snapshot))
+
+    def test_system_menu_actions_map_to_confirmed_session_commands(self) -> None:
+        snapshot = {}
+
+        self.assertEqual(menu_action_value(MENU_ITEM_LOGOUT, snapshot), "exit")
+        self.assertEqual(menu_action_value(MENU_ITEM_REBOOT, snapshot), "reboot")
+        self.assertEqual(menu_action_value(MENU_ITEM_POWEROFF, snapshot), "poweroff")
+
+    def test_system_menu_actions_expose_standard_icons(self) -> None:
+        notifier = ArchieStatusNotifier(object(), {}, Mock())
+        expected = {
+            MENU_ITEM_LOGOUT: "system-log-out-symbolic",
+            MENU_ITEM_REBOOT: "system-reboot-symbolic",
+            MENU_ITEM_POWEROFF: "system-shutdown-symbolic",
+        }
+
+        for item_id, icon_name in expected.items():
+            with self.subTest(item_id=item_id):
+                properties = notifier._item_props(item_id)
+
+                self.assertIsNotNone(properties)
+                assert properties is not None
+                self.assertEqual(properties["icon-name"].unpack(), icon_name)
+
+    def test_restart_applet_is_immediately_before_quit(self) -> None:
+        from archie.applet import MENU_ITEM_IDS
+
+        self.assertEqual(MENU_ITEM_IDS[-3:], (MENU_ITEM_POWEROFF, MENU_ITEM_RESTART, MENU_ITEM_QUIT))
+
+    def test_grouped_menu_events_share_click_dispatch(self) -> None:
+        notifier = ArchieStatusNotifier(object(), {}, Mock())
+        parameters = Mock()
+        parameters.unpack.return_value = (
+            [
+                (MENU_ITEM_OPEN, "clicked", None, 0),
+                (MENU_ITEM_NOTIFICATIONS, "clicked", None, 0),
+                (MENU_ITEM_LID_LOCK, "hovered", None, 0),
+            ],
+        )
+        invocation = Mock()
+        glib = Mock()
+        gtk = Mock()
+
+        with (
+            patch.object(notifier, "open_gui") as open_gui,
+            patch.object(notifier, "start_menu_action") as start_menu_action,
+        ):
+            notifier._dbusmenu_event_group(parameters, invocation, glib, gtk)
+
+        open_gui.assert_called_once_with()
+        start_menu_action.assert_called_once_with(MENU_ITEM_NOTIFICATIONS)
+        gtk.main_quit.assert_not_called()
+        invocation.return_value.assert_called_once()
 
     @patch("archie.applet.collect_system_status")
     def test_loads_tooltip_values_in_process(self, collect) -> None:
@@ -328,6 +388,14 @@ def make_gui_snapshot() -> GuiSettingsSnapshot:
         shy_mode=ShyModeSettings(),
         kdeconnect="on",
         power_profile="balanced",
+            calendar_left_preset="unset",
+            calendar_left_browser_url="",
+            calendar_right_preset="gnome-calendar",
+            calendar_right_browser_url="",
+            datetime_left_preset="unset",
+            datetime_left_browser_url="",
+            datetime_right_preset="gnome-datetime",
+            datetime_right_browser_url="",
         waybar_theme="tokyonight",
         waybar_font_family="MesloLGM Nerd Font",
         waybar_font_size=20,

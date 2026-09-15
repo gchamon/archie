@@ -3,15 +3,18 @@ import configparser
 import importlib.resources
 import json
 import os
+import re
+import shlex
 import shutil
 import subprocess
 import sys
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import urlsplit
 
 from archie.argparse import add_command_subparsers
 from archie.monitor import MonitorOutput, list_monitors_quiet
@@ -24,6 +27,18 @@ from archie.privacy import (
     save_shy_mode_settings,
 )
 from archie.store import (
+    CALENDAR_BROWSER_URL,
+    CALENDAR_CLICK,
+    CALENDAR_LAUNCHER,
+    CALENDAR_LEFT_BROWSER_URL,
+    CALENDAR_LEFT_PRESET,
+    CALENDAR_PRESET,
+    CALENDAR_RIGHT_BROWSER_URL,
+    CALENDAR_RIGHT_PRESET,
+    DATETIME_LEFT_BROWSER_URL,
+    DATETIME_LEFT_PRESET,
+    DATETIME_RIGHT_BROWSER_URL,
+    DATETIME_RIGHT_PRESET,
     NOTIFICATION_SOUND_SOURCE,
     NOTIFICATION_SOUNDS_ENABLED,
     POLICY_DEFAULTS,
@@ -68,6 +83,49 @@ TOKYONIGHT_THEME = "tokyonight"
 WAYBAR_THEMES = [DEFAULT_THEME, MECHABAR_THEME, TOKYONIGHT_THEME]
 WAYBAR_FONT_MIN_SIZE = 6
 WAYBAR_FONT_MAX_SIZE = 72
+CALENDAR_PRESET_GNOME = "gnome-calendar"
+CALENDAR_PRESET_BROWSER = "browser-url"
+CALENDAR_PRESET_UNSET = "unset"
+CALENDAR_PRESETS = (CALENDAR_PRESET_UNSET, CALENDAR_PRESET_GNOME, CALENDAR_PRESET_BROWSER)
+CALENDAR_CLICK_LEFT = "left"
+CALENDAR_CLICK_RIGHT = "right"
+CALENDAR_CLICKS = (CALENDAR_CLICK_LEFT, CALENDAR_CLICK_RIGHT)
+CALENDAR_OPEN_COMMAND = "archie system open calendar"
+CALENDAR_POLICY_KEYS = {
+    CALENDAR_CLICK_LEFT: (CALENDAR_LEFT_PRESET, CALENDAR_LEFT_BROWSER_URL),
+    CALENDAR_CLICK_RIGHT: (CALENDAR_RIGHT_PRESET, CALENDAR_RIGHT_BROWSER_URL),
+}
+DATETIME_PRESET_GNOME = "gnome-datetime"
+DATETIME_PRESET_BROWSER = "browser-url"
+DATETIME_PRESET_UNSET = "unset"
+DATETIME_PRESETS = (DATETIME_PRESET_UNSET, DATETIME_PRESET_GNOME, DATETIME_PRESET_BROWSER)
+DATETIME_OPEN_COMMAND = "archie system open datetime"
+CALENDAR_VIEW_MONTH = "month"
+DATETIME_VIEWS = ("agenda", "week")
+DATETIME_POLICY_KEYS = {
+    CALENDAR_CLICK_LEFT: (DATETIME_LEFT_PRESET, DATETIME_LEFT_BROWSER_URL),
+    CALENDAR_CLICK_RIGHT: (DATETIME_RIGHT_PRESET, DATETIME_RIGHT_BROWSER_URL),
+}
+
+
+def normalize_calendar_url(value: str) -> str:
+    if not value or any(character.isspace() for character in value):
+        raise ValueError("calendar URL must not be empty or contain whitespace")
+    try:
+        parsed = urlsplit(value)
+        hostname = parsed.hostname
+    except ValueError as error:
+        raise ValueError("calendar URL is malformed") from error
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc or not hostname:
+        raise ValueError("calendar URL must be an absolute http or https URL")
+    return value
+
+
+def valid_calendar_url(value: str) -> str:
+    try:
+        return normalize_calendar_url(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(str(error)) from error
 
 SYSTEM_STATUS_SETTINGS = [
     "lid-close-behavior",
@@ -142,6 +200,8 @@ def add_system_parser(
     )
     get_subparsers = add_command_subparsers(get_parser, dest="setting", metavar="setting")
     for setting, help_text, description in (
+        ("calendar-launcher", "Read the calendar launcher.", "Read the Archie-managed calendar launcher preset and URL."),
+        ("datetime-launcher", "Read the datetime launcher.", "Read the Archie-managed datetime launcher preset and URL."),
         ("lid-close-behavior", "Read lid close behavior.", "Read Archie-managed lid close behavior."),
         ("notifications", "Read dunst notification state.", "Read whether dunst notifications are on or off."),
         ("notification-sounds", "Read notification sound state.", "Read whether Dunst notification sounds are on or off."),
@@ -200,6 +260,49 @@ def add_system_parser(
         help="Absolute home directory containing legacy Archie settings.",
     )
     initialize_parser.set_defaults(func=run_system_initialize_store)
+
+    open_parser = system_subparsers.add_parser(
+        "open",
+        help="Open an Archie-managed desktop destination.",
+        description="Open an Archie-managed desktop destination.",
+    )
+    open_subparsers = add_command_subparsers(open_parser, dest="target", metavar="target")
+    calendar_open_parser = open_subparsers.add_parser(
+        "calendar",
+        help="Open the configured calendar launcher.",
+        description="Open the configured calendar launcher without a shell.",
+    )
+    calendar_open_parser.add_argument(
+        "--click",
+        choices=CALENDAR_CLICKS,
+        default=CALENDAR_CLICK_RIGHT,
+        help="Open the action configured for the left or right click.",
+    )
+    calendar_open_parser.add_argument(
+        "--view",
+        choices=(CALENDAR_VIEW_MONTH,),
+        default=CALENDAR_VIEW_MONTH,
+        help="Open GNOME Calendar in month view.",
+    )
+    calendar_open_parser.set_defaults(func=run_system_open)
+    datetime_open_parser = open_subparsers.add_parser(
+        "datetime",
+        help="Open the configured datetime launcher.",
+        description="Open the configured datetime launcher without a shell.",
+    )
+    datetime_open_parser.add_argument(
+        "--click",
+        choices=CALENDAR_CLICKS,
+        default=CALENDAR_CLICK_RIGHT,
+        help="Open the action configured for the left or right click.",
+    )
+    datetime_open_parser.add_argument(
+        "--view",
+        choices=DATETIME_VIEWS,
+        default="agenda",
+        help="Open GNOME Calendar in agenda or week view.",
+    )
+    datetime_open_parser.set_defaults(func=run_system_open)
 
     set_parser = system_subparsers.add_parser(
         "set",
@@ -318,6 +421,82 @@ def add_system_parser(
     )
     waybar_theme_set_parser.set_defaults(func=run_system_set)
 
+    calendar_launcher_set_parser = set_subparsers.add_parser(
+        "calendar-launcher",
+        help="Change the calendar launcher.",
+        description="Choose the calendar application or a validated browser URL.",
+    )
+    calendar_launcher_set_parser.add_argument(
+        "--click",
+        choices=CALENDAR_CLICKS,
+        default=CALENDAR_CLICK_RIGHT,
+        help="Use the left or right click on the Waybar date.",
+    )
+    calendar_presets = add_command_subparsers(
+        calendar_launcher_set_parser,
+        dest="calendar_preset",
+        metavar="PRESET",
+    )
+    calendar_presets.add_parser(
+        CALENDAR_PRESET_UNSET,
+        help="Remove the calendar action for this click.",
+        description="Leave this click without a calendar action.",
+    ).set_defaults(func=run_system_set)
+    calendar_presets.add_parser(
+        CALENDAR_PRESET_GNOME,
+        help="Use GNOME Calendar.",
+        description="Open GNOME Calendar.",
+    ).set_defaults(func=run_system_set)
+    browser_parser = calendar_presets.add_parser(
+        CALENDAR_PRESET_BROWSER,
+        help="Open a browser URL.",
+        description="Open a validated HTTP or HTTPS URL in the configured browser.",
+    )
+    browser_parser.add_argument(
+        "url",
+        type=valid_calendar_url,
+        help="HTTP or HTTPS calendar URL.",
+    )
+    browser_parser.set_defaults(func=run_system_set)
+
+    datetime_launcher_set_parser = set_subparsers.add_parser(
+        "datetime-launcher",
+        help="Change the datetime launcher.",
+        description="Choose the datetime application or a validated browser URL.",
+    )
+    datetime_launcher_set_parser.add_argument(
+        "--click",
+        choices=CALENDAR_CLICKS,
+        default=CALENDAR_CLICK_RIGHT,
+        help="Use the left or right click on the Waybar hour and weekday.",
+    )
+    datetime_presets = add_command_subparsers(
+        datetime_launcher_set_parser,
+        dest="datetime_preset",
+        metavar="PRESET",
+    )
+    datetime_presets.add_parser(
+        DATETIME_PRESET_UNSET,
+        help="Remove the datetime action for this click.",
+        description="Leave this click without a datetime action.",
+    ).set_defaults(func=run_system_set)
+    datetime_presets.add_parser(
+        DATETIME_PRESET_GNOME,
+        help="Open GNOME Date & Time settings.",
+        description="Open the GNOME Date & Time settings panel.",
+    ).set_defaults(func=run_system_set)
+    datetime_browser_parser = datetime_presets.add_parser(
+        DATETIME_PRESET_BROWSER,
+        help="Open a browser URL.",
+        description="Open a validated HTTP or HTTPS URL in the configured browser.",
+    )
+    datetime_browser_parser.add_argument(
+        "url",
+        type=valid_calendar_url,
+        help="HTTP or HTTPS datetime URL.",
+    )
+    datetime_browser_parser.set_defaults(func=run_system_set)
+
     for setting, help_text, value_help, value_type in (
         ("waybar-font-family", "Change the Waybar element font family.", "Installed font family name.", valid_waybar_font_family),
         ("waybar-font-size", "Change the Waybar element font size.", f"Font size in pixels ({WAYBAR_FONT_MIN_SIZE}-{WAYBAR_FONT_MAX_SIZE}).", valid_waybar_font_size),
@@ -349,48 +528,70 @@ def run_system_get(
     shy_mode_path: Path | None = None,
     notification_sounds_path: Path | None = None,
 ) -> int:
-    match args.setting:
-        case "lid-close-behavior":
-            print(detect_lid_close_behavior(lid_close_conf_path))
-            return 0
-        case "notifications":
-            print(detect_notifications_state())
-            return 0
-        case "notification-sounds":
-            print(
-                ON_VALUE
-                if load_notification_sounds_enabled(notification_sounds_path)
-                else OFF_VALUE
+    handlers: dict[str, Callable[[], int]] = {
+        "calendar-launcher": lambda: _print_system_setting(
+            format_calendar_settings(get_calendar_settings(waybar_theme_state_path))
+        ),
+        "datetime-launcher": lambda: _print_system_setting(
+            format_datetime_settings(get_datetime_settings(waybar_theme_state_path))
+        ),
+        "lid-close-behavior": lambda: _print_system_setting(
+            detect_lid_close_behavior(lid_close_conf_path)
+        ),
+        "notifications": lambda: _print_system_setting(detect_notifications_state()),
+        "notification-sounds": lambda: _print_system_setting(
+            ON_VALUE if load_notification_sounds_enabled(notification_sounds_path) else OFF_VALUE
+        ),
+        "notification-sound": lambda: _print_system_setting(
+            load_notification_sound_path(notification_sounds_path) or "default"
+        ),
+        "shy-mode": lambda: _print_system_setting(
+            format_shy_mode_settings(load_shy_mode_settings(shy_mode_path))
+        ),
+        "share-state": lambda: _print_system_setting(
+            ON_VALUE if detect_share_active() else OFF_VALUE
+        ),
+        "kdeconnect": lambda: _print_system_setting(detect_kdeconnect_state()),
+        "power-profile": detect_power_profile,
+        "waybar-theme": lambda: _print_system_setting(
+            detect_waybar_theme(waybar_theme_state_path)
+        ),
+        "brightness": lambda: print_brightness_state(backlight_path),
+    }
+    handlers.update(
+        {
+            setting: lambda setting=setting: _print_system_setting(
+                get_waybar_font_setting(setting, waybar_theme_state_path)
             )
-            return 0
-        case "notification-sound":
-            print(load_notification_sound_path(notification_sounds_path) or "default")
-            return 0
-        case "shy-mode":
-            print(format_shy_mode_settings(load_shy_mode_settings(shy_mode_path)))
-            return 0
-        case "share-state":
-            print(ON_VALUE if detect_share_active() else OFF_VALUE)
-            return 0
-        case "kdeconnect":
-            print(detect_kdeconnect_state())
-            return 0
-        case "power-profile":
-            return detect_power_profile()
-        case "waybar-theme":
-            print(detect_waybar_theme(waybar_theme_state_path))
-            return 0
-        case "waybar-font-family" | "waybar-font-size" | "waybar-menu-font-family" | "waybar-menu-font-size" | "waybar-tooltip-font-family" | "waybar-tooltip-font-size":
-            print(get_waybar_font_setting(args.setting, waybar_theme_state_path))
-            return 0
-        case "brightness":
-            return print_brightness_state(backlight_path)
-        case _:
-            print(
-                f"archie system get: unsupported setting: {args.setting}",
-                file=sys.stderr,
-            )
-            return 2
+            for setting in WAYBAR_FONT_POLICY_BY_SETTING
+        }
+    )
+    handler = handlers.get(args.setting)
+    if handler is None:
+        print(f"archie system get: unsupported setting: {args.setting}", file=sys.stderr)
+        return 2
+    return handler()
+
+
+def run_system_open(
+    args: argparse.Namespace,
+    *,
+    waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH,
+) -> int:
+    if args.target == "calendar":
+        settings = get_calendar_settings(waybar_theme_state_path)
+        return open_calendar_launcher(args.click, *settings[args.click], view=args.view)
+    if args.target == "datetime":
+        settings = get_datetime_settings(waybar_theme_state_path)
+        return open_datetime_launcher(args.click, *settings[args.click], view=args.view)
+    else:
+        print(f"archie system open: unsupported target: {args.target}", file=sys.stderr)
+        return 2
+
+
+def _print_system_setting(value: object) -> int:
+    print(value)
+    return 0
 
 
 def collect_system_status(
@@ -432,7 +633,8 @@ def collect_system_status(
             setting = futures[future]
             try:
                 values[setting] = future.result()
-            except Exception as error:
+            # Each reader is isolated so one unavailable service does not hide other status.
+            except Exception as error:  # noqa: BLE001
                 errors[setting] = str(error) or error.__class__.__name__
     return (
         {setting: values[setting] for setting in SYSTEM_STATUS_SETTINGS if setting in values},
@@ -547,83 +749,386 @@ def run_system_set(
     executor: Executor | None = None,
 ) -> int:
     execute = executor or execute_command
-    match args.setting:
-        case "lid-close-behavior":
-            if args.value not in LID_CLOSE_CONTENT_BY_MODE:
-                print(
-                    f"archie system set: unsupported lid-close-behavior: {args.value}",
-                    file=sys.stderr,
-                )
-                return 2
-            install_code = install_lid_close_behavior(
-                args.value, lid_close_conf_path, executor=execute
+    handlers: dict[str, Callable[[], int]] = {
+        "calendar-launcher": lambda: _set_calendar_launcher(
+            getattr(args, "click", CALENDAR_CLICK_RIGHT),
+            args.calendar_preset,
+            getattr(args, "url", ""),
+            waybar_theme_state_path,
+            waybar_config_path,
+            waybar_style_path,
+        ),
+        "datetime-launcher": lambda: _set_datetime_launcher(
+            getattr(args, "click", CALENDAR_CLICK_RIGHT),
+            args.datetime_preset,
+            getattr(args, "url", ""),
+            waybar_theme_state_path,
+            waybar_config_path,
+            waybar_style_path,
+        ),
+        "lid-close-behavior": lambda: _set_lid_close_behavior(
+            args.value, lid_close_conf_path, execute
+        ),
+        "notifications": lambda: set_notifications(args.value, executor=execute),
+        "notification-sounds": lambda: _set_notification_sounds(
+            args.value, notification_sounds_path
+        ),
+        "notification-sound": lambda: _set_notification_sound(
+            args.value, notification_sounds_path
+        ),
+        "shy-mode": lambda: _set_shy_mode(args, shy_mode_path),
+        "kdeconnect": lambda: set_kdeconnect(args.value),
+        "power-profile": lambda: set_power_profile(args.value, executor=execute),
+        "waybar-theme": lambda: _set_waybar_theme(
+            args.value,
+            waybar_theme_state_path,
+            waybar_config_path,
+            waybar_style_path,
+        ),
+        "brightness": lambda: set_brightness(args.device, args.percent, executor=execute),
+    }
+    handlers.update(
+        {
+            setting: lambda setting=setting: _set_waybar_font(
+                setting,
+                args.value,
+                waybar_theme_state_path,
+                waybar_style_path,
             )
-            if install_code != 0:
-                return install_code
-            return reload_logind_if_active(executor=execute)
-        case "notifications":
-            return set_notifications(args.value, executor=execute)
-        case "notification-sounds":
-            try:
-                save_notification_sounds_enabled(args.value == ON_VALUE, notification_sounds_path)
-            except (OSError, StoreError) as error:
-                print(f"archie system set notification-sounds: {error}", file=sys.stderr)
-                return 1
-            return 0
-        case "notification-sound":
-            try:
-                save_notification_sound_path(args.value, notification_sounds_path)
-            except (OSError, StoreError, ValueError) as error:
-                print(f"archie system set notification-sound: {error}", file=sys.stderr)
-                return 2 if isinstance(error, ValueError) else 1
-            return 0
-        case "shy-mode":
-            current = load_shy_mode_settings(shy_mode_path)
-            settings = ShyModeSettings(
-                enabled=args.value == ON_VALUE,
-                replay_count=args.replay_count or current.replay_count,
-                replay_interval=args.replay_interval or current.replay_interval,
+            for setting in WAYBAR_FONT_POLICY_BY_SETTING
+        }
+    )
+    handler = handlers.get(args.setting)
+    if handler is None:
+        print(f"archie system set: unsupported setting: {args.setting}", file=sys.stderr)
+        return 2
+    return handler()
+
+
+def _set_lid_close_behavior(value: str, path: Path, executor: Executor) -> int:
+    if value not in LID_CLOSE_CONTENT_BY_MODE:
+        print(f"archie system set: unsupported lid-close-behavior: {value}", file=sys.stderr)
+        return 2
+    install_code = install_lid_close_behavior(value, path, executor=executor)
+    return install_code or reload_logind_if_active(executor=executor)
+
+
+def _set_calendar_launcher(
+    click: str,
+    preset: str,
+    url: str,
+    path: Path,
+    config_path: Path,
+    style_path: Path,
+) -> int:
+    try:
+        click = normalize_calendar_click(click)
+        preset, url = normalize_calendar_settings(preset, url)
+        settings = dict(get_calendar_settings(path))
+        settings[click] = (preset, url)
+        policy_values = {
+            key: value
+            for side, (preset_key, url_key) in CALENDAR_POLICY_KEYS.items()
+            for key, value in (
+                (preset_key, settings[side][0]),
+                (url_key, settings[side][1]),
             )
-            try:
-                save_shy_mode_settings(settings, shy_mode_path)
-            except (OSError, StoreError) as error:
-                print(f"archie system set shy-mode: {error}", file=sys.stderr)
-                return 1
-            return 0
-        case "kdeconnect":
-            return set_kdeconnect(args.value)
-        case "power-profile":
-            return set_power_profile(args.value, executor=execute)
-        case "waybar-theme":
-            try:
-                return set_waybar_theme(
-                    args.value,
-                    waybar_theme_state_path=waybar_theme_state_path,
-                    waybar_config_path=waybar_config_path,
-                    waybar_style_path=waybar_style_path,
-                )
-            except (OSError, StoreError) as error:
-                print(f"archie system set waybar-theme: {error}", file=sys.stderr)
-                return 1
-        case "waybar-font-family" | "waybar-font-size" | "waybar-menu-font-family" | "waybar-menu-font-size" | "waybar-tooltip-font-family" | "waybar-tooltip-font-size":
-            try:
-                return set_waybar_font_setting(
-                    args.setting,
-                    args.value,
-                    waybar_theme_state_path=waybar_theme_state_path,
-                    waybar_style_path=waybar_style_path,
-                )
-            except (OSError, StoreError, ValueError) as error:
-                print(f"archie system set {args.setting}: {error}", file=sys.stderr)
-                return 1
-        case "brightness":
-            return set_brightness(args.device, args.percent, executor=execute)
-        case _:
-            print(
-                f"archie system set: unsupported setting: {args.setting}",
-                file=sys.stderr,
+        }
+        PolicyStore(StoreDatabase(path)).set_many(policy_values)
+        theme = detect_waybar_theme(path)
+        result = set_waybar_theme(
+            theme,
+            waybar_theme_state_path=path,
+            waybar_config_path=config_path,
+            waybar_style_path=style_path,
+        )
+        if result != 0:
+            return result
+    except (OSError, StoreError, ValueError) as error:
+        print(f"archie system set calendar-launcher: {error}", file=sys.stderr)
+        return 2 if isinstance(error, ValueError) else 1
+    return 0
+
+
+def normalize_calendar_click(click: str) -> str:
+    if click not in CALENDAR_CLICKS:
+        raise ValueError(f"unsupported calendar click: {click}")
+    return click
+
+
+def normalize_calendar_settings(preset: str, url: str = "") -> tuple[str, str]:
+    if preset == CALENDAR_PRESET_UNSET:
+        return preset, ""
+    if preset == CALENDAR_PRESET_GNOME:
+        return preset, ""
+    if preset == CALENDAR_PRESET_BROWSER:
+        return preset, normalize_calendar_url(url)
+    raise ValueError(f"unsupported calendar preset: {preset}")
+
+
+def get_calendar_settings(
+    path: Path = WAYBAR_THEME_STATE_PATH,
+) -> dict[str, tuple[str, str]]:
+    store = PolicyStore(StoreDatabase(path))
+    if (
+        not all(
+            store.get_optional(key) is not None
+            for keys in CALENDAR_POLICY_KEYS.values()
+            for key in keys
+        )
+        and (
+            store.get_optional(CALENDAR_CLICK) is not None
+            or store.get_optional(CALENDAR_PRESET) is not None
+            or store.get_optional(CALENDAR_LAUNCHER) is not None
+        )
+    ):
+        try:
+            migrate_calendar_policy(store)
+        except (OSError, StoreError):
+            pass
+    settings = {}
+    for click, (preset_key, url_key) in CALENDAR_POLICY_KEYS.items():
+        preset = store.get(preset_key)
+        url = store.get(url_key)
+        try:
+            settings[click] = normalize_calendar_settings(preset, url)
+        except ValueError:
+            settings[click] = (
+                CALENDAR_PRESET_UNSET
+                if click == CALENDAR_CLICK_LEFT
+                else CALENDAR_PRESET_GNOME,
+                "",
             )
-            return 2
+    return settings
+
+
+def format_calendar_settings(settings: Mapping[str, tuple[str, str]]) -> str:
+    lines = []
+    for click in CALENDAR_CLICKS:
+        preset, url = settings[click]
+        lines.append(f"{click} {preset}" if not url else f"{click} {preset} {url}")
+    return "\n".join(lines)
+
+
+def open_calendar_launcher(
+    _click: str,
+    preset: str,
+    url: str,
+    *,
+    view: str = CALENDAR_VIEW_MONTH,
+    environment: Mapping[str, str] | None = None,
+) -> int:
+    try:
+        normalize_calendar_click(_click)
+        preset, url = normalize_calendar_settings(preset, url)
+    except ValueError as error:
+        print(f"archie system open calendar: {error}", file=sys.stderr)
+        return 2
+    if preset == CALENDAR_PRESET_UNSET:
+        return 0
+    command = ["gnome-calendar"]
+    if preset == CALENDAR_PRESET_BROWSER:
+        variables = environment if environment is not None else os.environ
+        command = [variables.get("BROWSER") or "firefox", url]
+    else:
+        try:
+            set_calendar_view(view)
+        except OSError as error:
+            print(f"archie system open calendar: {error}", file=sys.stderr)
+            return 1
+    try:
+        subprocess.Popen(command, start_new_session=True)
+    except OSError as error:
+        print(f"archie system open calendar: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _set_datetime_launcher(
+    click: str,
+    preset: str,
+    url: str,
+    path: Path,
+    config_path: Path,
+    style_path: Path,
+) -> int:
+    try:
+        click = normalize_calendar_click(click)
+        preset, url = normalize_datetime_settings(preset, url)
+        settings = dict(get_datetime_settings(path))
+        settings[click] = (preset, url)
+        policy_values = {
+            key: value
+            for side, (preset_key, url_key) in DATETIME_POLICY_KEYS.items()
+            for key, value in (
+                (preset_key, settings[side][0]),
+                (url_key, settings[side][1]),
+            )
+        }
+        PolicyStore(StoreDatabase(path)).set_many(policy_values)
+        theme = detect_waybar_theme(path)
+        result = set_waybar_theme(
+            theme,
+            waybar_theme_state_path=path,
+            waybar_config_path=config_path,
+            waybar_style_path=style_path,
+        )
+        if result != 0:
+            return result
+    except (OSError, StoreError, ValueError) as error:
+        print(f"archie system set datetime-launcher: {error}", file=sys.stderr)
+        return 2 if isinstance(error, ValueError) else 1
+    return 0
+
+
+def normalize_datetime_settings(preset: str, url: str = "") -> tuple[str, str]:
+    if preset == DATETIME_PRESET_UNSET:
+        return preset, ""
+    if preset == DATETIME_PRESET_GNOME:
+        return preset, ""
+    if preset == DATETIME_PRESET_BROWSER:
+        return preset, normalize_calendar_url(url)
+    raise ValueError(f"unsupported datetime preset: {preset}")
+
+
+def get_datetime_settings(
+    path: Path = WAYBAR_THEME_STATE_PATH,
+) -> dict[str, tuple[str, str]]:
+    store = PolicyStore(StoreDatabase(path))
+    settings = {}
+    for click, (preset_key, url_key) in DATETIME_POLICY_KEYS.items():
+        preset = store.get(preset_key)
+        url = store.get(url_key)
+        try:
+            settings[click] = normalize_datetime_settings(preset, url)
+        except ValueError:
+            settings[click] = (
+                DATETIME_PRESET_UNSET
+                if click == CALENDAR_CLICK_LEFT
+                else DATETIME_PRESET_GNOME,
+                "",
+            )
+    return settings
+
+
+def format_datetime_settings(settings: Mapping[str, tuple[str, str]]) -> str:
+    lines = []
+    for click in CALENDAR_CLICKS:
+        preset, url = settings[click]
+        lines.append(f"{click} {preset}" if not url else f"{click} {preset} {url}")
+    return "\n".join(lines)
+
+
+def open_datetime_launcher(
+    _click: str,
+    preset: str,
+    url: str,
+    *,
+    view: str = "agenda",
+    environment: Mapping[str, str] | None = None,
+) -> int:
+    try:
+        normalize_calendar_click(_click)
+        preset, url = normalize_datetime_settings(preset, url)
+    except ValueError as error:
+        print(f"archie system open datetime: {error}", file=sys.stderr)
+        return 2
+    if preset == DATETIME_PRESET_UNSET:
+        return 0
+    command = ["gnome-calendar"]
+    if preset == DATETIME_PRESET_BROWSER:
+        variables = environment if environment is not None else os.environ
+        command = [variables.get("BROWSER") or "firefox", url]
+    else:
+        try:
+            set_calendar_view(view)
+        except OSError as error:
+            print(f"archie system open datetime: {error}", file=sys.stderr)
+            return 1
+    try:
+        subprocess.Popen(command, start_new_session=True)
+    except OSError as error:
+        print(f"archie system open datetime: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def set_calendar_view(view: str) -> None:
+    if view not in (CALENDAR_VIEW_MONTH, *DATETIME_VIEWS):
+        raise ValueError(f"unsupported calendar view: {view}")
+    result = subprocess.run(
+        ["gsettings", "set", "org.gnome.calendar", "active-view", view],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        message = result.stderr.strip() or "gsettings failed"
+        raise OSError(message)
+
+
+def _set_notification_sounds(value: str, path: Path | None) -> int:
+    try:
+        save_notification_sounds_enabled(value == ON_VALUE, path)
+    except (OSError, StoreError) as error:
+        print(f"archie system set notification-sounds: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _set_notification_sound(value: str, path: Path | None) -> int:
+    try:
+        save_notification_sound_path(value, path)
+    except (OSError, StoreError, ValueError) as error:
+        print(f"archie system set notification-sound: {error}", file=sys.stderr)
+        return 2 if isinstance(error, ValueError) else 1
+    return 0
+
+
+def _set_shy_mode(args: argparse.Namespace, path: Path | None) -> int:
+    current = load_shy_mode_settings(path)
+    settings = ShyModeSettings(
+        enabled=args.value == ON_VALUE,
+        replay_count=args.replay_count or current.replay_count,
+        replay_interval=args.replay_interval or current.replay_interval,
+    )
+    try:
+        save_shy_mode_settings(settings, path)
+    except (OSError, StoreError) as error:
+        print(f"archie system set shy-mode: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _set_waybar_theme(
+    value: str,
+    state_path: Path,
+    config_path: Path,
+    style_path: Path,
+) -> int:
+    try:
+        return set_waybar_theme(
+            value,
+            waybar_theme_state_path=state_path,
+            waybar_config_path=config_path,
+            waybar_style_path=style_path,
+        )
+    except (OSError, StoreError) as error:
+        print(f"archie system set waybar-theme: {error}", file=sys.stderr)
+        return 1
+
+
+def _set_waybar_font(setting: str, value: str | int, state_path: Path, style_path: Path) -> int:
+    try:
+        return set_waybar_font_setting(
+            setting,
+            value,
+            waybar_theme_state_path=state_path,
+            waybar_style_path=style_path,
+        )
+    except (OSError, StoreError, ValueError) as error:
+        print(f"archie system set {setting}: {error}", file=sys.stderr)
+        return 1
 
 
 def run_system_initialize_store(args: argparse.Namespace) -> int:
@@ -805,6 +1310,7 @@ def initialize_store(
             )
         initialized = store.initialize(values)
 
+    migrate_calendar_policy(store)
     theme = store.get(WAYBAR_THEME)
     if theme not in WAYBAR_THEMES:
         theme = DEFAULT_THEME
@@ -817,6 +1323,81 @@ def initialize_store(
     if result != 0:
         raise ValueError(f"could not materialize Waybar theme {theme!r}")
     return initialized
+
+
+def migrate_calendar_policy(store: PolicyStore) -> None:
+    stored_new = {
+        key: store.get_optional(key)
+        for keys in CALENDAR_POLICY_KEYS.values()
+        for key in keys
+    }
+    stored_click_value = store.get_optional(CALENDAR_CLICK)
+    stored_preset = store.get_optional(CALENDAR_PRESET)
+    stored_url_value = store.get_optional(CALENDAR_BROWSER_URL)
+    legacy_launcher = store.get_optional(CALENDAR_LAUNCHER)
+    if all(value is not None for value in stored_new.values()):
+        settings = {}
+        for click, (preset_key, url_key) in CALENDAR_POLICY_KEYS.items():
+            try:
+                settings[click] = normalize_calendar_settings(
+                    stored_new[preset_key] or "",
+                    stored_new[url_key] or "",
+                )
+            except ValueError:
+                settings[click] = default_calendar_settings()[click]
+        if stored_click_value is None and stored_preset is None and legacy_launcher is None:
+            return
+    else:
+        settings = default_calendar_settings()
+        if stored_preset is not None or stored_click_value is not None:
+            click = stored_click_value or CALENDAR_CLICK_RIGHT
+            try:
+                click = normalize_calendar_click(click)
+                settings[click] = normalize_calendar_settings(
+                    stored_preset or CALENDAR_PRESET_GNOME,
+                    stored_url_value or "",
+                )
+            except ValueError:
+                pass
+        elif legacy_launcher is not None:
+            settings[CALENDAR_CLICK_RIGHT] = migrate_legacy_calendar_launcher(legacy_launcher)
+
+    store.set_many(
+        {
+            key: value
+            for click, (preset_key, url_key) in CALENDAR_POLICY_KEYS.items()
+            for key, value in (
+                (preset_key, settings[click][0]),
+                (url_key, settings[click][1]),
+            )
+        }
+    )
+    for key in (CALENDAR_CLICK, CALENDAR_PRESET, CALENDAR_BROWSER_URL, CALENDAR_LAUNCHER):
+        if store.get_optional(key) is not None:
+            store.delete(key)
+
+
+def default_calendar_settings() -> dict[str, tuple[str, str]]:
+    return {
+        CALENDAR_CLICK_LEFT: (CALENDAR_PRESET_UNSET, ""),
+        CALENDAR_CLICK_RIGHT: (CALENDAR_PRESET_GNOME, ""),
+    }
+
+
+def migrate_legacy_calendar_launcher(legacy_launcher: str | None) -> tuple[str, str]:
+    if legacy_launcher == CALENDAR_PRESET_GNOME or legacy_launcher is None:
+        return CALENDAR_PRESET_GNOME, ""
+    try:
+        legacy_command = shlex.split(legacy_launcher)
+    except ValueError:
+        return CALENDAR_PRESET_GNOME, ""
+    if len(legacy_command) != 2 or legacy_command[0] != "xdg-open":
+        return CALENDAR_PRESET_GNOME, ""
+    try:
+        url = normalize_calendar_url(legacy_command[1])
+    except ValueError:
+        return CALENDAR_PRESET_GNOME, ""
+    return CALENDAR_PRESET_BROWSER, url
 
 
 def load_legacy_policy(legacy_home: Path) -> tuple[dict[str, str], Path | None]:
@@ -1147,6 +1728,14 @@ def set_waybar_theme(
         )
         return 1
 
+    calendar_settings = get_calendar_settings(waybar_theme_state_path)
+    datetime_settings = get_datetime_settings(waybar_theme_state_path)
+    try:
+        config_text = render_waybar_calendar_click(config_text, calendar_settings)
+        config_text = render_waybar_datetime_click(config_text, datetime_settings)
+    except ValueError as error:
+        print(f"archie system set waybar-theme: {error}", file=sys.stderr)
+        return 1
     waybar_config_path.parent.mkdir(parents=True, exist_ok=True)
     write_shared_text(waybar_config_path, config_text)
     write_shared_text(
@@ -1155,6 +1744,83 @@ def set_waybar_theme(
     )
     PolicyStore(StoreDatabase(waybar_theme_state_path)).set(WAYBAR_THEME, theme)
     return 0
+
+
+def render_waybar_calendar_click(
+    config_text: str,
+    settings: Mapping[str, tuple[str, str]],
+) -> str:
+    return render_waybar_click_actions(
+        config_text,
+        "clock#1",
+        settings,
+        f"{CALENDAR_OPEN_COMMAND} --view {CALENDAR_VIEW_MONTH}",
+        "calendar",
+    )
+
+
+def render_waybar_datetime_click(
+    config_text: str,
+    settings: Mapping[str, tuple[str, str]],
+) -> str:
+    for module, view in (("clock#2", "agenda"), ("clock#3", "week")):
+        config_text = render_waybar_click_actions(
+            config_text,
+            module,
+            settings,
+            f"{DATETIME_OPEN_COMMAND} --view {view}",
+            "datetime",
+        )
+    return config_text
+
+
+def render_waybar_click_actions(
+    config_text: str,
+    module: str,
+    settings: Mapping[str, tuple[str, str]],
+    open_command: str,
+    label: str,
+) -> str:
+    start = config_text.find(f'"{module}": {{')
+    end = config_text.find("    },", start)
+    if start < 0 or end < 0:
+        raise ValueError(f"Waybar theme is missing the {module} {label} module")
+    block = config_text[start:end]
+    for click in CALENDAR_CLICKS:
+        preset, _url = settings[click]
+        setting = "on-click" if click == CALENDAR_CLICK_LEFT else "on-click-right"
+        command = (
+            f'{open_command} --click {click}'
+            if preset != "unset"
+            else None
+        )
+        block, replacements = re.subn(
+            rf'^\s*"{re.escape(setting)}":.*\n',
+            "" if command is None else rf'        "{setting}": "{command}"\n',
+            block,
+            flags=re.MULTILINE,
+        )
+        if replacements > 1:
+            raise ValueError(f"Waybar theme has duplicate {setting} {label} actions")
+        if replacements == 0 and command is not None:
+            action_line = f'        "{setting}": "{command}"'
+            block = block.rstrip("\n") + f",\n{action_line}\n"
+    lines = block.splitlines()
+    nonempty_lines = [index for index, line in enumerate(lines) if line.strip()]
+    if nonempty_lines:
+        last_line = nonempty_lines[-1]
+        for index, line in enumerate(lines):
+            if not line.strip():
+                continue
+            is_click_action = re.match(r'^\s*"on-click(?:-right)?":', line) is not None
+            if index != last_line and not is_click_action:
+                continue
+            normalized_line = line.rstrip().removesuffix(",")
+            if index != last_line:
+                normalized_line += ","
+            lines[index] = normalized_line
+        block = "\n".join(lines) + "\n"
+    return config_text[:start] + block + config_text[end:]
 
 
 def set_waybar_font_setting(

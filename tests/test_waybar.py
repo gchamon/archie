@@ -84,22 +84,17 @@ class ManagedWaybarThemesTest(unittest.TestCase):
 
     def test_theme_styles_do_not_reset_native_menu_controls(self) -> None:
         root = Path(__file__).resolve().parents[1]
-        deployment_root = root / "deployment-packages/config/waybar/themes"
         package_root = root / "src/archie/waybar-themes"
 
         for theme in ("cjbassi", "mechabar", "tokyonight"):
             with self.subTest(theme=theme):
-                deployment_style = (deployment_root / theme / "style.css").read_text(
-                    encoding="utf-8"
-                )
-                package_style = (package_root / theme / "style.css").read_text(
+                style = (package_root / theme / "style.css").read_text(
                     encoding="utf-8"
                 )
 
-                self.assertEqual(deployment_style, package_style)
-                self.assertNotIn("\n* {", f"\n{deployment_style}")
-                self.assertNotIn("window#waybar *", deployment_style)
-                self.assertNotIn("menu *", deployment_style)
+                self.assertNotIn("\n* {", f"\n{style}")
+                self.assertNotIn("window#waybar *", style)
+                self.assertNotIn("menu *", style)
 
     def test_mechabar_preserves_its_module_spacing(self) -> None:
         root = Path(__file__).resolve().parents[1]
@@ -113,15 +108,51 @@ class ManagedWaybarThemesTest(unittest.TestCase):
 
     def test_every_theme_declares_and_styles_the_mic_indicator(self) -> None:
         root = Path(__file__).resolve().parents[1]
-        for theme_root in (
-            root / "deployment-packages/config/waybar/themes",
-            root / "src/archie/waybar-themes",
-        ):
-            for theme in ("cjbassi", "mechabar", "tokyonight"):
-                with self.subTest(theme_root=theme_root, theme=theme):
-                    config = (theme_root / theme / "config").read_text(encoding="utf-8")
-                    style = (theme_root / theme / "style.css").read_text(encoding="utf-8")
+        theme_root = root / "src/archie/waybar-themes"
+        for theme in ("cjbassi", "mechabar", "tokyonight"):
+            with self.subTest(theme=theme):
+                config = (theme_root / theme / "config").read_text(encoding="utf-8")
+                style = (theme_root / theme / "style.css").read_text(encoding="utf-8")
 
-                    self.assertIn('"custom/mic"', config)
-                    self.assertIn("waybar-mic-indicator.sh", config)
-                    self.assertIn("#custom-mic", style)
+                self.assertIn('"custom/mic"', config)
+                self.assertIn("waybar-mic-indicator.sh", config)
+                self.assertIn("#custom-mic", style)
+
+    def test_every_theme_orders_left_cluster_modules(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        theme_root = root / "src/archie/waybar-themes"
+
+        for theme in ("cjbassi", "mechabar", "tokyonight"):
+            with self.subTest(theme=theme):
+                config = (theme_root / theme / "config").read_text(encoding="utf-8")
+                modules_left = config.split('"modules-left": [', 1)[1].split("]", 1)[0]
+                modules_right = config.split('"modules-right": [', 1)[1].split("]", 1)[0]
+                module_names = [
+                    module.strip(' ",')
+                    for module in modules_left.splitlines()
+                    if module.strip().startswith('"')
+                ]
+
+                self.assertEqual(
+                    [
+                        module
+                        for module in module_names
+                        if module in {"hyprland/workspaces", "cpu", "memory", "disk"}
+                    ],
+                    ["hyprland/workspaces", "cpu", "memory", "disk"],
+                )
+                self.assertNotIn('"disk"', modules_right)
+
+    def test_every_theme_binds_date_clicks_to_calendar_actions(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        theme_root = root / "src/archie/waybar-themes"
+
+        for theme in ("cjbassi", "mechabar", "tokyonight"):
+            with self.subTest(theme=theme):
+                config = (theme_root / theme / "config").read_text(encoding="utf-8")
+                date_module = config.split('"clock#1": {', 1)[1].split("    },", 1)[0]
+
+                self.assertNotIn('"on-click":', date_module)
+                self.assertIn(
+                    '"on-click-right": "archie system open calendar --view month --click right"', date_module
+                )

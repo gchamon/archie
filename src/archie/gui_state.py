@@ -6,7 +6,7 @@ from archie.monitor import MonitorOutput
 from archie.privacy import ShyModeSettings
 
 GUI_SETTINGS_SNAPSHOT_ENV = "ARCHIE_GUI_SETTINGS_SNAPSHOT"
-GUI_SETTINGS_SNAPSHOT_VERSION = 3
+GUI_SETTINGS_SNAPSHOT_VERSION = 7
 
 
 @dataclass(frozen=True)
@@ -21,6 +21,14 @@ class GuiSettingsSnapshot:
     shy_mode: ShyModeSettings
     kdeconnect: str
     power_profile: str
+    calendar_left_preset: str
+    calendar_left_browser_url: str
+    calendar_right_preset: str
+    calendar_right_browser_url: str
+    datetime_left_preset: str
+    datetime_left_browser_url: str
+    datetime_right_preset: str
+    datetime_right_browser_url: str
     waybar_theme: str
     waybar_font_family: str
     waybar_font_size: int
@@ -48,6 +56,14 @@ def serialize_gui_settings_snapshot(snapshot: GuiSettingsSnapshot) -> str:
             "shy_mode": asdict(snapshot.shy_mode),
             "kdeconnect": snapshot.kdeconnect,
             "power_profile": snapshot.power_profile,
+            "calendar_left_preset": snapshot.calendar_left_preset,
+            "calendar_left_browser_url": snapshot.calendar_left_browser_url,
+            "calendar_right_preset": snapshot.calendar_right_preset,
+            "calendar_right_browser_url": snapshot.calendar_right_browser_url,
+            "datetime_left_preset": snapshot.datetime_left_preset,
+            "datetime_left_browser_url": snapshot.datetime_left_browser_url,
+            "datetime_right_preset": snapshot.datetime_right_preset,
+            "datetime_right_browser_url": snapshot.datetime_right_browser_url,
             "waybar_theme": snapshot.waybar_theme,
             "waybar_font_family": snapshot.waybar_font_family,
             "waybar_font_size": snapshot.waybar_font_size,
@@ -91,6 +107,14 @@ def deserialize_gui_settings_snapshot(payload: str) -> GuiSettingsSnapshot | Non
             ),
             kdeconnect=_require_str(data, "kdeconnect"),
             power_profile=_require_str(data, "power_profile"),
+            calendar_left_preset=_require_str(data, "calendar_left_preset"),
+            calendar_left_browser_url=_require_str(data, "calendar_left_browser_url"),
+            calendar_right_preset=_require_str(data, "calendar_right_preset"),
+            calendar_right_browser_url=_require_str(data, "calendar_right_browser_url"),
+            datetime_left_preset=_require_str(data, "datetime_left_preset"),
+            datetime_left_browser_url=_require_str(data, "datetime_left_browser_url"),
+            datetime_right_preset=_require_str(data, "datetime_right_preset"),
+            datetime_right_browser_url=_require_str(data, "datetime_right_browser_url"),
             waybar_theme=_require_str(data, "waybar_theme"),
             waybar_font_family=_require_str(data, "waybar_font_family"),
             waybar_font_size=_require_int(data, "waybar_font_size"),

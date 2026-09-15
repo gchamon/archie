@@ -29,6 +29,17 @@ from archie.monitor import (
 from archie.privacy import ShyModeSettings
 from archie.store import STORE_DATABASE_PATH
 from archie.system import (
+    CALENDAR_CLICK_LEFT,
+    CALENDAR_CLICK_RIGHT,
+    CALENDAR_CLICKS,
+    CALENDAR_PRESET_BROWSER,
+    CALENDAR_PRESET_GNOME,
+    CALENDAR_PRESET_UNSET,
+    CALENDAR_PRESETS,
+    DATETIME_PRESET_BROWSER,
+    DATETIME_PRESET_GNOME,
+    DATETIME_PRESET_UNSET,
+    DATETIME_PRESETS,
     HIBERNATE_MODE,
     LOCK_MODE,
     NONE_MODE,
@@ -36,6 +47,8 @@ from archie.system import (
     ON_VALUE,
     POWER_PROFILES,
     WAYBAR_THEMES,
+    get_calendar_settings,
+    get_datetime_settings,
 )
 from archie.version import applet_update_required, installed_archie_version
 
@@ -152,6 +165,34 @@ class ArchieControlsWindow:
         self.waybar_theme_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.waybar_theme_box.add_css_class("archie-lid-segments")
         self.waybar_theme_box.add_css_class("linked")
+        self.calendar_launcher_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.calendar_launcher_status = Gtk.Label()
+        self.calendar_launcher_status.set_xalign(0)
+        self.calendar_launcher_status.set_wrap(True)
+        self.calendar_launcher_status.set_sensitive(False)
+        self.calendar_launcher_click = CALENDAR_CLICK_RIGHT
+        self.calendar_launcher_preset = CALENDAR_PRESET_GNOME
+        self.calendar_launcher_settings = {
+            CALENDAR_CLICK_LEFT: (CALENDAR_PRESET_UNSET, ""),
+            CALENDAR_CLICK_RIGHT: (CALENDAR_PRESET_GNOME, ""),
+        }
+        self.calendar_click_dropdown = None
+        self.calendar_preset_dropdown = None
+        self.calendar_browser_url_entry = None
+        self.datetime_launcher_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.datetime_launcher_status = Gtk.Label()
+        self.datetime_launcher_status.set_xalign(0)
+        self.datetime_launcher_status.set_wrap(True)
+        self.datetime_launcher_status.set_sensitive(False)
+        self.datetime_launcher_click = CALENDAR_CLICK_RIGHT
+        self.datetime_launcher_preset = DATETIME_PRESET_GNOME
+        self.datetime_launcher_settings = {
+            CALENDAR_CLICK_LEFT: (DATETIME_PRESET_UNSET, ""),
+            CALENDAR_CLICK_RIGHT: (DATETIME_PRESET_GNOME, ""),
+        }
+        self.datetime_click_dropdown = None
+        self.datetime_preset_dropdown = None
+        self.datetime_browser_url_entry = None
         self.waybar_font_dialog = Gtk.FontDialog()
         self.waybar_font_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.waybar_menu_font_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -266,6 +307,10 @@ class ArchieControlsWindow:
         options.append(self.shy_mode_status)
         options.append(self.build_setting_row("KDE Connect:", self.kdeconnect_box))
         options.append(self.build_setting_row("Power profile:", self.power_profile_box))
+        options.append(self.build_setting_row("Calendar shortcut:", self.calendar_launcher_box))
+        options.append(self.calendar_launcher_status)
+        options.append(self.build_setting_row("Date/time shortcut:", self.datetime_launcher_box))
+        options.append(self.datetime_launcher_status)
         options.append(self.build_setting_row("Waybar theme:", self.waybar_theme_box))
         options.append(self.build_setting_row("Waybar elements:", self.waybar_font_box))
         options.append(self.build_setting_row("Context menus:", self.waybar_menu_font_box))
@@ -486,6 +531,8 @@ class ArchieControlsWindow:
         self.clear_box(self.shy_mode_box)
         self.clear_box(self.kdeconnect_box)
         self.clear_box(self.power_profile_box)
+        self.clear_box(self.calendar_launcher_box)
+        self.clear_box(self.datetime_launcher_box)
         self.clear_box(self.waybar_theme_box)
         self.clear_box(self.waybar_font_box)
         self.clear_box(self.waybar_menu_font_box)
@@ -503,6 +550,18 @@ class ArchieControlsWindow:
         self.render_shy_mode(snapshot.shy_mode)
         self.render_kdeconnect(snapshot.kdeconnect)
         self.render_power_profile(snapshot.power_profile)
+        self.render_calendar_launcher(
+            {
+                CALENDAR_CLICK_LEFT: (snapshot.calendar_left_preset, snapshot.calendar_left_browser_url),
+                CALENDAR_CLICK_RIGHT: (snapshot.calendar_right_preset, snapshot.calendar_right_browser_url),
+            }
+        )
+        self.render_datetime_launcher(
+            {
+                CALENDAR_CLICK_LEFT: (snapshot.datetime_left_preset, snapshot.datetime_left_browser_url),
+                CALENDAR_CLICK_RIGHT: (snapshot.datetime_right_preset, snapshot.datetime_right_browser_url),
+            }
+        )
         self.render_waybar_theme(snapshot.waybar_theme)
         self.render_waybar_font(
             self.waybar_font_box,
@@ -556,6 +615,8 @@ class ArchieControlsWindow:
             self.waybar_tooltip_font_box,
         ):
             self.set_box_sensitive(box, sensitive)
+        self.set_calendar_launcher_sensitive(sensitive)
+        self.set_datetime_launcher_sensitive(sensitive)
 
     def render_monitors(self) -> None:
         for monitor in self.monitors:
@@ -643,7 +704,7 @@ class ArchieControlsWindow:
         self.begin_settings_change()
         try:
             self.pending_snapshot = apply_monitor_toggle(self.monitors, monitor_name)
-        except Exception as error:
+        except (OSError, RuntimeError, ValueError) as error:
             self.set_status(str(error))
             self.finish_settings_change()
             return
@@ -678,7 +739,7 @@ class ArchieControlsWindow:
                 restore_monitors(self.pending_snapshot)
                 notify_applet_settings_changed()
                 self.set_status("Monitor layout restored.")
-            except Exception as error:
+            except (OSError, RuntimeError) as error:
                 self.set_status(f"Restore failed: {error}")
             self.finish_settings_change()
         self.pending_snapshot = None
@@ -780,6 +841,76 @@ class ArchieControlsWindow:
         if active is None:
             active = get_power_profile()
         self.render_segmented_row(self.power_profile_box, POWER_PROFILES, active, self.on_power_profile_clicked)
+
+    def render_calendar_launcher(self, settings=None) -> None:
+        if settings is None:
+            settings = get_calendar_settings()
+        self.calendar_launcher_settings = dict(settings)
+        self.calendar_launcher_click = CALENDAR_CLICK_RIGHT
+        self.calendar_launcher_preset, browser_url = self.calendar_launcher_settings[self.calendar_launcher_click]
+        self.calendar_click_dropdown = self.create_calendar_dropdown(
+            ["Left", "Right"], CALENDAR_CLICKS.index(self.calendar_launcher_click), self.on_calendar_click_changed
+        )
+        self.calendar_preset_dropdown = self.create_calendar_dropdown(
+            ["Unset", "GNOME Calendar", "Browser"],
+            CALENDAR_PRESETS.index(self.calendar_launcher_preset),
+            self.on_calendar_preset_changed,
+        )
+        entry = self.Gtk.Entry()
+        entry.set_hexpand(True)
+        entry.set_text(browser_url)
+        entry.set_placeholder_text("https://calendar.example/")
+        entry.set_sensitive(self.calendar_launcher_preset == CALENDAR_PRESET_BROWSER)
+        self.calendar_browser_url_entry = entry
+        self.calendar_launcher_status.set_label(
+            "Example: https://cloud.example.org/index.php/apps/calendar/"
+        )
+        apply_button = self.Gtk.Button(label="Apply")
+        apply_button.connect("clicked", self.on_calendar_launcher_apply, entry)
+        self.calendar_launcher_box.append(self.calendar_click_dropdown)
+        self.calendar_launcher_box.append(self.calendar_preset_dropdown)
+        self.calendar_launcher_box.append(entry)
+        self.calendar_launcher_box.append(apply_button)
+
+    def render_datetime_launcher(self, settings=None) -> None:
+        if settings is None:
+            settings = get_datetime_settings()
+        self.datetime_launcher_settings = dict(settings)
+        self.datetime_launcher_click = CALENDAR_CLICK_RIGHT
+        self.datetime_launcher_preset, browser_url = self.datetime_launcher_settings[
+            self.datetime_launcher_click
+        ]
+        self.datetime_click_dropdown = self.create_calendar_dropdown(
+            ["Left", "Right"],
+            CALENDAR_CLICKS.index(self.datetime_launcher_click),
+            self.on_datetime_click_changed,
+        )
+        self.datetime_preset_dropdown = self.create_calendar_dropdown(
+            ["Unset", "GNOME Calendar", "Browser"],
+            DATETIME_PRESETS.index(self.datetime_launcher_preset),
+            self.on_datetime_preset_changed,
+        )
+        entry = self.Gtk.Entry()
+        entry.set_hexpand(True)
+        entry.set_text(browser_url)
+        entry.set_placeholder_text("https://datetime.example/")
+        entry.set_sensitive(self.datetime_launcher_preset == DATETIME_PRESET_BROWSER)
+        self.datetime_browser_url_entry = entry
+        self.datetime_launcher_status.set_label(
+            "Hour opens agenda view; weekday opens week view."
+        )
+        apply_button = self.Gtk.Button(label="Apply")
+        apply_button.connect("clicked", self.on_datetime_launcher_apply, entry)
+        self.datetime_launcher_box.append(self.datetime_click_dropdown)
+        self.datetime_launcher_box.append(self.datetime_preset_dropdown)
+        self.datetime_launcher_box.append(entry)
+        self.datetime_launcher_box.append(apply_button)
+
+    def create_calendar_dropdown(self, labels: list[str], selected: int, callback):
+        dropdown = self.Gtk.DropDown.new(self.Gtk.StringList.new(labels), None)
+        dropdown.set_selected(selected)
+        dropdown.connect("notify::selected", callback)
+        return dropdown
 
     def render_waybar_theme(self, active: str | None = None) -> None:
         if active is None:
@@ -905,6 +1036,96 @@ class ArchieControlsWindow:
         self.render_power_profile()
         self.finish_settings_change()
 
+    def on_calendar_click_changed(self, dropdown, _pspec) -> None:
+        self.calendar_launcher_click = CALENDAR_CLICKS[dropdown.get_selected()]
+        self.calendar_launcher_preset, browser_url = self.calendar_launcher_settings[self.calendar_launcher_click]
+        if self.calendar_preset_dropdown is not None:
+            self.calendar_preset_dropdown.set_selected(CALENDAR_PRESETS.index(self.calendar_launcher_preset))
+        if self.calendar_browser_url_entry is not None:
+            self.calendar_browser_url_entry.set_text(browser_url)
+            self.calendar_browser_url_entry.set_sensitive(
+                self.calendar_launcher_preset == CALENDAR_PRESET_BROWSER
+            )
+
+    def on_calendar_preset_changed(self, dropdown, _pspec) -> None:
+        self.calendar_launcher_preset = CALENDAR_PRESETS[dropdown.get_selected()]
+        if self.calendar_browser_url_entry is not None:
+            self.calendar_browser_url_entry.set_sensitive(
+                self.calendar_launcher_preset == CALENDAR_PRESET_BROWSER
+            )
+
+    def on_calendar_launcher_apply(self, _button, entry) -> None:
+        self.calendar_launcher_settings[self.calendar_launcher_click] = (
+            self.calendar_launcher_preset,
+            entry.get_text(),
+        )
+        self.set_calendar_launcher(
+            self.calendar_launcher_click,
+            self.calendar_launcher_preset,
+            entry.get_text(),
+        )
+
+    def set_calendar_launcher(self, click: str, preset: str, browser_url: str) -> None:
+        self.begin_settings_change()
+        command = ["archie", "system", "set", "calendar-launcher", "--click", click, preset]
+        if preset == CALENDAR_PRESET_BROWSER:
+            command.append(browser_url)
+        result = run_cli(command)
+        if result.returncode == 0:
+            self.set_status("Calendar shortcut updated.")
+        else:
+            self.set_status(f"Failed to set calendar shortcut: {result.stderr.strip()}")
+        self.clear_box(self.calendar_launcher_box)
+        self.render_calendar_launcher()
+        self.finish_settings_change()
+
+    def on_datetime_click_changed(self, dropdown, _pspec) -> None:
+        self.datetime_launcher_click = CALENDAR_CLICKS[dropdown.get_selected()]
+        self.datetime_launcher_preset, browser_url = self.datetime_launcher_settings[
+            self.datetime_launcher_click
+        ]
+        if self.datetime_preset_dropdown is not None:
+            self.datetime_preset_dropdown.set_selected(
+                DATETIME_PRESETS.index(self.datetime_launcher_preset)
+            )
+        if self.datetime_browser_url_entry is not None:
+            self.datetime_browser_url_entry.set_text(browser_url)
+            self.datetime_browser_url_entry.set_sensitive(
+                self.datetime_launcher_preset == DATETIME_PRESET_BROWSER
+            )
+
+    def on_datetime_preset_changed(self, dropdown, _pspec) -> None:
+        self.datetime_launcher_preset = DATETIME_PRESETS[dropdown.get_selected()]
+        if self.datetime_browser_url_entry is not None:
+            self.datetime_browser_url_entry.set_sensitive(
+                self.datetime_launcher_preset == DATETIME_PRESET_BROWSER
+            )
+
+    def on_datetime_launcher_apply(self, _button, entry) -> None:
+        self.datetime_launcher_settings[self.datetime_launcher_click] = (
+            self.datetime_launcher_preset,
+            entry.get_text(),
+        )
+        self.set_datetime_launcher(
+            self.datetime_launcher_click,
+            self.datetime_launcher_preset,
+            entry.get_text(),
+        )
+
+    def set_datetime_launcher(self, click: str, preset: str, browser_url: str) -> None:
+        self.begin_settings_change()
+        command = ["archie", "system", "set", "datetime-launcher", "--click", click, preset]
+        if preset == DATETIME_PRESET_BROWSER:
+            command.append(browser_url)
+        result = run_cli(command)
+        if result.returncode == 0:
+            self.set_status("Date/time shortcut updated.")
+        else:
+            self.set_status(f"Failed to set date/time shortcut: {result.stderr.strip()}")
+        self.clear_box(self.datetime_launcher_box)
+        self.render_datetime_launcher()
+        self.finish_settings_change()
+
     def on_waybar_theme_clicked(self, _button, value: str) -> None:
         self.begin_settings_change()
         result = run_cli(["archie", "system", "set", "waybar-theme", value])
@@ -983,6 +1204,20 @@ class ArchieControlsWindow:
             child.set_sensitive(sensitive)
             child = child.get_next_sibling()
 
+    def set_calendar_launcher_sensitive(self, sensitive: bool) -> None:
+        self.set_box_sensitive(self.calendar_launcher_box, sensitive)
+        if self.calendar_browser_url_entry is not None:
+            self.calendar_browser_url_entry.set_sensitive(
+                sensitive and self.calendar_launcher_preset == CALENDAR_PRESET_BROWSER
+            )
+
+    def set_datetime_launcher_sensitive(self, sensitive: bool) -> None:
+        self.set_box_sensitive(self.datetime_launcher_box, sensitive)
+        if self.datetime_browser_url_entry is not None:
+            self.datetime_browser_url_entry.set_sensitive(
+                sensitive and self.datetime_launcher_preset == DATETIME_PRESET_BROWSER
+            )
+
     def run_cli_async(self, run_command, on_complete) -> None:
         def worker() -> None:
             result = run_command()
@@ -1019,7 +1254,7 @@ class ArchieControlsWindow:
 
     def set_status(self, message: str) -> None:
         print(message, flush=True)
-        entry = f"{datetime.now().strftime('%H:%M:%S')}  {message}"
+        entry = f"{datetime.now().astimezone().strftime('%H:%M:%S')}  {message}"
         if self.message_buffer.get_char_count() > 0:
             entry = f"{entry}\n"
         start_iter = self.message_buffer.get_start_iter()
@@ -1178,7 +1413,7 @@ def store_write_warning(path: Path = STORE_DATABASE_PATH) -> str | None:
 
 
 def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
-    with ThreadPoolExecutor(max_workers=13) as executor:
+    with ThreadPoolExecutor(max_workers=14) as executor:
         monitors_future = executor.submit(list_monitors)
         brightness_future = executor.submit(get_brightness_devices)
         lid_behavior_future = executor.submit(get_lid_behavior)
@@ -1188,6 +1423,8 @@ def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
         shy_mode_future = executor.submit(get_shy_mode_settings)
         kdeconnect_future = executor.submit(get_kdeconnect_state)
         power_profile_future = executor.submit(get_power_profile)
+        calendar_settings_future = executor.submit(get_calendar_settings)
+        datetime_settings_future = executor.submit(get_datetime_settings)
         waybar_theme_future = executor.submit(get_waybar_theme)
         waybar_font_future = executor.submit(get_waybar_font, "waybar-font")
         waybar_menu_font_future = executor.submit(get_waybar_font, "waybar-menu-font")
@@ -1197,7 +1434,8 @@ def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
         try:
             monitors = monitors_future.result()
             monitor_error = None
-        except Exception as error:
+        # Monitor discovery is optional, so preserve the remaining settings on failure.
+        except Exception as error:  # noqa: BLE001
             monitors = []
             monitor_error = str(error)
         brightness = brightness_future.result()
@@ -1208,6 +1446,8 @@ def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
         shy_mode = shy_mode_future.result()
         kdeconnect = kdeconnect_future.result()
         power_profile = power_profile_future.result()
+        calendar_settings = calendar_settings_future.result()
+        datetime_settings = datetime_settings_future.result()
         waybar_theme = waybar_theme_future.result()
         waybar_font = waybar_font_future.result()
         waybar_menu_font = waybar_menu_font_future.result()
@@ -1223,6 +1463,14 @@ def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
         shy_mode=shy_mode,
         kdeconnect=kdeconnect,
         power_profile=power_profile,
+        calendar_left_preset=calendar_settings["left"][0],
+        calendar_left_browser_url=calendar_settings["left"][1],
+        calendar_right_preset=calendar_settings["right"][0],
+        calendar_right_browser_url=calendar_settings["right"][1],
+        datetime_left_preset=datetime_settings["left"][0],
+        datetime_left_browser_url=datetime_settings["left"][1],
+        datetime_right_preset=datetime_settings["right"][0],
+        datetime_right_browser_url=datetime_settings["right"][1],
         waybar_theme=waybar_theme,
         waybar_font_family=waybar_font[0],
         waybar_font_size=waybar_font[1],

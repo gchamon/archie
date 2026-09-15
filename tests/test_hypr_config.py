@@ -1,7 +1,6 @@
 import unittest
 from pathlib import Path
 
-
 BINDS_PATH = (
     Path(__file__).resolve().parents[1]
     / "deployment-packages/config/hypr/config/binds.lua"
