@@ -13,19 +13,40 @@ with (ROOT / "pyproject.toml").open("rb") as file:
 
 
 class ArchieCliReleaseVersionTest(unittest.TestCase):
-    def run_prepare(self, package_dir: Path, channel: str, commit: str, package_release: str | None = None) -> None:
+    def create_makepkg_stub(self, directory: Path) -> Path:
+        executable = directory / "makepkg"
+        executable.write_text("#!/bin/sh\nprintf '%s\\n' 'mock-srcinfo'\n")
+        executable.chmod(0o755)
+        return directory
+
+    def run_prepare(
+        self,
+        package_dir: Path,
+        channel: str,
+        commit: str,
+        makepkg_dir: Path,
+        package_release: str | None = None,
+    ) -> None:
         env = os.environ | {
             "ARCHIE_CLI_AUR_DIR": str(package_dir),
             "ARCHIE_CLI_CHANNEL": channel,
+            "PATH": f"{makepkg_dir}:{os.environ['PATH']}",
         }
         if package_release is not None:
             env["ARCHIE_CLI_PACKAGE_RELEASE"] = package_release
         subprocess.run([str(PREPARE), commit], cwd=ROOT, env=env, check=True)
 
-    def run_verify(self, package_dir: Path, channel: str, package_release: str | None = None) -> None:
+    def run_verify(
+        self,
+        package_dir: Path,
+        channel: str,
+        makepkg_dir: Path,
+        package_release: str | None = None,
+    ) -> None:
         env = os.environ | {
             "ARCHIE_CLI_AUR_DIR": str(package_dir),
             "ARCHIE_CLI_CHANNEL": channel,
+            "PATH": f"{makepkg_dir}:{os.environ['PATH']}",
         }
         if package_release is not None:
             env["ARCHIE_CLI_PACKAGE_RELEASE"] = package_release
@@ -36,48 +57,51 @@ class ArchieCliReleaseVersionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             package_dir = Path(temporary) / "archie-cli-nightly"
             package_dir.mkdir()
+            makepkg_dir = self.create_makepkg_stub(Path(temporary))
             subprocess.run(["git", "init", "--initial-branch=master", str(package_dir)], check=True, capture_output=True)
 
-            self.run_prepare(package_dir, "alpha", commit, "283")
+            self.run_prepare(package_dir, "alpha", commit, makepkg_dir, "283")
             alpha_pkgbuild = (package_dir / "PKGBUILD").read_text()
             self.assertIn(f"pkgver={PROJECT_VERSION}a", alpha_pkgbuild)
             self.assertIn("pkgrel=283", alpha_pkgbuild)
             self.assertIn(f"_commit={commit}", alpha_pkgbuild)
-            self.run_verify(package_dir, "alpha", "283")
+            self.run_verify(package_dir, "alpha", makepkg_dir, "283")
 
-            self.run_prepare(package_dir, "rc", commit, "284")
+            self.run_prepare(package_dir, "rc", commit, makepkg_dir, "284")
             rc_pkgbuild = (package_dir / "PKGBUILD").read_text()
             self.assertIn(f"pkgver={PROJECT_VERSION}rc", rc_pkgbuild)
             self.assertIn("pkgrel=284", rc_pkgbuild)
-            self.run_verify(package_dir, "rc", "284")
+            self.run_verify(package_dir, "rc", makepkg_dir, "284")
 
     def test_stable_verification_ignores_prerelease_pipeline_release_number(self) -> None:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         with tempfile.TemporaryDirectory() as temporary:
             package_dir = Path(temporary) / "archie-cli"
             package_dir.mkdir()
+            makepkg_dir = self.create_makepkg_stub(Path(temporary))
             subprocess.run(["git", "init", "--initial-branch=master", str(package_dir)], check=True, capture_output=True)
 
-            self.run_prepare(package_dir, "stable", commit, "283")
+            self.run_prepare(package_dir, "stable", commit, makepkg_dir, "283")
             stable_pkgbuild = (package_dir / "PKGBUILD").read_text()
             self.assertIn(f"pkgver={PROJECT_VERSION}", stable_pkgbuild)
             self.assertIn("pkgrel=1", stable_pkgbuild)
-            self.run_verify(package_dir, "stable", "283")
+            self.run_verify(package_dir, "stable", makepkg_dir, "283")
 
     def test_repeating_the_same_commit_keeps_package_release_idempotent(self) -> None:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         with tempfile.TemporaryDirectory() as temporary:
             package_dir = Path(temporary) / "archie-cli-nightly"
             package_dir.mkdir()
+            makepkg_dir = self.create_makepkg_stub(Path(temporary))
             subprocess.run(["git", "init", "--initial-branch=master", str(package_dir)], check=True, capture_output=True)
 
-            self.run_prepare(package_dir, "alpha", commit)
+            self.run_prepare(package_dir, "alpha", commit, makepkg_dir)
             first_release = next(
                 line.removeprefix("pkgrel=")
                 for line in (package_dir / "PKGBUILD").read_text().splitlines()
                 if line.startswith("pkgrel=")
             )
-            self.run_prepare(package_dir, "alpha", commit)
+            self.run_prepare(package_dir, "alpha", commit, makepkg_dir)
             second_release = next(
                 line.removeprefix("pkgrel=")
                 for line in (package_dir / "PKGBUILD").read_text().splitlines()

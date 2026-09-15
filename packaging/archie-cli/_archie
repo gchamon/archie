@@ -1,7 +1,7 @@
 #compdef archie
 
 _archie() {
-  local -a commands actions get_settings set_settings behaviors global_options status_options initialize_options downgrade_options
+  local -a commands actions get_settings set_settings open_targets behaviors calendar_presets calendar_options datetime_presets datetime_options global_options status_options initialize_options downgrade_options
 
   commands=(
     'applet:Run the Archie tray applet'
@@ -12,10 +12,13 @@ _archie() {
   actions=(
     'get:Read an Archie-owned system setting'
     'initialize-store:Initialize shared Archie store'
+    'open:Open an Archie-managed desktop destination'
     'status:Summarize current system status'
     'set:Change an Archie-owned system setting'
   )
   get_settings=(
+    'calendar-launcher:Read configured calendar launcher'
+    'datetime-launcher:Read configured datetime launcher'
     'lid-close-behavior:Read lid close behavior'
     'notifications:Read dunst notification state'
     'notification-sounds:Read notification sound state'
@@ -31,6 +34,8 @@ _archie() {
     'monitors:Read Hyprland monitor state'
   )
   set_settings=(
+    'calendar-launcher:Manage calendar launcher'
+    'datetime-launcher:Manage datetime launcher'
     'lid-close-behavior:Manage lid close behavior'
     'notifications:Manage dunst notification state'
     'notification-sounds:Manage notification sound state'
@@ -47,6 +52,26 @@ _archie() {
     'hibernate:Use systemd-logind hybrid-sleep'
     'lock:Lock after reopening'
     'none:Ignore lid close events'
+  )
+  calendar_presets=(
+    'gnome-calendar:Open GNOME Calendar'
+    'browser-url:Open a browser URL'
+    'unset:Remove the calendar action'
+  )
+  calendar_options=(
+    '--click[Waybar click]:click:(left right)'
+  )
+  datetime_presets=(
+    'gnome-datetime:Open GNOME Calendar in the module view'
+    'browser-url:Open a browser URL'
+    'unset:Remove the datetime action'
+  )
+  datetime_options=(
+    '--click[Waybar click]:click:(left right)'
+  )
+  open_targets=(
+    'calendar:Open configured calendar launcher'
+    'datetime:Open configured datetime launcher'
   )
   global_options=(
     '--help:show help and exit'
@@ -78,6 +103,8 @@ _archie() {
         case "$words[3]" in
           status) _describe -t options 'system status option' status_options ;;
           initialize-store) _describe -t options 'store initialization option' initialize_options ;;
+          calendar-launcher) _describe -t options 'calendar launcher option' calendar_options ;;
+          datetime-launcher) _describe -t options 'datetime launcher option' datetime_options ;;
           *) _describe -t options 'archie option' global_options ;;
         esac
         ;;
@@ -101,8 +128,17 @@ _archie() {
     4:system:set:*)
       _describe -t settings 'system setting' set_settings
       ;;
+    4:system:open:*)
+      _describe -t targets 'system open target' open_targets
+      ;;
     5:system:set:lid-close-behavior)
       _describe -t behaviors 'lid close behavior' behaviors
+      ;;
+    5:system:set:calendar-launcher)
+      _describe -t calendar-presets 'calendar preset' calendar_presets
+      ;;
+    5:system:set:datetime-launcher)
+      _describe -t datetime-presets 'datetime preset' datetime_presets
       ;;
     *:downgrade:*)
       _archie_pacman_packages

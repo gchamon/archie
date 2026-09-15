@@ -34,6 +34,33 @@ from archie.privacy import ShyModeSettings
 
 
 class CliExposureTest(unittest.TestCase):
+    def test_calendar_launcher_accepts_only_constrained_presets(self) -> None:
+        with patch("archie.system._set_calendar_launcher", return_value=0) as setter:
+            self.assertEqual(
+                main(["system", "set", "calendar-launcher", "gnome-calendar"]),
+                0,
+            )
+            setter.assert_called_once()
+            self.assertEqual(setter.call_args.args[:3], ("right", "gnome-calendar", ""))
+
+        with patch("archie.system._set_calendar_launcher", return_value=0) as setter:
+            self.assertEqual(
+                main(
+                    [
+                        "system",
+                        "set",
+                        "calendar-launcher",
+                        "browser-url",
+                        "https://calendar.example/",
+                    ]
+                ),
+                0,
+            )
+            self.assertEqual(
+                setter.call_args.args[:3],
+                ("right", "browser-url", "https://calendar.example/"),
+            )
+
     def test_help_uses_command_metavar_instead_of_root_choice_tuple(self) -> None:
         stdout = io.StringIO()
         with self.assertRaises(SystemExit) as error, redirect_stdout(stdout):
@@ -59,7 +86,7 @@ class CliExposureTest(unittest.TestCase):
             main(["system", "get"])
 
         self.assertEqual(error.exception.code, 2)
-        self.assertIn("{lid-close-behavior,notifications", stderr.getvalue())
+        self.assertIn("{calendar-launcher,datetime-launcher,lid-close-behavior,notifications", stderr.getvalue())
         self.assertIn("the following arguments are required: setting", stderr.getvalue())
 
     def test_help_all_includes_gui_and_applet_commands(self) -> None:
@@ -261,6 +288,13 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
             patch("archie.gui.get_shy_mode_settings", return_value=shy_mode),
             patch("archie.gui.get_kdeconnect_state", return_value="on"),
             patch("archie.gui.get_power_profile", return_value="balanced"),
+            patch(
+                "archie.gui.get_calendar_settings",
+                return_value={
+                    "left": ("unset", ""),
+                    "right": ("gnome-calendar", ""),
+                },
+            ),
             patch("archie.gui.get_waybar_theme", return_value="tokyonight"),
             patch(
                 "archie.gui.get_waybar_font",
@@ -283,6 +317,14 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
         self.assertEqual(snapshot.shy_mode, shy_mode)
         self.assertEqual(snapshot.kdeconnect, "on")
         self.assertEqual(snapshot.power_profile, "balanced")
+        self.assertEqual(snapshot.calendar_left_preset, "unset")
+        self.assertEqual(snapshot.calendar_left_browser_url, "")
+        self.assertEqual(snapshot.calendar_right_preset, "gnome-calendar")
+        self.assertEqual(snapshot.calendar_right_browser_url, "")
+        self.assertEqual(snapshot.datetime_left_preset, "unset")
+        self.assertEqual(snapshot.datetime_left_browser_url, "")
+        self.assertEqual(snapshot.datetime_right_preset, "gnome-datetime")
+        self.assertEqual(snapshot.datetime_right_browser_url, "")
         self.assertEqual(snapshot.waybar_theme, "tokyonight")
         self.assertEqual(snapshot.waybar_font_family, "JetBrains Mono")
         self.assertEqual(snapshot.waybar_font_size, 18)
@@ -302,6 +344,13 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
             patch("archie.gui.get_shy_mode_settings", return_value=ShyModeSettings()),
             patch("archie.gui.get_kdeconnect_state", return_value="unknown"),
             patch("archie.gui.get_power_profile", return_value="unknown"),
+            patch(
+                "archie.gui.get_calendar_settings",
+                return_value={
+                    "left": ("unset", ""),
+                    "right": ("gnome-calendar", ""),
+                },
+            ),
             patch("archie.gui.get_waybar_theme", return_value="unknown"),
             patch("archie.gui.get_waybar_font", return_value=("MesloLGM Nerd Font", 20)),
         ):
@@ -325,6 +374,14 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
             shy_mode=ShyModeSettings(enabled=True, replay_count=4, replay_interval=2.5),
             kdeconnect="on",
             power_profile="balanced",
+            calendar_left_preset="unset",
+            calendar_left_browser_url="",
+            calendar_right_preset="gnome-calendar",
+            calendar_right_browser_url="",
+            datetime_left_preset="unset",
+            datetime_left_browser_url="",
+            datetime_right_preset="gnome-datetime",
+            datetime_right_browser_url="",
             waybar_theme="tokyonight",
             waybar_font_family="JetBrains Mono",
             waybar_font_size=18,
@@ -349,6 +406,14 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
         self.assertEqual(restored.shy_mode, snapshot.shy_mode)
         self.assertEqual(restored.kdeconnect, snapshot.kdeconnect)
         self.assertEqual(restored.power_profile, snapshot.power_profile)
+        self.assertEqual(restored.calendar_left_preset, snapshot.calendar_left_preset)
+        self.assertEqual(restored.calendar_left_browser_url, snapshot.calendar_left_browser_url)
+        self.assertEqual(restored.calendar_right_preset, snapshot.calendar_right_preset)
+        self.assertEqual(restored.calendar_right_browser_url, snapshot.calendar_right_browser_url)
+        self.assertEqual(restored.datetime_left_preset, snapshot.datetime_left_preset)
+        self.assertEqual(restored.datetime_left_browser_url, snapshot.datetime_left_browser_url)
+        self.assertEqual(restored.datetime_right_preset, snapshot.datetime_right_preset)
+        self.assertEqual(restored.datetime_right_browser_url, snapshot.datetime_right_browser_url)
         self.assertEqual(restored.waybar_theme, snapshot.waybar_theme)
         self.assertEqual(restored.waybar_font_family, snapshot.waybar_font_family)
         self.assertEqual(restored.waybar_font_size, snapshot.waybar_font_size)
@@ -367,4 +432,11 @@ class GuiSettingsSnapshotTest(unittest.TestCase):
 
     def test_ignores_malformed_applet_snapshot_environment(self) -> None:
         with patch.dict(os.environ, {"ARCHIE_GUI_SETTINGS_SNAPSHOT": "not json"}, clear=False):
+            self.assertIsNone(load_gui_settings_snapshot_from_environment())
+
+        with patch.dict(
+            os.environ,
+            {"ARCHIE_GUI_SETTINGS_SNAPSHOT": '{"version": 4}'},
+            clear=False,
+        ):
             self.assertIsNone(load_gui_settings_snapshot_from_environment())

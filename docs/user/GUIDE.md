@@ -109,7 +109,9 @@ yay -S --needed \
   fd \
   frece \
   fzf \
+  gnome-calendar \
   gnome-system-monitor \
+  gsimplecal \
   grimblast-git \
   htop \
   hyprcursor \
@@ -219,9 +221,34 @@ are real mutable files because Archie rewrites them when switching themes:
 archie system set waybar-theme cjbassi
 ```
 
-Tracked Waybar theme sources remain in the repository, but the live files under
-`/var/lib/archie/waybar/` are real mutable files so changing the theme does not
-dirty the checked-out Stow package.
+Right-click the date in Waybar to open the configured calendar, which defaults
+to GNOME Calendar. The left click is unset by default. To configure a browser
+calendar, use the Browser preset and enter an instance of the open-source
+Nextcloud Calendar web app:
+
+```bash
+archie system set calendar-launcher --click right browser-url https://cloud.example.org/index.php/apps/calendar/
+```
+
+The Browser preset uses the executable in `$BROWSER`, or `firefox` when
+`$BROWSER` is unset. Replace the example host with the address of your
+Nextcloud server.
+
+The hour and weekday Waybar modules share a separate datetime launcher backed
+by GNOME Calendar. The hour opens agenda view, the weekday opens week view,
+and right click is enabled by default while left click is unset:
+
+```bash
+archie system set datetime-launcher --click right gnome-datetime
+```
+
+The date module opens GNOME Calendar in month view. The datetime launcher also
+supports the Browser and Unset presets.
+
+Waybar theme templates are bundled with the `archie-cli` package under
+`src/archie/waybar-themes/`. The live files under `/var/lib/archie/waybar/` are
+real mutable copies materialized from those templates, so changing the theme
+does not modify a checked-out Stow package.
 
 ### 2.2 System specific configuration
 

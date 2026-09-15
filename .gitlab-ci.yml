@@ -8,6 +8,24 @@ default:
     - groundstation
 
 include:
+  - local: .gitlab/ci/test.gitlab-ci.yml
+    rules:
+      - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+        changes:
+          - src/archie/**/*
+          - tests/**/*
+          - packaging/archie-cli/**/*
+          - scripts/**/*
+          - deployment-packages/config/hypr/scripts/**/*
+          - deployment-packages/config/waybar/**/*
+          - copy-deployed-files/**/*
+          - pyproject.toml
+          - uv.lock
+          - .gitlab-ci.yml
+          - .gitlab/ci/test.gitlab-ci.yml
+      - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/'
+      - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      - when: never
   - component: $CI_SERVER_FQDN/to-be-continuous/gitleaks/gitlab-ci-gitleaks@2.10.0
   - component: gitlab.com/gabriel.chamon/ci-components/orisun-gitlab@v1
     inputs:

@@ -58,11 +58,29 @@ MENU_ITEM_LID_HIBERNATE = 5
 MENU_ITEM_LID_LOCK = 6
 MENU_ITEM_NOTIFICATIONS = 7
 MENU_ITEM_NOTIFICATION_SOUNDS = 8
+MENU_ITEM_LOGOUT = 9
+MENU_ITEM_REBOOT = 10
+MENU_ITEM_POWEROFF = 11
 MENU_QUICK_SWITCH_IDS = (
     MENU_ITEM_LID_HIBERNATE,
     MENU_ITEM_LID_LOCK,
     MENU_ITEM_NOTIFICATIONS,
     MENU_ITEM_NOTIFICATION_SOUNDS,
+)
+MENU_SYSTEM_ACTIONS = {
+    MENU_ITEM_LOGOUT: "exit",
+    MENU_ITEM_REBOOT: "reboot",
+    MENU_ITEM_POWEROFF: "poweroff",
+}
+MENU_ITEM_IDS = (
+    MENU_ITEM_OPEN,
+    *MENU_QUICK_SWITCH_IDS,
+    MENU_ITEM_SEP,
+    MENU_ITEM_LOGOUT,
+    MENU_ITEM_REBOOT,
+    MENU_ITEM_POWEROFF,
+    MENU_ITEM_RESTART,
+    MENU_ITEM_QUIT,
 )
 RUNNING_VERSION = installed_archie_version()
 
@@ -199,8 +217,10 @@ def format_tooltip(
     )
 
 
-def format_tooltip_title(version: str = RUNNING_VERSION) -> str:
-    return f"Archie Controls v{version}"
+def format_tooltip_title(version: str | None = None) -> str:
+    if version is None:
+        return "Archie Applet"
+    return f"Archie Applet v{version}"
 
 
 def format_shy_mode_status(state: ShyModeViewState | None = None) -> str:
@@ -256,6 +276,8 @@ def menu_toggle_state(item_id: int, snapshot: Mapping[str, object]) -> int | Non
 
 
 def menu_action_value(item_id: int, snapshot: Mapping[str, object]) -> str | None:
+    if item_id in MENU_SYSTEM_ACTIONS:
+        return MENU_SYSTEM_ACTIONS[item_id]
     if item_id == MENU_ITEM_LID_HIBERNATE:
         return "hibernate" if menu_toggle_state(item_id, snapshot) is not None else None
     if item_id == MENU_ITEM_LID_LOCK:
@@ -370,6 +392,23 @@ class ArchieStatusNotifier:
                 "enabled": GLib.Variant("b", True),
                 "visible": GLib.Variant("b", True),
             }
+        if item_id in MENU_SYSTEM_ACTIONS:
+            labels = {
+                MENU_ITEM_LOGOUT: "Log out",
+                MENU_ITEM_REBOOT: "Restart",
+                MENU_ITEM_POWEROFF: "Power off",
+            }
+            icons = {
+                MENU_ITEM_LOGOUT: "system-log-out-symbolic",
+                MENU_ITEM_REBOOT: "system-reboot-symbolic",
+                MENU_ITEM_POWEROFF: "system-shutdown-symbolic",
+            }
+            return {
+                "label": GLib.Variant("s", labels[item_id]),
+                "icon-name": GLib.Variant("s", icons[item_id]),
+                "enabled": GLib.Variant("b", not self.menu_action_in_progress),
+                "visible": GLib.Variant("b", True),
+            }
         if item_id in MENU_QUICK_SWITCH_IDS:
             labels = {
                 MENU_ITEM_LID_HIBERNATE: "Lid close: Hibernate",
@@ -422,78 +461,77 @@ class ArchieStatusNotifier:
         gi.require_version("Gtk", "3.0")
         from gi.repository import GLib, Gtk  # type: ignore[attr-defined]
 
-        if method_name == "GetLayout":
-            _parent_id, recursion_depth, _property_names = parameters.unpack()
-            children = []
-            if recursion_depth != 0:
-                for child_id in (
-                    MENU_ITEM_OPEN,
-                    MENU_ITEM_LID_HIBERNATE,
-                    MENU_ITEM_LID_LOCK,
-                    MENU_ITEM_NOTIFICATIONS,
-                    MENU_ITEM_NOTIFICATION_SOUNDS,
-                    MENU_ITEM_RESTART,
-                    MENU_ITEM_SEP,
-                    MENU_ITEM_QUIT,
-                ):
-                    children.append(GLib.Variant("(ia{sv}av)", (child_id, self._item_props(child_id), [])))
-            root = (0, self._item_props(0), children)
-            invocation.return_value(GLib.Variant("(u(ia{sv}av))", (self.revision, root)))
-        elif method_name == "GetGroupProperties":
-            ids, _property_names = parameters.unpack()
-            if not ids:
-                ids = [
-                    0,
-                    MENU_ITEM_OPEN,
-                    *MENU_QUICK_SWITCH_IDS,
-                    MENU_ITEM_RESTART,
-                    MENU_ITEM_SEP,
-                    MENU_ITEM_QUIT,
-                ]
-            result = []
-            for item_id in ids:
-                props = self._item_props(item_id)
-                if props is not None:
-                    result.append((item_id, props))
-            invocation.return_value(GLib.Variant("(a(ia{sv}))", (result,)))
-        elif method_name == "GetProperty":
-            item_id, name = parameters.unpack()
-            props = self._item_props(item_id) or {}
-            value = props.get(name)
-            if value is None:
-                value = GLib.Variant("s", "")
-            invocation.return_value(GLib.Variant("(v)", (value,)))
-        elif method_name == "Event":
-            item_id, event_id, _data, _timestamp = parameters.unpack()
-            if event_id == "clicked":
-                if item_id == MENU_ITEM_OPEN:
-                    self.open_gui()
-                elif item_id in MENU_QUICK_SWITCH_IDS:
-                    self.start_menu_action(item_id)
-                elif item_id == MENU_ITEM_RESTART:
-                    self.request_restart()
-                elif item_id == MENU_ITEM_QUIT:
-                    Gtk.main_quit()
+        handler = {
+            "GetLayout": self._dbusmenu_get_layout,
+            "GetGroupProperties": self._dbusmenu_get_group_properties,
+            "GetProperty": self._dbusmenu_get_property,
+            "Event": self._dbusmenu_event,
+            "EventGroup": self._dbusmenu_event_group,
+            "AboutToShow": self._dbusmenu_about_to_show,
+            "AboutToShowGroup": self._dbusmenu_about_to_show_group,
+        }.get(method_name)
+        if handler is None:
             invocation.return_value(None)
-        elif method_name == "EventGroup":
-            (events,) = parameters.unpack()
-            for item_id, event_id, _data, _timestamp in events:
-                if event_id == "clicked":
-                    if item_id == MENU_ITEM_OPEN:
-                        self.open_gui()
-                    elif item_id in MENU_QUICK_SWITCH_IDS:
-                        self.start_menu_action(item_id)
-                    elif item_id == MENU_ITEM_RESTART:
-                        self.request_restart()
-                    elif item_id == MENU_ITEM_QUIT:
-                        Gtk.main_quit()
-            invocation.return_value(GLib.Variant("(ai)", ([],)))
-        elif method_name == "AboutToShow":
-            invocation.return_value(GLib.Variant("(b)", (False,)))
-        elif method_name == "AboutToShowGroup":
-            invocation.return_value(GLib.Variant("(aiai)", ([], [])))
-        else:
-            invocation.return_value(None)
+            return
+        handler(parameters, invocation, GLib, Gtk)
+
+    def _dbusmenu_get_layout(self, parameters, invocation, GLib, _Gtk) -> None:
+        _parent_id, recursion_depth, _property_names = parameters.unpack()
+        children = []
+        if recursion_depth != 0:
+            children = [
+                GLib.Variant("(ia{sv}av)", (item_id, self._item_props(item_id), []))
+                for item_id in MENU_ITEM_IDS
+            ]
+        root = (0, self._item_props(0), children)
+        invocation.return_value(GLib.Variant("(u(ia{sv}av))", (self.revision, root)))
+
+    def _dbusmenu_get_group_properties(self, parameters, invocation, GLib, _Gtk) -> None:
+        ids, _property_names = parameters.unpack()
+        ids = ids or [0, *MENU_ITEM_IDS]
+        result = [
+            (item_id, props)
+            for item_id in ids
+            if (props := self._item_props(item_id)) is not None
+        ]
+        invocation.return_value(GLib.Variant("(a(ia{sv}))", (result,)))
+
+    def _dbusmenu_get_property(self, parameters, invocation, GLib, _Gtk) -> None:
+        item_id, name = parameters.unpack()
+        props = self._item_props(item_id) or {}
+        value = props.get(name, GLib.Variant("s", ""))
+        invocation.return_value(GLib.Variant("(v)", (value,)))
+
+    def _dbusmenu_event(self, parameters, invocation, _GLib, Gtk) -> None:
+        item_id, event_id, _data, _timestamp = parameters.unpack()
+        self._handle_menu_event(item_id, event_id, Gtk)
+        invocation.return_value(None)
+
+    def _dbusmenu_event_group(self, parameters, invocation, GLib, Gtk) -> None:
+        (events,) = parameters.unpack()
+        for item_id, event_id, _data, _timestamp in events:
+            self._handle_menu_event(item_id, event_id, Gtk)
+        invocation.return_value(GLib.Variant("(ai)", ([],)))
+
+    @staticmethod
+    def _dbusmenu_about_to_show(_parameters, invocation, GLib, _Gtk) -> None:
+        invocation.return_value(GLib.Variant("(b)", (False,)))
+
+    @staticmethod
+    def _dbusmenu_about_to_show_group(_parameters, invocation, GLib, _Gtk) -> None:
+        invocation.return_value(GLib.Variant("(aiai)", ([], [])))
+
+    def _handle_menu_event(self, item_id: int, event_id: str, Gtk) -> None:
+        if event_id != "clicked":
+            return
+        if item_id == MENU_ITEM_OPEN:
+            self.open_gui()
+        elif item_id in MENU_QUICK_SWITCH_IDS or item_id in MENU_SYSTEM_ACTIONS:
+            self.start_menu_action(item_id)
+        elif item_id == MENU_ITEM_RESTART:
+            self.request_restart()
+        elif item_id == MENU_ITEM_QUIT:
+            Gtk.main_quit()
 
     def dbusmenu_get_property(
         self,
@@ -667,7 +705,10 @@ class ArchieStatusNotifier:
 
         def worker() -> None:
             try:
-                if item_id in {MENU_ITEM_LID_HIBERNATE, MENU_ITEM_LID_LOCK}:
+                if item_id in MENU_SYSTEM_ACTIONS:
+                    script = Path.home() / ".config/hypr/scripts/confirm-before-exit.sh"
+                    result = run_cli([str(script), value])
+                elif item_id in {MENU_ITEM_LID_HIBERNATE, MENU_ITEM_LID_LOCK}:
                     result = set_lid_behavior(value)
                 else:
                     setting = (

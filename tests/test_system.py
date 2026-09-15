@@ -10,6 +10,11 @@ from unittest.mock import patch
 
 from archie.cli import main
 from archie.store import (
+    CALENDAR_LAUNCHER,
+    CALENDAR_LEFT_BROWSER_URL,
+    CALENDAR_LEFT_PRESET,
+    CALENDAR_RIGHT_BROWSER_URL,
+    CALENDAR_RIGHT_PRESET,
     NOTIFICATION_SOUND_SOURCE,
     NOTIFICATION_SOUNDS_ENABLED,
     SHY_MODE_ENABLED,
@@ -25,6 +30,12 @@ from archie.store import (
     StoreDatabase,
 )
 from archie.system import (
+    CALENDAR_CLICK_LEFT,
+    CALENDAR_CLICK_RIGHT,
+    CALENDAR_PRESET_BROWSER,
+    CALENDAR_PRESET_GNOME,
+    DATETIME_PRESET_BROWSER,
+    DATETIME_PRESET_GNOME,
     HIBERNATE_MODE,
     LOCK_MODE,
     NONE_MODE,
@@ -40,6 +51,8 @@ from archie.system import (
     format_brightness_device,
     format_system_status,
     format_system_status_json,
+    get_calendar_settings,
+    get_datetime_settings,
     initialize_store,
     install_lid_close_behavior,
     list_backlight_device_names,
@@ -47,7 +60,10 @@ from archie.system import (
     load_notification_sounds_enabled,
     notification_sound_asset_path,
     notification_sounds_config_path,
+    open_calendar_launcher,
+    open_datetime_launcher,
     reload_logind_if_active,
+    render_waybar_calendar_click,
     render_waybar_style,
     run_system_get,
     run_system_set,
@@ -114,6 +130,269 @@ class NotificationSoundsCommandTest(unittest.TestCase):
             )
 
 
+class CalendarLauncherTest(unittest.TestCase):
+    def test_defaults_to_gnome_calendar_and_persists_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "store.sqlite3"
+            path.touch()
+
+            self.assertEqual(
+                get_calendar_settings(path),
+                {
+                    CALENDAR_CLICK_LEFT: ("unset", ""),
+                    CALENDAR_CLICK_RIGHT: (CALENDAR_PRESET_GNOME, ""),
+                },
+            )
+            args = argparse.Namespace(
+                setting="calendar-launcher",
+                click=CALENDAR_CLICK_RIGHT,
+                calendar_preset=CALENDAR_PRESET_GNOME,
+            )
+            config_path = Path(temp_dir) / "waybar/config"
+            style_path = Path(temp_dir) / "waybar/style.css"
+            self.assertEqual(
+                run_system_set(
+                    args,
+                    waybar_theme_state_path=path,
+                    waybar_config_path=config_path,
+                    waybar_style_path=style_path,
+                ),
+                0,
+            )
+            store = PolicyStore(StoreDatabase(path))
+            self.assertEqual(store.get(CALENDAR_RIGHT_PRESET), CALENDAR_PRESET_GNOME)
+            self.assertEqual(store.get(CALENDAR_RIGHT_BROWSER_URL), "")
+
+            args = argparse.Namespace(
+                setting="calendar-launcher",
+                click=CALENDAR_CLICK_RIGHT,
+                calendar_preset=CALENDAR_PRESET_BROWSER,
+                url="https://calendar.example/",
+            )
+            self.assertEqual(
+                run_system_set(
+                    args,
+                    waybar_theme_state_path=path,
+                    waybar_config_path=config_path,
+                    waybar_style_path=style_path,
+                ),
+                0,
+            )
+            self.assertEqual(
+                get_calendar_settings(path),
+                {
+                    CALENDAR_CLICK_LEFT: ("unset", ""),
+                    CALENDAR_CLICK_RIGHT: (CALENDAR_PRESET_BROWSER, "https://calendar.example/"),
+                },
+            )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                self.assertEqual(
+                    run_system_get(
+                        argparse.Namespace(setting="calendar-launcher"),
+                        waybar_theme_state_path=path,
+                    ),
+                    0,
+                )
+            self.assertEqual(
+                stdout.getvalue(),
+                "left unset\nright browser-url https://calendar.example/\n",
+            )
+
+            rendered_config = config_path.read_text(encoding="utf-8")
+            date_module = rendered_config.split('"clock#1": {', 1)[1].split("    },", 1)[0]
+            self.assertNotIn('"on-click":', date_module)
+            self.assertIn(
+                '"on-click-right": "archie system open calendar --view month --click right"',
+                date_module,
+            )
+
+    def test_renders_the_calendar_action_on_the_selected_click(self) -> None:
+        config = (
+            '"clock#1": {\n'
+            '    "on-click": "gsimplecal",\n'
+            '    "on-click-right": "archie system open calendar"\n'
+            "    },\n"
+        )
+
+        left_config = render_waybar_calendar_click(
+            config,
+            {"left": (CALENDAR_PRESET_GNOME, ""), "right": ("unset", "")},
+        )
+        json.loads("{" + left_config.rstrip().removesuffix(",") + "}")
+        self.assertIn('"on-click": "archie system open calendar --view month --click left"', left_config)
+        self.assertNotIn('"on-click-right":', left_config)
+
+        right_config = render_waybar_calendar_click(
+            config,
+            {"left": ("unset", ""), "right": (CALENDAR_PRESET_GNOME, "")},
+        )
+        json.loads("{" + right_config.rstrip().removesuffix(",") + "}")
+        self.assertNotIn('"on-click":', right_config)
+        self.assertIn('"on-click-right": "archie system open calendar --view month --click right"', right_config)
+
+        both_config = render_waybar_calendar_click(
+            config,
+            {"left": (CALENDAR_PRESET_GNOME, ""), "right": (CALENDAR_PRESET_GNOME, "")},
+        )
+        json.loads("{" + both_config.rstrip().removesuffix(",") + "}")
+
+    def test_rejects_invalid_browser_url(self) -> None:
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            self.assertEqual(
+                run_system_set(
+                    argparse.Namespace(
+                        setting="calendar-launcher",
+                        click=CALENDAR_CLICK_RIGHT,
+                        calendar_preset=CALENDAR_PRESET_BROWSER,
+                        url="file:///tmp/calendar.html",
+                    ),
+                    waybar_theme_state_path=Path("/tmp/archie-calendar-test.sqlite3"),
+                ),
+                2,
+            )
+            self.assertIn("absolute http or https URL", stderr.getvalue())
+
+    def test_opens_gnome_calendar_without_a_shell(self) -> None:
+        with (
+            patch(
+                "archie.system.subprocess.run",
+                return_value=subprocess.CompletedProcess([], 0, "", ""),
+            ) as run,
+            patch("archie.system.subprocess.Popen") as popen,
+        ):
+            self.assertEqual(
+                open_calendar_launcher(CALENDAR_CLICK_RIGHT, CALENDAR_PRESET_GNOME, ""),
+                0,
+            )
+
+        run.assert_called_once_with(
+            ["gsettings", "set", "org.gnome.calendar", "active-view", "month"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        popen.assert_called_once_with(["gnome-calendar"], start_new_session=True)
+
+
+    def test_opens_browser_url_with_browser_environment(self) -> None:
+        with patch("archie.system.subprocess.Popen") as popen:
+            self.assertEqual(
+                open_calendar_launcher(
+                    CALENDAR_CLICK_RIGHT,
+                    CALENDAR_PRESET_BROWSER,
+                    "https://calendar.example/",
+                    environment={"BROWSER": "zen-browser"},
+                ),
+                0,
+            )
+
+        popen.assert_called_once_with(
+            ["zen-browser", "https://calendar.example/"], start_new_session=True
+        )
+
+    def test_browser_defaults_to_firefox(self) -> None:
+        with patch("archie.system.subprocess.Popen") as popen:
+            self.assertEqual(
+                open_calendar_launcher(
+                    CALENDAR_CLICK_RIGHT,
+                    CALENDAR_PRESET_BROWSER,
+                    "https://calendar.example/",
+                    environment={},
+                ),
+                0,
+            )
+
+        popen.assert_called_once_with(
+            ["firefox", "https://calendar.example/"], start_new_session=True
+        )
+
+    def test_reports_launcher_failures(self) -> None:
+        stderr = io.StringIO()
+        with patch(
+            "archie.system.subprocess.run",
+            return_value=subprocess.CompletedProcess([], 0, "", ""),
+        ), patch(
+            "archie.system.subprocess.Popen", side_effect=FileNotFoundError("missing")
+        ), redirect_stderr(stderr):
+            self.assertEqual(
+                open_calendar_launcher(CALENDAR_CLICK_RIGHT, CALENDAR_PRESET_GNOME, ""),
+                1,
+            )
+
+        self.assertIn("missing", stderr.getvalue())
+
+
+class DateTimeLauncherTest(unittest.TestCase):
+    def test_datetime_settings_are_independent_and_materialize_on_hour_and_weekday(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "store.sqlite3"
+            path.touch()
+            config_path = Path(temp_dir) / "waybar/config"
+            style_path = Path(temp_dir) / "waybar/style.css"
+
+            self.assertEqual(
+                get_datetime_settings(path),
+                {"left": ("unset", ""), "right": (DATETIME_PRESET_GNOME, "")},
+            )
+            self.assertEqual(
+                run_system_set(
+                    argparse.Namespace(
+                        setting="datetime-launcher",
+                        click=CALENDAR_CLICK_LEFT,
+                        datetime_preset=DATETIME_PRESET_BROWSER,
+                        url="https://datetime.example/",
+                    ),
+                    waybar_theme_state_path=path,
+                    waybar_config_path=config_path,
+                    waybar_style_path=style_path,
+                ),
+                0,
+            )
+
+            settings = get_datetime_settings(path)
+            self.assertEqual(settings[CALENDAR_CLICK_LEFT], (DATETIME_PRESET_BROWSER, "https://datetime.example/"))
+            self.assertEqual(settings[CALENDAR_CLICK_RIGHT], (DATETIME_PRESET_GNOME, ""))
+            config = config_path.read_text(encoding="utf-8")
+            for module in ("clock#2", "clock#3"):
+                module_text = config.split(f'"{module}": {{', 1)[1].split("    },", 1)[0]
+                view = "agenda" if module == "clock#2" else "week"
+                self.assertIn(
+                    f'"on-click": "archie system open datetime --view {view} --click left"',
+                    module_text,
+                )
+                self.assertIn(
+                    f'"on-click-right": "archie system open datetime --view {view} --click right"',
+                    module_text,
+                )
+
+    def test_opens_gnome_datetime_without_a_shell(self) -> None:
+        with (
+            patch(
+                "archie.system.subprocess.run",
+                return_value=subprocess.CompletedProcess([], 0, "", ""),
+            ) as run,
+            patch("archie.system.subprocess.Popen") as popen,
+        ):
+            self.assertEqual(
+                open_datetime_launcher(CALENDAR_CLICK_RIGHT, DATETIME_PRESET_GNOME, ""),
+                0,
+            )
+
+        run.assert_called_once_with(
+            ["gsettings", "set", "org.gnome.calendar", "active-view", "agenda"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        popen.assert_called_once_with(
+            ["gnome-calendar"],
+            start_new_session=True,
+        )
+
+
 class PolicyInitializationTest(unittest.TestCase):
     def test_migrates_legacy_policy_and_materializes_shared_assets_once(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -177,6 +456,51 @@ class PolicyInitializationTest(unittest.TestCase):
                 )
             )
             self.assertEqual(store.get(WAYBAR_THEME), "tokyonight")
+
+    def test_migrates_safe_legacy_calendar_values_and_discards_other_commands(self) -> None:
+        for legacy, expected in (
+            (
+                "xdg-open https://calendar.example/",
+                (CALENDAR_PRESET_BROWSER, "https://calendar.example/"),
+            ),
+            ("gnome-calendar", (CALENDAR_PRESET_GNOME, "")),
+            ("sh -c 'touch /tmp/unsafe'", (CALENDAR_PRESET_GNOME, "")),
+        ):
+            with self.subTest(legacy=legacy), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                policy_path = root / "shared/store.sqlite3"
+                policy_path.parent.mkdir()
+                policy_path.touch()
+                database = StoreDatabase(policy_path)
+                database.ensure_schema()
+                database.ensure_table(
+                    "CREATE TABLE IF NOT EXISTS policy ("
+                    "key TEXT PRIMARY KEY, value TEXT NOT NULL"
+                    ")"
+                )
+                database.execute_many(
+                    "INSERT INTO policy(key, value) VALUES (?, ?)",
+                    ((CALENDAR_LAUNCHER, legacy),),
+                )
+
+                initialize_store(
+                    root / "home",
+                    policy_path=policy_path,
+                    waybar_config_path=root / "waybar/config",
+                    waybar_style_path=root / "waybar/style.css",
+                )
+
+                store = PolicyStore(database)
+                self.assertEqual(
+                    (
+                        store.get(CALENDAR_LEFT_PRESET),
+                        store.get(CALENDAR_LEFT_BROWSER_URL),
+                        store.get(CALENDAR_RIGHT_PRESET),
+                        store.get(CALENDAR_RIGHT_BROWSER_URL),
+                    ),
+                    ("unset", "", *expected),
+                )
+                self.assertIsNone(store.get_optional(CALENDAR_LAUNCHER))
 
 
 class WaybarTypographyTest(unittest.TestCase):

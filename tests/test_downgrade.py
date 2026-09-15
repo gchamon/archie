@@ -16,7 +16,6 @@ from archie.downgrade import (
     run_downgrade,
 )
 
-
 ARCHIVE_HTML = """
 <html><body><pre>
 <a href="../">../</a>
@@ -36,6 +35,21 @@ LIVE_STYLE_LINUX_LTS_HTML = """
 <a href="linux-lts-6.18.29-1-x86_64.pkg.tar.zst">linux-lts-6.18.29-1-x86_64.pkg.tar.zst</a>             11-May-2026 08:08    144M
 </pre></body></html>
 """
+
+
+def naive_datetime(
+    year: int,
+    month: int,
+    day: int,
+    hour: int = 0,
+    minute: int = 0,
+    second: int = 0,
+    microsecond: int = 0,
+) -> dt.datetime:
+    return dt.datetime.combine(
+        dt.date(year, month, day),
+        dt.time(hour, minute, second, microsecond),
+    )
 
 LIVE_STYLE_LINUX_LTS_HEADERS_HTML = """
 <html><body><pre>
@@ -67,16 +81,16 @@ class TargetParsingTest(unittest.TestCase):
     def test_parse_absolute_date_as_end_of_day(self) -> None:
         self.assertEqual(
             parse_target("2026-01-01"),
-            dt.datetime(2026, 1, 1, 23, 59, 59, 999999),
+            naive_datetime(2026, 1, 1, 23, 59, 59, 999999),
         )
 
     def test_parse_relative_days(self) -> None:
-        now = dt.datetime(2026, 1, 10, 12, 0)
-        self.assertEqual(parse_target("7d", now=now), dt.datetime(2026, 1, 3, 12, 0))
+        now = naive_datetime(2026, 1, 10, 12)
+        self.assertEqual(parse_target("7d", now=now), naive_datetime(2026, 1, 3, 12))
 
     def test_parse_relative_hours(self) -> None:
-        now = dt.datetime(2026, 1, 10, 12, 0)
-        self.assertEqual(parse_target("4h", now=now), dt.datetime(2026, 1, 10, 8, 0))
+        now = naive_datetime(2026, 1, 10, 12)
+        self.assertEqual(parse_target("4h", now=now), naive_datetime(2026, 1, 10, 8))
 
     def test_rejects_invalid_target(self) -> None:
         with self.assertRaises(ValueError):
@@ -125,10 +139,10 @@ class ArchiveParsingTest(unittest.TestCase):
         self.assertEqual(
             [candidate.timestamp for candidate in candidates],
             [
-                dt.datetime(2026, 5, 1, 16, 33),
-                dt.datetime(2026, 5, 7, 17, 54),
-                dt.datetime(2026, 5, 8, 7, 23),
-                dt.datetime(2026, 5, 11, 8, 8),
+                naive_datetime(2026, 5, 1, 16, 33),
+                naive_datetime(2026, 5, 7, 17, 54),
+                naive_datetime(2026, 5, 8, 7, 23),
+                naive_datetime(2026, 5, 11, 8, 8),
             ],
         )
 
@@ -151,7 +165,7 @@ class ResolutionTest(unittest.TestCase):
 
         resolutions = resolve_packages(
             packages=["linux-lts"],
-            target=dt.datetime(2026, 1, 2, 23, 59),
+            target=naive_datetime(2026, 1, 2, 23, 59),
             archive_url="https://archive.archlinux.org",
             fetcher=fetcher,
         )
@@ -168,7 +182,7 @@ class ResolutionTest(unittest.TestCase):
 
         resolutions = resolve_packages(
             packages=["linux-lts"],
-            target=dt.datetime(2026, 5, 8, 20, 0, 10),
+            target=naive_datetime(2026, 5, 8, 20, 0, 10),
             archive_url="https://archive.archlinux.org",
             fetcher=fetcher,
         )

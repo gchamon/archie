@@ -1,5 +1,6 @@
 import sqlite3
 from collections.abc import Iterable, Sequence
+from contextlib import closing
 from pathlib import Path
 
 STORE_DATABASE_PATH = Path("/var/lib/archie/store.sqlite3")
@@ -24,7 +25,7 @@ class StoreDatabase:
         if not self.path.exists():
             return []
         try:
-            with self._connect() as connection:
+            with closing(self._connect()) as connection:
                 if connection.execute("PRAGMA user_version").fetchone()[0] == 0:
                     return []
                 self._verify_schema(connection)
@@ -35,7 +36,7 @@ class StoreDatabase:
     def execute_many(self, query: str, rows: Iterable[Sequence[object]]) -> None:
         self._require_store_file()
         try:
-            with self._connect() as connection:
+            with closing(self._connect()) as connection:
                 self._initialize_schema(connection)
                 connection.execute("BEGIN IMMEDIATE")
                 connection.executemany(query, rows)
@@ -46,7 +47,7 @@ class StoreDatabase:
     def ensure_table(self, ddl: str) -> None:
         self._require_store_file()
         try:
-            with self._connect() as connection:
+            with closing(self._connect()) as connection:
                 self._initialize_schema(connection)
                 connection.execute(ddl)
                 connection.commit()
@@ -69,7 +70,7 @@ class StoreDatabase:
     def ensure_schema(self) -> None:
         self._require_store_file()
         try:
-            with self._connect() as connection:
+            with closing(self._connect()) as connection:
                 self._initialize_schema(connection)
         except sqlite3.Error as error:
             raise StoreError(f"could not initialize store: {error}") from error

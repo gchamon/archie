@@ -22,7 +22,9 @@ ESSENTIAL_PACKAGES=(
     fd
     frece
     fzf
+    gnome-calendar
     gnome-system-monitor
+    gsimplecal
     grimblast-git
     htop
     hyprcursor

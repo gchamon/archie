@@ -1,9 +1,16 @@
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 from archie.store import (
+    CALENDAR_LAUNCHER,
+    CALENDAR_LEFT_BROWSER_URL,
+    CALENDAR_LEFT_PRESET,
+    CALENDAR_RIGHT_BROWSER_URL,
+    CALENDAR_RIGHT_PRESET,
     NOTIFICATION_SOUNDS_ENABLED,
     SHY_MODE_REPLAY_COUNT,
     STORE_SCHEMA_VERSION,
@@ -36,7 +43,7 @@ class StoreDatabaseTest(unittest.TestCase):
             StoreDatabase(path).ensure_schema()
 
             self.assertEqual(path.stat().st_mode & 0o777, 0o600)
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection:
                 version = connection.execute("PRAGMA user_version").fetchone()[0]
             self.assertEqual(version, STORE_SCHEMA_VERSION)
 
@@ -57,14 +64,14 @@ class StoreDatabaseTest(unittest.TestCase):
 
             database.ensure_schema()
 
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection:
                 version = connection.execute("PRAGMA user_version").fetchone()[0]
             self.assertEqual(version, STORE_SCHEMA_VERSION)
 
     def test_rejects_newer_schema(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "store.sqlite3"
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection:
                 connection.execute("PRAGMA user_version = 99")
 
             with self.assertRaises(StoreError):
@@ -88,6 +95,20 @@ class StoreDatabaseTest(unittest.TestCase):
                 [("world",)],
             )
 
+    def test_closes_connections_after_reading(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "store.sqlite3"
+            path.touch()
+            database = StoreDatabase(path)
+            database.ensure_schema()
+            connection = database._connect()
+
+            with patch.object(database, "_connect", return_value=connection):
+                self.assertEqual(database.fetch_all("SELECT 1"), [(1,)])
+
+            with self.assertRaises(sqlite3.ProgrammingError):
+                connection.execute("SELECT 1")
+
 
 class PolicyStoreTest(unittest.TestCase):
     def test_defaults_and_round_trips_are_domain_specific(self) -> None:
@@ -96,6 +117,10 @@ class PolicyStoreTest(unittest.TestCase):
             path.touch()
             store = PolicyStore(StoreDatabase(path))
 
+            self.assertEqual(store.get(CALENDAR_LEFT_PRESET), "unset")
+            self.assertEqual(store.get(CALENDAR_LEFT_BROWSER_URL), "")
+            self.assertEqual(store.get(CALENDAR_RIGHT_PRESET), "gnome-calendar")
+            self.assertEqual(store.get(CALENDAR_RIGHT_BROWSER_URL), "")
             self.assertEqual(store.get(NOTIFICATION_SOUNDS_ENABLED), "on")
             self.assertEqual(store.get(WAYBAR_FONT_FAMILY), "MesloLGM Nerd Font")
             self.assertEqual(store.get(WAYBAR_FONT_SIZE), "20")
@@ -129,3 +154,25 @@ class PolicyStoreTest(unittest.TestCase):
             store = PolicyStore(StoreDatabase(path))
             with self.assertRaises(KeyError):
                 store.set("unknown", "value")
+
+    def test_optional_values_and_deletion_support_policy_migrations(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "store.sqlite3"
+            path.touch()
+            database = StoreDatabase(path)
+            database.ensure_schema()
+            database.ensure_table(
+                "CREATE TABLE IF NOT EXISTS policy ("
+                "key TEXT PRIMARY KEY, value TEXT NOT NULL"
+                ")"
+            )
+            store = PolicyStore(database)
+
+            self.assertIsNone(store.get_optional(CALENDAR_LAUNCHER))
+            database.execute_many(
+                "INSERT INTO policy(key, value) VALUES (?, ?)",
+                ((CALENDAR_LAUNCHER, "gnome-calendar"),),
+            )
+            self.assertEqual(store.get_optional(CALENDAR_LAUNCHER), "gnome-calendar")
+            store.delete(CALENDAR_LAUNCHER)
+            self.assertIsNone(store.get_optional(CALENDAR_LAUNCHER))

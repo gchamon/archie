@@ -7,7 +7,8 @@
     "modules-left": [
         "hyprland/workspaces",
         "cpu",
-        "memory"
+        "memory",
+        "disk"
     ],
     "modules-center": [
         "clock#1",
@@ -20,7 +21,6 @@
         "custom/mic",
         "pulseaudio",
         "battery",
-        "disk",
         "tray"
     ],
 
@@ -31,7 +31,8 @@
 
     "clock#1": {
         "format": "{:%m-%d}",
-        "tooltip": false
+        "tooltip": false,
+        "on-click-right": "archie system open calendar --view month --click right"
     },
     "clock#2": {
         "format": "{:%H:%M}",

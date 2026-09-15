@@ -81,8 +81,6 @@ autoload -Uz +X bashcompinit && bashcompinit
 autoload -Uz compinit && compinit
 compinit
 
-complete -C '/usr/local/bin/aws_completer' aws
-
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 #
 # This loads p10k.zsh on terminal emulators and .p10k-portable.zsh to tty
