@@ -65,6 +65,11 @@ Use the [quickstart](docs/user/QUICKSTART.md) for the fastest repo-backed deploy
 path. It is derived from the system installation guide, which remains
 canonical.
 
+### [Arch Linux integration architecture](docs/architecture/ARCH_LINUX_INTEGRATION.md)
+
+The architecture guide maps the Archinstall plugin, internal provisioning
+scripts, Archie CLI package, and AUR publication flow for maintainers.
+
 ### [Migration guide](docs/user/MIGRATING.md)
 
 Use the [migration guide](docs/user/MIGRATING.md) when upgrading from Archie v2 to

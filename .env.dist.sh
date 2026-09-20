@@ -21,7 +21,7 @@
 export ARCHIE_ENABLE_SDDM_THEME=1
 
 # When set to 1, quickstart deploys /etc/systemd/logind.conf.d/lid-close.conf
-# via the lid-close Stow package.
+# as a copied file from copy-deployed-files, not through a Stow package.
 export ARCHIE_ENABLE_LID_CLOSE=1
 
 # When set to 1, quickstart deploys the optional Nvidia system package via the

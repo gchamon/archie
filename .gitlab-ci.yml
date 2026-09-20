@@ -16,6 +16,7 @@ include:
           - tests/**/*
           - packaging/archie-cli/**/*
           - scripts/**/*
+          - archinstall/**/*
           - deployment-packages/config/hypr/scripts/**/*
           - deployment-packages/config/waybar/**/*
           - copy-deployed-files/**/*

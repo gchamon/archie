@@ -132,6 +132,15 @@ The quickstart intentionally makes a few fixed choices:
 - `yay` review menus default to `N`
 - `yay` removes make dependencies after successful installs
 
+The quickstart and Archinstall profile consume the same package manifest at
+[`archinstall/package-manifest.json`](../../archinstall/package-manifest.json).
+The profile deliberately replaces quickstart's unattended `yay` installation
+flow with target-user AUR builds and root-controlled `pacman -U` installation;
+this includes building and installing `yay-bin` first, without using `yay` as
+the installer for the remaining packages.
+The [Arch Linux integration architecture](../architecture/ARCH_LINUX_INTEGRATION.md)
+documents both paths and the separate AUR publication flow.
+
 The helper does not guess machine-specific values on its own. If discovery
 commands are unavailable or incomplete, it leaves the generated local files in
 place and tells you what to edit manually.

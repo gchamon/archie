@@ -21,6 +21,11 @@
 <!--toc:end-->
 
 ## Summary
+This document is a future custom-ISO and Calamares plan. The currently
+implemented stock-ISO Archinstall plugin, provisioning scripts, Arch package,
+and AUR publication flow are documented in
+[ARCH_LINUX_INTEGRATION.md](./ARCH_LINUX_INTEGRATION.md).
+
 Build `Archie` as a custom Arch-based live ISO with a Calamares GUI installer, laptop-first defaults, selectable software bundles, and quarterly stable releases.  
 Base stays on Arch repos + AUR (enabled broadly), with systemd-boot (UEFI) and ext4 default partitioning with optional LUKS encryption.
 

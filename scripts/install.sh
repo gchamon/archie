@@ -8,118 +8,11 @@ source "$SCRIPT_DIR/../lib/bash/lib.sh"
 CANONICAL_REPO_URL="https://gitlab.com/gabriel.chamon/archie.git"
 RAW_SCRIPT_URL="https://gitlab.com/gabriel.chamon/archie/-/raw/main/scripts/install.sh"
 
-ESSENTIAL_PACKAGES=(
-    acpi
-    power-profiles-daemon
-    ttf-cascadia-code-nerd
-    bc
-    bind
-    blueman
-    brightnessctl
-    calibre
-    cliphist
-    dunst
-    fd
-    frece
-    fzf
-    gnome-calendar
-    gnome-system-monitor
-    gsimplecal
-    grimblast-git
-    htop
-    hyprcursor
-    hyprlock
-    hyprpaper
-    inotify-tools
-    jq
-    kdeconnect
-    ksnip
-    less
-    linux-lts-headers
-    lsd
-    man-db
-    ncdu
-    noto-fonts
-    noto-fonts-emoji
-    otf-font-awesome
-    pamixer
-    pavucontrol
-    polkit-kde-agent
-    plocate
-    ranger
-    ripgrep
-    rofi-wayland
-    rsync
-    sqlite
-    stow
-    unzip
-    waybar
-    wl-clip-persist
-    xorg-xhost
-    zen-browser-bin
-    zip
-    zsh-fast-syntax-highlighting
-)
-
-ZSH_PACKAGES=(
-    zsh
-    zsh-completions
-    oh-my-zsh-git
-    zsh-theme-powerlevel10k
-    ttf-meslo-nerd
-)
-
-THEME_PACKAGES=(
-    archlinux-wallpaper
-    gnome-themes-extra
-    qt5ct
-    qt5-graphicaleffects
-    qt6ct
-    xcursor-breeze5
-    xdg-desktop-portal-gnome
-    xdg-desktop-portal-gtk
-    nwg-look
-)
-
-KEYRING_PACKAGES=(
-    gnome-keyring
-    seahorse
-)
-
-DEFAULT_P10K_PACKAGE="p10k-lean"
-GTK_THEME="Adwaita-dark"
-USER_STOW_BACKUP_ROOT="$HOME/archie-pre-stow-backup"
-SYSTEM_STOW_BACKUP_ROOT="/root/archie-pre-stow-backup"
-
 BACKED_UP_USER_PATHS=0
 BACKED_UP_SYSTEM_PATHS=0
 
-quickstart_bool_enabled() {
-    case "${1,,}" in
-        1|true|yes|on)
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-}
-
 is_interactive() {
     [[ -t 0 && -t 1 ]]
-}
-
-apply_quickstart_env_defaults() {
-    ARCHIE_CHECKOUT_DIR_NAME="${ARCHIE_CHECKOUT_DIR_NAME:-$HOME/archie}"
-    ARCHIE_ENABLE_SDDM_THEME="${ARCHIE_ENABLE_SDDM_THEME:-1}"
-    ARCHIE_ENABLE_LID_CLOSE="${ARCHIE_ENABLE_LID_CLOSE:-1}"
-    ARCHIE_ENABLE_POWER_BUTTON_CONFIRM="${ARCHIE_ENABLE_POWER_BUTTON_CONFIRM:-1}"
-    ARCHIE_ENABLE_NVIDIA="${ARCHIE_ENABLE_NVIDIA:-0}"
-    ARCHIE_ENABLE_XKB_CUSTOMIZATIONS="${ARCHIE_ENABLE_XKB_CUSTOMIZATIONS:-0}"
-    DEFAULT_P10K_PACKAGE="${ARCHIE_P10K_PACKAGE:-p10k-lean}"
-    GTK_THEME="${ARCHIE_GTK_THEME:-Adwaita-dark}"
-    USER_STOW_BACKUP_ROOT="${ARCHIE_USER_STOW_BACKUP_ROOT:-$HOME/archie-pre-stow-backup}"
-    SYSTEM_STOW_BACKUP_ROOT="${ARCHIE_SYSTEM_STOW_BACKUP_ROOT:-/root/archie-pre-stow-backup}"
 }
 
 run_pacman_install() {
@@ -216,7 +109,7 @@ bootstrap_checkout_if_needed() {
 
 install_base_packages() {
     log_step "Install base packages"
-    run_pacman_install git base-devel
+    run_pacman_install git base-devel jq
 }
 
 package_is_installed() {
@@ -254,47 +147,43 @@ bootstrap_yay() {
 }
 
 install_yay_packages() {
-    log_step "Install Archie packages with yay"
-    run_yay_install "${ESSENTIAL_PACKAGES[@]}"
+    local -a official_packages=()
+    local -a aur_packages=()
+
+    log_step "Install Archie packages from the shared manifest"
+    mapfile -t official_packages < <(manifest_packages official_runtime)
+    mapfile -t aur_packages < <(manifest_packages aur_runtime)
+    run_pacman_install "${official_packages[@]}"
+    run_yay_install "${aur_packages[@]}"
 }
 
 install_zsh_packages() {
-    log_step "Install zsh packages"
-    run_yay_install "${ZSH_PACKAGES[@]}"
+    log_info "Zsh packages are included in the shared manifest"
 }
 
 install_theme_packages() {
-    log_step "Install theme packages"
-    run_yay_install "${THEME_PACKAGES[@]}"
+    log_info "Theme packages are included in the shared manifest"
 }
 
 install_sddm_theme_package() {
+    local -a theme_packages=()
+
     if ! quickstart_bool_enabled "$ARCHIE_ENABLE_SDDM_THEME"; then
         log_info "Skipping SDDM theme package install; set ARCHIE_ENABLE_SDDM_THEME=1 to enable it again"
         return
     fi
 
     log_step "Install SDDM theme package"
-    run_yay_install sddm-slice-qt6-git
+    mapfile -t theme_packages < <(manifest_optional_packages sddm_theme)
+    ((${#theme_packages[@]} > 0)) || {
+        log_info "No SDDM theme packages are declared in the manifest"
+        return
+    }
+    run_yay_install "${theme_packages[@]}"
 }
 
 install_keyring_packages() {
-    log_step "Install keyring packages"
-    run_yay_install "${KEYRING_PACKAGES[@]}"
-}
-
-stow_package() {
-    local target="$1"
-    local package_name="$2"
-
-    run_cmd stow --dir deployment-packages --target "$target" "$package_name"
-}
-
-stow_package_sudo() {
-    local target="$1"
-    local package_name="$2"
-
-    run_sudo_cmd stow --dir deployment-packages --target "$target" "$package_name"
+    log_info "Keyring packages are included in the shared manifest"
 }
 
 find_conflicting_deployed_path() {
@@ -527,36 +416,6 @@ backup_existing_stow_targets() {
     log_info "Moved $BACKED_UP_USER_PATHS user path(s) and $BACKED_UP_SYSTEM_PATHS system path(s) aside before deployment"
 }
 
-deploy_p10k_default() {
-    local p10k_path="$HOME/.p10k.zsh"
-    local desired_target="$REPO_ROOT/deployment-packages/$DEFAULT_P10K_PACKAGE/.p10k.zsh"
-
-    log_step "Deploy default Powerlevel10k theme"
-
-    if [[ -L "$p10k_path" ]] && [[ "$(readlink -f "$p10k_path")" == "$desired_target" ]]; then
-        log_info "$DEFAULT_P10K_PACKAGE is already active"
-        return
-    fi
-
-    if [[ -e "$p10k_path" || -L "$p10k_path" ]]; then
-        log_warn "$p10k_path already exists and is not managed by $DEFAULT_P10K_PACKAGE"
-        log_warn "Leaving the existing file in place. Switch themes manually if needed."
-        return
-    fi
-
-    stow_package "$HOME" "$DEFAULT_P10K_PACKAGE"
-}
-
-deploy_copy_deployed_file_sudo() {
-    local relative_path="$1"
-    local source_path="$REPO_ROOT/copy-deployed-files/$relative_path"
-    local deployed_path="/$relative_path"
-
-    run_sudo_cmd mkdir -p "$(dirname "$deployed_path")"
-    run_sudo_cmd rm -f "$deployed_path"
-    run_sudo_cmd install -m 0644 "$source_path" "$deployed_path"
-}
-
 initialize_archie_store() {
     log_step "Initialize shared Archie store"
 
@@ -584,14 +443,14 @@ deploy_copy_deployed_files() {
     log_step "Deploy copy-managed files"
 
     if quickstart_bool_enabled "$ARCHIE_ENABLE_LID_CLOSE"; then
-        deploy_copy_deployed_file_sudo etc/systemd/logind.conf.d/lid-close.conf
+        deploy_system_file etc/systemd/logind.conf.d/lid-close.conf
         deployed_logind_file=1
     else
         log_info "Skipping lid-close deployment; set ARCHIE_ENABLE_LID_CLOSE=1 to enable it again"
     fi
 
     if quickstart_bool_enabled "$ARCHIE_ENABLE_POWER_BUTTON_CONFIRM"; then
-        deploy_copy_deployed_file_sudo etc/systemd/logind.conf.d/power-button-confirm.conf
+        deploy_system_file etc/systemd/logind.conf.d/power-button-confirm.conf
         deployed_logind_file=1
     else
         log_info "Skipping power-button confirmation deployment; set ARCHIE_ENABLE_POWER_BUTTON_CONFIRM=1 to enable it again"
@@ -628,62 +487,6 @@ deploy_stow_packages() {
     fi
 
     deploy_p10k_default
-}
-
-copy_from_deployed_template() {
-    local deployed_template="$1"
-    local dist_suffix="$2"
-    local replacement_suffix="$3"
-    local template_path=""
-    local target_path=""
-
-    template_path="$(readlink -f "$deployed_template")"
-    target_path="${template_path%$dist_suffix}$replacement_suffix"
-
-    if [[ -e "$target_path" || -L "$target_path" ]]; then
-        printf '  -> Keeping existing local file: %s\n' "$target_path" >&2
-        printf '%s\n' "$target_path"
-        return 0
-    fi
-
-    print_command cp "$template_path" "$target_path" >&2
-    cp "$template_path" "$target_path"
-    printf '%s\n' "$target_path"
-}
-
-copy_deployed_template_to_target() {
-    local deployed_template="$1"
-    local target_path="$2"
-    local template_path=""
-
-    template_path="$(readlink -f "$deployed_template")"
-
-    if [[ -e "$target_path" || -L "$target_path" ]]; then
-        printf '  -> Keeping existing local file: %s\n' "$target_path" >&2
-        printf '%s\n' "$target_path"
-        return 0
-    fi
-
-    print_command cp "$template_path" "$target_path" >&2
-    cp "$template_path" "$target_path"
-    printf '%s\n' "$target_path"
-}
-
-scaffold_local_files() {
-    log_step "Scaffold machine-local files from deployed templates"
-
-    DEVICE_LUA_PATH="$(copy_deployed_template_to_target "$HOME/.config/hypr/config/device.dist.lua" "$HOME/.config/hypr/config/device.lua")"
-    HYPRPAPER_CONF_PATH="$(copy_from_deployed_template "$HOME/.config/hypr/hyprpaper.dist.conf" ".dist.conf" ".conf")"
-    OVERRIDES_SH_PATH="$(copy_from_deployed_template "$HOME/.local/lib/zsh/overrides.dist.sh" ".dist.sh" ".sh")"
-
-    log_info "device.lua: $DEVICE_LUA_PATH"
-    log_info "hyprpaper.conf: $HYPRPAPER_CONF_PATH"
-    log_info "overrides.sh: $OVERRIDES_SH_PATH"
-}
-
-ensure_required_home_folders() {
-    log_step "Create required home folders"
-    run_cmd mkdir -p "$HOME/Pictures/Screenshots"
 }
 
 set_login_shell() {
@@ -752,7 +555,7 @@ print_manual_follow_up() {
 
 main() {
     load_repo_env_file "$REPO_ROOT/.env.sh" 'ARCHIE_*'
-    apply_quickstart_env_defaults
+    apply_install_env_defaults
     install_base_packages
     bootstrap_checkout_if_needed
     bootstrap_yay
@@ -778,4 +581,6 @@ main() {
     print_manual_follow_up
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

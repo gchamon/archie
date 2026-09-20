@@ -5,6 +5,7 @@ import tempfile
 import threading
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -13,9 +14,11 @@ from archie.gui import (
     ArchieControlsWindow,
     can_write_store,
     filter_documentation_rows,
+    filter_notifications,
     filter_shortcut_rows,
     get_notification_sound,
     get_notification_sounds_state,
+    highlight_matches_markup,
     load_gui_settings_snapshot,
     load_gui_settings_snapshot_from_environment,
     parse_brightness_devices,
@@ -30,7 +33,7 @@ from archie.gui_state import (
     serialize_gui_settings_snapshot,
 )
 from archie.monitor import MonitorOutput
-from archie.privacy import ShyModeSettings
+from archie.privacy import DunstNotification, ShyModeSettings
 
 
 class CliExposureTest(unittest.TestCase):
@@ -181,6 +184,90 @@ class NotificationSoundsGuiStateTest(unittest.TestCase):
             run_cli.return_value = subprocess.CompletedProcess([], 0, "/usr/share/sounds/test.ogg\n", "")
             self.assertEqual(get_notification_sound(), "/usr/share/sounds/test.ogg")
             run_cli.assert_called_once_with(["archie", "system", "get", "notification-sound"])
+
+
+class NotificationHistoryGuiStateTest(unittest.TestCase):
+    def test_filters_displayed_notification_fields_case_insensitively(self) -> None:
+        notifications = [
+            DunstNotification("Mail", "Build complete", "Pipeline succeeded", datetime(2026, 1, 1, tzinfo=UTC)),
+            DunstNotification("Chat", "Hello", "See you tomorrow", datetime(2026, 1, 2, tzinfo=UTC)),
+        ]
+
+        self.assertEqual(filter_notifications(notifications, "PIPELINE"), [notifications[0]])
+        self.assertEqual(filter_notifications(notifications, "chat"), [notifications[1]])
+        self.assertEqual(filter_notifications(notifications, ""), notifications)
+
+    def test_notification_poll_does_not_refresh_when_live_updates_are_disabled(self) -> None:
+        window = object.__new__(ArchieControlsWindow)
+        window.notification_live_updates = False
+        window.notification_poll_timeout_id = 12
+        window.refresh_notification_history = Mock()
+
+        self.assertFalse(window.poll_notification_history())
+        self.assertIsNone(window.notification_poll_timeout_id)
+        window.refresh_notification_history.assert_not_called()
+
+    def test_clear_history_constructs_and_presents_a_modal_alert(self) -> None:
+        window = object.__new__(ArchieControlsWindow)
+        window.Gtk = Mock()
+        window.window = Mock()
+        window.on_notification_clear_response = Mock()
+        dialog = Mock()
+        window.Gtk.AlertDialog.return_value = dialog
+
+        window.on_notification_clear_clicked(None)
+
+        window.Gtk.AlertDialog.assert_called_once_with(message="Clear all notification history?")
+        dialog.set_detail.assert_called_once_with(
+            "This permanently removes every notification stored by Dunst."
+        )
+        dialog.set_buttons.assert_called_once_with(["Cancel", "Clear history"])
+        dialog.set_cancel_button.assert_called_once_with(0)
+        dialog.set_default_button.assert_called_once_with(0)
+        dialog.set_modal.assert_called_once_with(True)
+        dialog.choose.assert_called_once_with(
+            window.window,
+            None,
+            window.on_notification_clear_response,
+        )
+
+    def test_clear_history_only_starts_after_confirmation(self) -> None:
+        window = object.__new__(ArchieControlsWindow)
+        window.notification_clear_button = Mock()
+        window.run_cli_async = Mock()
+        window.on_notification_history_cleared = Mock()
+        dialog = Mock()
+        result = Mock()
+        dialog.choose_finish.return_value = 0
+
+        window.on_notification_clear_response(dialog, result)
+
+        window.notification_clear_button.set_sensitive.assert_not_called()
+        window.run_cli_async.assert_not_called()
+
+        dialog.choose_finish.return_value = 1
+        window.on_notification_clear_response(dialog, result)
+
+        window.notification_clear_button.set_sensitive.assert_called_once_with(False)
+        window.run_cli_async.assert_called_once()
+
+
+class SearchHighlightTest(unittest.TestCase):
+    def test_highlights_all_case_insensitive_matches_and_escapes_markup(self) -> None:
+        markup = highlight_matches_markup("Mail <ready> mail", "MAIL")
+
+        self.assertEqual(
+            markup,
+            '<span background="#f9e2af" foreground="#1e1e2e" weight="bold">Mail</span> '
+            "&lt;ready&gt; "
+            '<span background="#f9e2af" foreground="#1e1e2e" weight="bold">mail</span>',
+        )
+
+    def test_highlight_escapes_special_characters_without_a_query(self) -> None:
+        self.assertEqual(
+            highlight_matches_markup("A < B & C", ""),
+            "A &lt; B &amp; C",
+        )
 
 
 class GuiStoreAccessTest(unittest.TestCase):

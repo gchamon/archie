@@ -1,7 +1,10 @@
+import html
 import json
+import re
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Protocol
 
@@ -30,6 +33,80 @@ class ShyModeSettings:
     enabled: bool = False
     replay_count: int = DEFAULT_REPLAY_COUNT
     replay_interval: float = DEFAULT_REPLAY_INTERVAL
+
+
+@dataclass(frozen=True)
+class DunstNotification:
+    application: str
+    summary: str
+    body: str
+    timestamp: datetime
+
+    def search_text(self) -> str:
+        return f"{self.application} {self.summary} {self.body} {self.timestamp.isoformat()}"
+
+
+@dataclass(frozen=True)
+class DunstHistoryResult:
+    notifications: tuple[DunstNotification, ...] = ()
+    error: str | None = None
+
+
+def dunst_boot_time() -> datetime:
+    with Path("/proc/stat").open(encoding="utf-8") as stat:
+        for line in stat:
+            if line.startswith("btime "):
+                return datetime.fromtimestamp(int(line.removeprefix("btime ").strip())).astimezone()
+    raise ValueError("Could not determine system boot time.")
+
+
+def parse_dunst_history(payload: str, boot_time: datetime) -> tuple[DunstNotification, ...]:
+    try:
+        document = json.loads(payload)
+    except json.JSONDecodeError as error:
+        raise ValueError("Dunst returned invalid notification history JSON.") from error
+    if not isinstance(document, dict) or not isinstance(document.get("data"), list):
+        raise TypeError("Dunst returned an unsupported notification history format.")
+
+    notifications: list[DunstNotification] = []
+    for batch in document["data"]:
+        if not isinstance(batch, list):
+            continue
+        for item in batch:
+            notification = parse_dunst_notification(item, boot_time)
+            if notification is not None:
+                notifications.append(notification)
+    return tuple(sorted(notifications, key=lambda notification: notification.timestamp, reverse=True))
+
+
+def parse_dunst_notification(item: object, boot_time: datetime) -> DunstNotification | None:
+    if not isinstance(item, dict):
+        return None
+    timestamp = dunst_field(item, "timestamp")
+    if not isinstance(timestamp, int):
+        return None
+    application = dunst_plain_text(dunst_field(item, "appname")) or "Unknown application"
+    summary = dunst_plain_text(dunst_field(item, "summary")) or "Notification"
+    body = dunst_plain_text(dunst_field(item, "body"))
+    return DunstNotification(
+        application=application,
+        summary=summary,
+        body=body,
+        timestamp=boot_time + timedelta(microseconds=timestamp),
+    )
+
+
+def dunst_field(item: dict[str, object], name: str) -> object:
+    value = item.get(name)
+    return value.get("data") if isinstance(value, dict) else None
+
+
+def dunst_plain_text(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    text = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]*>", "", text)
+    return " ".join(html.unescape(text).split())
 
 
 def load_shy_mode_settings(path: Path | None = None) -> ShyModeSettings:
@@ -132,6 +209,18 @@ class DunstClient:
 
     def history_pop(self) -> bool:
         return self.runner(["dunstctl", "history-pop"]).returncode == 0
+
+    def history(self) -> DunstHistoryResult:
+        result = self.runner(["dunstctl", "history"])
+        if result.returncode != 0:
+            return DunstHistoryResult(error=result.stderr.strip() or "Dunst history request failed.")
+        try:
+            return DunstHistoryResult(parse_dunst_history(result.stdout, dunst_boot_time()))
+        except (OSError, TypeError, ValueError) as error:
+            return DunstHistoryResult(error=str(error))
+
+    def clear_history(self) -> bool:
+        return self.runner(["dunstctl", "history-clear"]).returncode == 0
 
     def _count(self, kind: str) -> int | None:
         result = self.runner(["dunstctl", "count", kind])
