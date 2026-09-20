@@ -108,6 +108,10 @@ GitHub. The pipeline expects these repository variables:
   commit separately. Merge requests publish alpha builds and
   `develop` publishes RC builds through the nightly package.
 
+See the [Arch Linux integration architecture](../architecture/ARCH_LINUX_INTEGRATION.md)
+for the package contents, channel derivation, AUR handoff, and privilege
+boundaries.
+
 The host migration itself is tracked in
 `docs/work-items/repository-hosting-01-gitlab-cutover.md`.
 

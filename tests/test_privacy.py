@@ -1,7 +1,9 @@
 import subprocess
 import tempfile
 import unittest
+from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import patch
 
 from archie.privacy import (
     DunstClient,
@@ -9,6 +11,7 @@ from archie.privacy import (
     ShyModeSettings,
     format_shy_mode_settings,
     load_shy_mode_settings,
+    parse_dunst_history,
     parse_share_active,
     save_shy_mode_settings,
 )
@@ -233,3 +236,52 @@ class DunstClientTest(unittest.TestCase):
         self.assertIsNone(client.waiting_count())
         self.assertIsNone(client.history_count())
         self.assertFalse(client.history_pop())
+
+    def test_parses_typed_history_and_sorts_newest_first(self) -> None:
+        history = '''{
+            "type": "aa{sv}",
+            "data": [[
+                {"appname": {"data": "Mail"}, "summary": {"data": "Earlier"}, "body": {"data": "First"}, "timestamp": {"data": 1000000}},
+                {"appname": {"data": "Chat"}, "summary": {"data": "<b>New message</b>"}, "body": {"data": "Hello<br/>world &amp; friends"}, "timestamp": {"data": 3000000}}
+            ]]
+        }'''
+
+        notifications = parse_dunst_history(history, datetime(2026, 1, 1, tzinfo=UTC))
+
+        self.assertEqual([notification.application for notification in notifications], ["Chat", "Mail"])
+        self.assertEqual(notifications[0].summary, "New message")
+        self.assertEqual(notifications[0].body, "Hello world & friends")
+        self.assertEqual(notifications[0].timestamp, datetime(2026, 1, 1, 0, 0, 3, tzinfo=UTC))
+
+    def test_skips_invalid_records_and_rejects_invalid_history_shape(self) -> None:
+        history = '{"data":[[{"timestamp":{"data":"bad"}}, {"timestamp":{"data":1000}}]]}'
+        notifications = parse_dunst_history(history, datetime(2026, 1, 1, tzinfo=UTC))
+
+        self.assertEqual(len(notifications), 1)
+        self.assertEqual(notifications[0].application, "Unknown application")
+        with self.assertRaisesRegex(TypeError, "unsupported"):
+            parse_dunst_history("[]", datetime(2026, 1, 1, tzinfo=UTC))
+
+    def test_history_preserves_command_and_parse_errors(self) -> None:
+        failed = DunstClient(
+            lambda command: subprocess.CompletedProcess(command, 1, "", "Dunst unavailable")
+        ).history()
+        malformed = DunstClient(
+            lambda command: subprocess.CompletedProcess(command, 0, "not json", "")
+        ).history()
+
+        self.assertEqual(failed.error, "Dunst unavailable")
+        self.assertEqual(malformed.error, "Dunst returned invalid notification history JSON.")
+
+    def test_history_and_clear_use_dunstctl(self) -> None:
+        calls: list[list[str]] = []
+
+        def runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0, '{"data":[]}', "")
+
+        with patch("archie.privacy.dunst_boot_time", return_value=datetime(2026, 1, 1, tzinfo=UTC)):
+            client = DunstClient(runner)
+            self.assertEqual(client.history().notifications, ())
+        self.assertTrue(client.clear_history())
+        self.assertEqual(calls, [["dunstctl", "history"], ["dunstctl", "history-clear"]])

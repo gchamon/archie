@@ -52,9 +52,41 @@ supposed to be system and backup agnostic and should work in any system.
 
 ### 1.0 Installing Arch Linux
 
-This guide isn't prescriptive about how to install Arch Linux, but it requires
-the installation of the desktop profile with hyprland by using
-[archinstall](https://github.com/archlinux/archinstall).
+For a fresh installation from the official Arch Linux ISO, start the guided
+installer with the Archie plugin from an immutable Archie release tag:
+
+```bash
+archinstall --plugin-url https://gitlab.com/gabriel.chamon/archie/-/raw/<release>/archinstall/plugin.py
+```
+
+For example, from the `main` branch:
+
+```bash
+archinstall --plugin-url https://gitlab.com/gabriel.chamon/archie/-/raw/main/archinstall/plugin.py
+```
+
+Select `Archie` under `Profile > Desktop`. The profile supports Archinstall
+4.4.x, an online x86_64 UEFI installation, and exactly one administrative user.
+Archinstall continues to own disk layout, encryption, bootloader, kernels,
+networking, locale, graphics driver selection, and the base package install.
+Archie builds its AUR packages as the selected user and installs only verified
+artifacts as root. AUR is outside Archinstall's support boundary; review the
+package sources and the resulting `/var/log/archie/provision.log` before
+relying on this path.
+
+For the implementation boundaries behind the plugin, provisioning scripts,
+Arch package, and AUR publication, see the
+[Arch Linux integration architecture](../architecture/ARCH_LINUX_INTEGRATION.md).
+
+Provisioning completes before Archinstall exits. It leaves the persistent
+checkout at `~/archie`, deploys machine-local templates without inventing
+hardware values, and enables SDDM, the Archie theme, lid-close handling, and
+power-button confirmation. Review `device.lua`, `hyprpaper.conf`, monitor
+geometry, wallpaper mappings, and brightness devices after the first boot.
+
+Use [QUICKSTART.md](./QUICKSTART.md) and the remaining sections of this guide
+when Archie is being added to an already installed Arch system. The plugin
+does not support offline installation or multiple administrative users.
 
 ### 1.1 Install Essential Packages
 

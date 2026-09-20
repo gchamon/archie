@@ -92,5 +92,6 @@ uv tool upgrade --all
 Repo-internal planning and design material lives under:
 
 - [docs/work-items/README.md](docs/work-items/README.md)
+- [docs/architecture/ARCH_LINUX_INTEGRATION.md](docs/architecture/ARCH_LINUX_INTEGRATION.md)
 - [docs/architecture/decisions/README.md](docs/architecture/decisions/README.md)
 - [docs/README.md](docs/README.md)

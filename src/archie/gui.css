@@ -88,3 +88,24 @@
 .archie-shortcuts-error {
     color: #f38ba8;
 }
+
+.archie-notification-row {
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.archie-notification-application,
+.archie-notification-summary {
+    font-weight: 700;
+}
+
+.archie-notification-timestamp,
+.archie-notification-body,
+.archie-notification-message {
+    opacity: 0.72;
+}
+
+.archie-notification-error {
+    color: #f38ba8;
+    opacity: 1;
+}

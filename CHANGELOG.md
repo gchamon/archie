@@ -3,6 +3,9 @@
 <!--toc:start-->
 
 - [Changelog](#changelog)
+  - [[0.3.0] - 2026-09-19](#030-2026-09-19)
+    - [Changed](#changed)
+    - [Added](#added)
   - [[0.2.0] - 2026-09-01](#020-2026-09-01)
     - [Changed](#changed)
     - [Added](#added)
@@ -20,6 +23,17 @@
     - [Added](#added-3)
   - [[1.0] - 2025-06-12](#10-2025-06-12)
 <!--toc:end-->
+
+## [0.3.0] - 2026-09-19
+
+### Changed
+
+- Simplify Archinstall provisioning around the shared package manifest and direct target-user handoff ([Archinstall integration](docs/architecture/ARCH_LINUX_INTEGRATION.md))
+
+### Added
+
+- Add a Notifications tab for browsing, searching, refreshing, and clearing Dunst history ([notification controls](https://gitlab.com/gabriel.chamon/archie/-/commit/2ccf7d1b2175bd3ecabab6027d51b243e68b670f))
+- Add manual `yay-bin` bootstrapping to the Archinstall AUR provisioning flow ([Archinstall packages](https://gitlab.com/gabriel.chamon/archie/-/commit/e40ecf2))
 
 ## [0.2.0] - 2026-09-01
 
@@ -92,6 +106,7 @@ _If you are upgrading: please see [docs/user/MIGRATING.md](docs/user/MIGRATING.m
 _First release._
 
 [2.0]: https://gitlab.com/gabriel.chamon/archie/-/tags/v2.0
+[0.3.0]: https://gitlab.com/gabriel.chamon/archie/-/tags/v0.3.0
 [0.2.0]: https://gitlab.com/gabriel.chamon/archie/-/tags/v0.2.0
 [1.2]: https://gitlab.com/gabriel.chamon/archie/-/tags/v1.2
 [1.1]: https://gitlab.com/gabriel.chamon/archie/-/tags/v1.1

@@ -1,4 +1,5 @@
 import argparse
+import html
 import importlib.resources
 import os
 import signal
@@ -26,7 +27,12 @@ from archie.monitor import (
     list_monitors,
     restore_monitors,
 )
-from archie.privacy import ShyModeSettings
+from archie.privacy import (
+    DunstClient,
+    DunstHistoryResult,
+    DunstNotification,
+    ShyModeSettings,
+)
 from archie.store import STORE_DATABASE_PATH
 from archie.system import (
     CALENDAR_CLICK_LEFT,
@@ -65,6 +71,7 @@ SHELL_COMMANDS_PATHS = [
     Path("/usr/share/doc/archie-cli/ZSH_COMMANDS.md"),
 ]
 BRIGHTNESS_DEBOUNCE_MS = 500
+NOTIFICATION_HISTORY_POLL_SECONDS = 5
 
 
 @dataclass(frozen=True)
@@ -131,6 +138,11 @@ class ArchieControlsWindow:
         self.pending_timeout_id: int | None = None
         self.brightness_timeout_ids: dict[str, int] = {}
         self.documentation_tabs: dict[str, tuple[str, object]] = {}
+        self.notification_history: tuple[DunstNotification, ...] = ()
+        self.notification_history_error: str | None = None
+        self.notification_history_loading = False
+        self.notification_live_updates = True
+        self.notification_poll_timeout_id: int | None = None
         self.store_write_warning: str | None = None
         self.settings_loading = False
         self.settings_visible = False
@@ -246,31 +258,81 @@ class ArchieControlsWindow:
         self.window.present()
 
     def _on_close_request(self, _window) -> bool:
+        self.stop_notification_polling()
         self.application.window = None
         return False
 
     def build_content(self):
         Gtk = self.Gtk
-        notebook = Gtk.Notebook()
-        notebook.set_tab_pos(Gtk.PositionType.TOP)
-        notebook.append_page(self.build_system_settings_tab(), Gtk.Label(label="System settings"))
-        notebook.append_page(
-            self.build_documentation_table_tab(
-                tab_id="keyboard-shortcuts",
-                search_placeholder="Search keyboard shortcuts",
-                read_markdown=read_keyboard_shortcuts_markdown,
-            ),
-            Gtk.Label(label="Keyboard shortcuts"),
-        )
+        self.notebook = Gtk.Notebook()
+        self.notebook.set_tab_pos(Gtk.PositionType.TOP)
+        self.notebook.append_page(self.build_system_settings_tab(), Gtk.Label(label="System settings"))
+        self.notifications_tab = self.build_notifications_tab()
+        self.notebook.append_page(self.notifications_tab, Gtk.Label(label="Notifications"))
+        self.notebook.append_page(self.build_commands_shortcuts_tab(), Gtk.Label(label="Commands & shortcuts"))
+        self.notebook.connect("switch-page", self.on_main_tab_switched)
+        return self.notebook
+
+    def build_commands_shortcuts_tab(self):
+        notebook = self.Gtk.Notebook()
+        notebook.set_tab_pos(self.Gtk.PositionType.TOP)
         notebook.append_page(
             self.build_documentation_table_tab(
                 tab_id="shell-commands",
                 search_placeholder="Search shell commands",
                 read_markdown=read_shell_commands_markdown,
             ),
-            Gtk.Label(label="Shell commands"),
+            self.Gtk.Label(label="Shell commands"),
+        )
+        notebook.append_page(
+            self.build_documentation_table_tab(
+                tab_id="keyboard-shortcuts",
+                search_placeholder="Search keyboard shortcuts",
+                read_markdown=read_keyboard_shortcuts_markdown,
+            ),
+            self.Gtk.Label(label="Keyboard shortcuts"),
         )
         return notebook
+
+    def build_notifications_tab(self):
+        Gtk = self.Gtk
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        root.set_margin_top(12)
+        root.set_margin_bottom(12)
+        root.set_margin_start(12)
+        root.set_margin_end(12)
+
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.notification_search = Gtk.SearchEntry()
+        self.notification_search.set_placeholder_text("Search notifications")
+        self.notification_search.set_hexpand(True)
+        self.notification_search.connect("search-changed", self.on_notification_search_changed)
+        self.notification_live_button = Gtk.ToggleButton(label="Live updates: on")
+        self.notification_live_button.set_active(True)
+        self.notification_live_button.connect("toggled", self.on_notification_live_toggled)
+        self.notification_refresh_button = Gtk.Button(label="Refresh")
+        self.notification_refresh_button.connect("clicked", self.on_notification_refresh_clicked)
+        self.notification_clear_button = Gtk.Button(label="Clear history")
+        self.notification_clear_button.add_css_class("destructive-action")
+        self.notification_clear_button.connect("clicked", self.on_notification_clear_clicked)
+        toolbar.append(self.notification_search)
+        toolbar.append(self.notification_live_button)
+        toolbar.append(self.notification_refresh_button)
+        toolbar.append(self.notification_clear_button)
+        root.append(toolbar)
+
+        self.notification_history_content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.notification_history_content.set_margin_top(2)
+        self.notification_history_content.set_margin_bottom(2)
+        self.notification_history_content.set_margin_start(2)
+        self.notification_history_content.set_margin_end(2)
+        self.notification_history_scroller = Gtk.ScrolledWindow()
+        self.notification_history_scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.notification_history_scroller.set_vexpand(True)
+        self.notification_history_scroller.set_child(self.notification_history_content)
+        root.append(self.notification_history_scroller)
+        self.render_notification_history()
+        return root
 
     def build_system_settings_tab(self):
         Gtk = self.Gtk
@@ -407,7 +469,8 @@ class ArchieControlsWindow:
         grid.add_css_class("archie-shortcuts-grid")
         for row_index, row in enumerate([header, *body]):
             for column_index, value in enumerate(row):
-                label = self.Gtk.Label(label=value)
+                label = self.Gtk.Label()
+                label.set_markup(highlight_matches_markup(value, query))
                 label.set_xalign(0)
                 label.set_yalign(0)
                 label.set_wrap(True)
@@ -426,6 +489,175 @@ class ArchieControlsWindow:
         markdown, content = tab_state
         self.clear_box(content)
         self.render_documentation_tables(markdown, content, search_entry.get_text())
+
+    def on_main_tab_switched(self, _notebook, page, _page_num: int) -> None:
+        if page is self.notifications_tab:
+            self.refresh_notification_history()
+            self.start_notification_polling()
+        else:
+            self.stop_notification_polling()
+
+    def start_notification_polling(self) -> None:
+        if not self.notification_live_updates or self.notification_poll_timeout_id is not None:
+            return
+        self.notification_poll_timeout_id = self.GLib.timeout_add_seconds(
+            NOTIFICATION_HISTORY_POLL_SECONDS,
+            self.poll_notification_history,
+        )
+
+    def stop_notification_polling(self) -> None:
+        if self.notification_poll_timeout_id is not None:
+            self.GLib.source_remove(self.notification_poll_timeout_id)
+            self.notification_poll_timeout_id = None
+
+    def poll_notification_history(self) -> bool:
+        if not self.notification_live_updates:
+            self.notification_poll_timeout_id = None
+            return False
+        self.refresh_notification_history()
+        return True
+
+    def refresh_notification_history(self) -> None:
+        if self.notification_history_loading:
+            return
+        self.notification_history_loading = True
+        self.notification_refresh_button.set_sensitive(False)
+        self.render_notification_history()
+        self.run_cli_async(load_notification_history, self.on_notification_history_loaded)
+
+    def on_notification_history_loaded(self, result: DunstHistoryResult) -> bool:
+        self.notification_history_loading = False
+        self.notification_refresh_button.set_sensitive(True)
+        if result.error is None:
+            self.notification_history = result.notifications
+            self.notification_history_error = None
+        else:
+            self.notification_history_error = result.error
+            self.set_status(f"Could not load notification history: {result.error}")
+        self.render_notification_history()
+        return False
+
+    def on_notification_search_changed(self, _entry) -> None:
+        self.render_notification_history()
+
+    def on_notification_live_toggled(self, button) -> None:
+        self.notification_live_updates = button.get_active()
+        button.set_label(f"Live updates: {'on' if self.notification_live_updates else 'off'}")
+        if self.notification_live_updates:
+            self.refresh_notification_history()
+            self.start_notification_polling()
+        else:
+            self.stop_notification_polling()
+
+    def on_notification_refresh_clicked(self, _button) -> None:
+        self.refresh_notification_history()
+
+    def render_notification_history(self) -> None:
+        self.clear_box(self.notification_history_content)
+        if self.notification_history_loading and not self.notification_history:
+            self.render_notification_history_message("Loading notification history…")
+            return
+        if self.notification_history_error is not None and not self.notification_history:
+            self.render_notification_history_message(
+                f"Could not load notification history: {self.notification_history_error}",
+                error=True,
+            )
+            return
+        notifications = filter_notifications(
+            self.notification_history,
+            self.notification_search.get_text(),
+        )
+        if not notifications:
+            message = "No notifications match this search." if self.notification_history else "No notification history."
+            self.render_notification_history_message(message)
+            return
+        if self.notification_history_error is not None:
+            self.render_notification_history_message(
+                f"Showing previous results. Refresh failed: {self.notification_history_error}",
+                error=True,
+            )
+        for index, notification in enumerate(notifications):
+            if index:
+                self.notification_history_content.append(self.Gtk.Separator())
+            self.notification_history_content.append(
+                self.build_notification_row(notification, self.notification_search.get_text())
+            )
+
+    def render_notification_history_message(self, message: str, *, error: bool = False) -> None:
+        label = self.Gtk.Label(label=message)
+        label.set_xalign(0)
+        label.set_wrap(True)
+        label.set_vexpand(True)
+        label.set_valign(self.Gtk.Align.CENTER)
+        label.add_css_class("archie-notification-message")
+        if error:
+            label.add_css_class("archie-notification-error")
+        self.notification_history_content.append(label)
+
+    def build_notification_row(self, notification: DunstNotification, query: str = ""):
+        row = self.Gtk.Box(orientation=self.Gtk.Orientation.VERTICAL, spacing=3)
+        row.add_css_class("archie-notification-row")
+        header = self.Gtk.Box(orientation=self.Gtk.Orientation.HORIZONTAL, spacing=8)
+        application = self.Gtk.Label()
+        application.set_markup(highlight_matches_markup(notification.application, query))
+        application.set_xalign(0)
+        application.set_hexpand(True)
+        application.set_ellipsize(self.Pango.EllipsizeMode.END)
+        application.add_css_class("archie-notification-application")
+        timestamp = self.Gtk.Label()
+        timestamp.set_markup(
+            highlight_matches_markup(notification.timestamp.strftime("%b %-d, %H:%M"), query)
+        )
+        timestamp.set_xalign(1)
+        timestamp.add_css_class("archie-notification-timestamp")
+        header.append(application)
+        header.append(timestamp)
+        row.append(header)
+        summary = self.Gtk.Label()
+        summary.set_markup(highlight_matches_markup(notification.summary, query))
+        summary.set_xalign(0)
+        summary.set_wrap(True)
+        summary.add_css_class("archie-notification-summary")
+        row.append(summary)
+        if notification.body:
+            body = self.Gtk.Label()
+            body.set_markup(highlight_matches_markup(notification.body, query))
+            body.set_xalign(0)
+            body.set_wrap(True)
+            body.add_css_class("archie-notification-body")
+            row.append(body)
+        return row
+
+    def on_notification_clear_clicked(self, _button) -> None:
+        dialog = self.Gtk.AlertDialog(message="Clear all notification history?")
+        dialog.set_detail("This permanently removes every notification stored by Dunst.")
+        dialog.set_buttons(["Cancel", "Clear history"])
+        dialog.set_cancel_button(0)
+        dialog.set_default_button(0)
+        dialog.set_modal(True)
+        dialog.choose(self.window, None, self.on_notification_clear_response)
+
+    def on_notification_clear_response(self, dialog, result) -> None:
+        try:
+            response = dialog.choose_finish(result)
+        except Exception:  # noqa: BLE001
+            return
+        if response != 1:
+            return
+        self.notification_clear_button.set_sensitive(False)
+        self.run_cli_async(clear_notification_history, self.on_notification_history_cleared)
+
+    def on_notification_history_cleared(self, cleared: bool) -> bool:
+        self.notification_clear_button.set_sensitive(True)
+        if not cleared:
+            self.set_status("Could not clear notification history.")
+            return False
+        self.notification_history = ()
+        self.notification_history_error = None
+        self.set_status("Notification history cleared.")
+        self.render_notification_history()
+        self.refresh_notification_history()
+        return False
 
     def refresh(self) -> bool:
         if self.settings_loading:
@@ -1333,6 +1565,14 @@ def get_notification_sound() -> str:
     return result.stdout.strip() if result.returncode == 0 else "default"
 
 
+def load_notification_history() -> DunstHistoryResult:
+    return DunstClient().history()
+
+
+def clear_notification_history() -> bool:
+    return DunstClient().clear_history()
+
+
 def get_shy_mode_settings() -> ShyModeSettings:
     result = run_cli(["archie", "system", "get", "shy-mode"])
     if result.returncode != 0:
@@ -1574,6 +1814,60 @@ def filter_documentation_rows(rows: Sequence[Sequence[str]], query: str) -> list
         for row in rows
         if normalized_query in " ".join(row).casefold()
     ]
+
+
+def filter_notifications(
+    notifications: Sequence[DunstNotification], query: str
+) -> list[DunstNotification]:
+    normalized_query = query.casefold().strip()
+    if not normalized_query:
+        return list(notifications)
+    return [
+        notification
+        for notification in notifications
+        if normalized_query in notification.search_text().casefold()
+    ]
+
+
+def highlight_matches_markup(text: str, query: str) -> str:
+    normalized_query = query.casefold().strip()
+    if not normalized_query:
+        return html.escape(text, quote=False)
+
+    folded_parts: list[str] = []
+    folded_positions: list[int] = []
+    for index, character in enumerate(text):
+        folded = character.casefold()
+        folded_parts.append(folded)
+        folded_positions.extend([index] * len(folded))
+    folded_text = "".join(folded_parts)
+
+    ranges: list[tuple[int, int]] = []
+    start = 0
+    while (match_start := folded_text.find(normalized_query, start)) != -1:
+        match_end = match_start + len(normalized_query)
+        if match_end > len(folded_positions):
+            break
+        original_start = folded_positions[match_start]
+        original_end = folded_positions[match_end - 1] + 1
+        ranges.append((original_start, original_end))
+        start = match_end
+
+    if not ranges:
+        return html.escape(text, quote=False)
+
+    chunks: list[str] = []
+    cursor = 0
+    for original_start, original_end in ranges:
+        chunks.append(html.escape(text[cursor:original_start], quote=False))
+        chunks.append(
+            '<span background="#f9e2af" foreground="#1e1e2e" weight="bold">'
+            f"{html.escape(text[original_start:original_end], quote=False)}"
+            "</span>"
+        )
+        cursor = original_end
+    chunks.append(html.escape(text[cursor:], quote=False))
+    return "".join(chunks)
 
 
 filter_shortcut_rows = filter_documentation_rows

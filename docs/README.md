@@ -14,6 +14,8 @@ This directory holds Archie documentation and repo-internal working material.
 
 Relevant operational guides include:
 
+- [Arch Linux integration architecture](architecture/ARCH_LINUX_INTEGRATION.md):
+  Archinstall, provisioning, Arch package, and AUR integration boundaries.
 - `user/GUIDE.md`: main Archie installation and deployment handbook.
 - `user/DEVELOPMENT.md`: host-side development tooling and virtualization setup.
 - `development/DEV_ENV.md`: Incus VM bootstrap flow for disposable Archie

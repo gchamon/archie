@@ -3,7 +3,7 @@
   image: ghcr.io/astral-sh/uv:python3.14-trixie-slim@sha256:bebc7d6de6dd015a483903461eaedea12805728be6f9a044ca7106a2f7e11ddf
   before_script:
     - apt-get update
-    - apt-get install -y --no-install-recommends gcc git libatomic1 libcairo2-dev libgirepository-2.0-dev pkg-config python3-dev gir1.2-gtk-4.0
+    - apt-get install -y --no-install-recommends gcc git jq libatomic1 libcairo2-dev libgirepository-2.0-dev pkg-config python3-dev gir1.2-gtk-4.0
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
     - uv sync --locked --group dev
   rules:
