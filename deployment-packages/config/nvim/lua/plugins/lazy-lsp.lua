@@ -1,18 +1,10 @@
 return {
   "dundalek/lazy-lsp.nvim",
   dependencies = { "neovim/nvim-lspconfig" },
-  opts = {
-    servers = {
-      bashls = {
-        settings = {
-          filetypes = { "sh", "zsh" },
-        },
-      },
-    },
-  },
   config = function()
     require("lazy-lsp").setup({
       excluded_servers = {
+        "bashls", -- configured by LazyVim's nvim-lspconfig spec
         "ccls", -- prefer clangd
         "denols", -- prefer eslint and ts_ls
         "docker_compose_language_service", -- yamlls should be enough?

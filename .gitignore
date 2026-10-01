@@ -1,3 +1,5 @@
+lazy-lock.json
+*lock.kitty.conf*
 docs/codex-sessions/**/*.jsonl
 .venv/
 .state/

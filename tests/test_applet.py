@@ -37,8 +37,22 @@ class AppletTooltipTest(unittest.TestCase):
         self.assertEqual(
             format_tooltip(
                 {
-                    "brightness": [{"name": "amdgpu_bl1", "percent": 71}],
-                    "monitors": [{"name": "eDP-1", "label": "Built-in display", "enabled": True, "focused": True}],
+                    "brightness": [
+                        {"name": "amdgpu_bl1", "percent": 71},
+                        {"name": "acpi_video0", "percent": 68},
+                    ],
+                    "monitors": [
+                        {"name": "eDP-1", "label": "Built-in display", "enabled": True, "focused": True},
+                        {"name": "HDMI-A-1", "label": "External display", "enabled": True, "focused": False},
+                    ],
+                    "peripherals": {
+                        "bluetooth": ["WH-1000XM5", "Keyboard"],
+                        "usb": ["Integrated Camera", "USB mouse"],
+                        "network": [
+                            {"device": "wlan0", "type": "wifi", "connection": "Home"},
+                            {"device": "enp2s0", "type": "ethernet", "connection": "Office"},
+                        ],
+                    },
                     "lid-close-behavior": "lock",
                     "notifications": "off",
                     "notification-sounds": "on",
@@ -49,8 +63,21 @@ class AppletTooltipTest(unittest.TestCase):
                 ShyModeViewState(False, False, False, False, False),
             ),
             "Hardware\n"
-            "  Brightness: amdgpu_bl1 71%\n"
-            "  Monitors: eDP-1 Built-in display: enabled (focused)\n"
+            "  Brightness:\n"
+            "    - amdgpu_bl1 71%\n"
+            "    - acpi_video0 68%\n"
+            "  Monitors:\n"
+            "    - eDP-1 Built-in display: enabled (focused)\n"
+            "    - HDMI-A-1 External display: enabled\n"
+            "  Bluetooth:\n"
+            "    - WH-1000XM5\n"
+            "    - Keyboard\n"
+            "  USB:\n"
+            "    - Integrated Camera\n"
+            "    - USB mouse\n"
+            "  Network:\n"
+            "    - wifi wlan0: Home\n"
+            "    - ethernet enp2s0: Office\n"
             "\n"
             "Desktop\n"
             "  Lid close: lock\n"
@@ -82,6 +109,9 @@ class AppletTooltipTest(unittest.TestCase):
             "Hardware\n"
             "  Brightness: unavailable\n"
             "  Monitors: unavailable\n"
+            "  Bluetooth: unavailable\n"
+            "  USB: unavailable\n"
+            "  Network: unavailable\n"
             "\n"
             "Desktop\n"
             "  Lid close: unknown\n"
@@ -386,6 +416,7 @@ def make_gui_snapshot() -> GuiSettingsSnapshot:
         notification_sounds="on",
         notification_sound="default",
         shy_mode=ShyModeSettings(),
+        share_state="off",
         kdeconnect="on",
         power_profile="balanced",
             calendar_left_preset="unset",
@@ -403,4 +434,5 @@ def make_gui_snapshot() -> GuiSettingsSnapshot:
         waybar_menu_font_size=20,
         waybar_tooltip_font_family="MesloLGM Nerd Font",
         waybar_tooltip_font_size=20,
+        peripherals={"bluetooth": ["WH-1000XM5"], "usb": [], "network": []},
     )

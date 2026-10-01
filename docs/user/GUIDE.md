@@ -282,6 +282,44 @@ Waybar theme templates are bundled with the `archie-cli` package under
 real mutable copies materialized from those templates, so changing the theme
 does not modify a checked-out Stow package.
 
+
+The memory indicator shows RAM usage as a percentage; its tooltip starts with
+used/total RAM in GiB, followed by up to five process-name groups ranked by
+resident memory, one per line with usage amounts aligned.
+
+The disk indicator keeps the root filesystem usage percentage in the bar. Its
+tooltip lists non-temporary local and network mount points with aligned
+used/total capacity and percentage columns.
+
+The sound indicator shows the default output level and its tooltip lists the
+default output and input devices with label, device, and volume/mute columns
+aligned using fixed-width fields. It also reports a webcam audio source when
+one is exposed by PulseAudio-compatible audio tools. Click to open
+`pavucontrol`, right-click to toggle output mute, and scroll to change output
+volume. Long device descriptions are middle-truncated to their first and last
+12 characters.
+
+The battery indicator shows charge and uses low-charge styling. Its tooltip
+reports UPower's  estimated time to full (TTF) while charging, estimated
+remaining runtime, battery health and charge cycles when available, plus system
+uptime, last boot time and uptime rounded to days. While UPower reports an
+online power adapter, estimated runtime is shown as a dash instead of
+`unavailable`.
+
+The Archie applet's Hardware tooltip lists connected Bluetooth devices,
+non-root-hub USB devices and connected Ethernet/Wi-Fi networks. The Dashboard
+tab presents the same hardware overview alongside Archie-managed settings and
+desktop features. To hide built-in USB devices from the list, open System
+settings, unplug external USB devices, then click **Unplug devices and learn
+built-in USB**. Archie remembers USB serial identities when available, or the
+USB port for devices without a serial number. Reconnect external devices to
+have them appear in the list. The selected main tab is remembered when System
+settings is reopened.
+
+The System settings window ends with a Quick links tab. The repository and
+profile URLs come from the `[project.urls]` entries in the root `pyproject.toml`,
+so a fork can update those links in one place.
+
 ### 2.2 System specific configuration
 
 Some files aren't managed by Stow because they are machine-specific local files.
@@ -337,6 +375,29 @@ with `acpi_backlight` kernel parameter. For more information see [ACPI
 backlight control](#acpi-backlight-control) and archlinux docs on [Backlight's
 kernel command-line
 options](https://wiki.archlinux.org/title/Backlight#Kernel_command-line_options).
+
+#### Network-specific Kitty SSH configuration
+
+Keep hostnames and other network-specific Kitty SSH settings out of Archie’s
+tracked configuration. Kitty’s SSH kitten bootstraps the remote connection
+before starting the login shell, so the SSH server does not treat it as a normal
+interactive login and does not display its native MOTD, login notice, or
+authentication banner. Kitty’s SSH kitten cannot request those server-side
+greetings during bootstrap.
+
+For a host that should use native OpenSSH and display its server-configured
+greeting, create `~/.config/kitty/ssh.local.conf`:
+
+```conf
+hostname example.internal
+delegate ssh
+```
+
+Replace `example.internal` with the exact host token you pass to `sshk` or
+`kitten ssh`. The example is a placeholder, not an Archie host. Kitty delegates
+only matching connections to OpenSSH; other hosts continue using the SSH
+kitten. Keep `ssh.local.conf` local and untracked. Archie’s `ssh.conf` includes
+it optionally, and Stow does not manage this file.
 
 ### 2.3 Zsh setup
 

@@ -41,6 +41,7 @@ class DunstNotification:
     summary: str
     body: str
     timestamp: datetime
+    notification_id: int | None = None
 
     def search_text(self) -> str:
         return f"{self.application} {self.summary} {self.body} {self.timestamp.isoformat()}"
@@ -85,6 +86,7 @@ def parse_dunst_notification(item: object, boot_time: datetime) -> DunstNotifica
     timestamp = dunst_field(item, "timestamp")
     if not isinstance(timestamp, int):
         return None
+    notification_id = dunst_field(item, "id")
     application = dunst_plain_text(dunst_field(item, "appname")) or "Unknown application"
     summary = dunst_plain_text(dunst_field(item, "summary")) or "Notification"
     body = dunst_plain_text(dunst_field(item, "body"))
@@ -93,6 +95,7 @@ def parse_dunst_notification(item: object, boot_time: datetime) -> DunstNotifica
         summary=summary,
         body=body,
         timestamp=boot_time + timedelta(microseconds=timestamp),
+        notification_id=notification_id if isinstance(notification_id, int) else None,
     )
 
 
@@ -207,8 +210,11 @@ class DunstClient:
     def history_count(self) -> int | None:
         return self._count("history")
 
-    def history_pop(self) -> bool:
-        return self.runner(["dunstctl", "history-pop"]).returncode == 0
+    def history_pop(self, notification_id: int | None = None) -> bool:
+        command = ["dunstctl", "history-pop"]
+        if notification_id is not None:
+            command.append(str(notification_id))
+        return self.runner(command).returncode == 0
 
     def history(self) -> DunstHistoryResult:
         result = self.runner(["dunstctl", "history"])
@@ -221,6 +227,7 @@ class DunstClient:
 
     def clear_history(self) -> bool:
         return self.runner(["dunstctl", "history-clear"]).returncode == 0
+
 
     def _count(self, kind: str) -> int | None:
         result = self.runner(["dunstctl", "count", kind])

@@ -1,7 +1,9 @@
 import argparse
 import html
+import importlib.metadata
 import importlib.resources
 import os
+import shlex
 import signal
 import subprocess
 import threading
@@ -32,8 +34,9 @@ from archie.privacy import (
     DunstHistoryResult,
     DunstNotification,
     ShyModeSettings,
+    detect_share_active,
 )
-from archie.store import STORE_DATABASE_PATH
+from archie.store import GUI_MAIN_TAB, STORE_DATABASE_PATH, PolicyStore, StoreError
 from archie.system import (
     CALENDAR_CLICK_LEFT,
     CALENDAR_CLICK_RIGHT,
@@ -53,6 +56,9 @@ from archie.system import (
     ON_VALUE,
     POWER_PROFILES,
     WAYBAR_THEMES,
+    capture_builtin_usb_devices,
+    collect_connected_peripherals,
+    format_peripherals_status,
     get_calendar_settings,
     get_datetime_settings,
 )
@@ -60,6 +66,53 @@ from archie.version import applet_update_required, installed_archie_version
 
 LID_BEHAVIORS = [HIBERNATE_MODE, LOCK_MODE, NONE_MODE]
 TOGGLE_VALUES = [ON_VALUE, OFF_VALUE]
+MAIN_TAB_IDS = (
+    "dashboard",
+    "system-settings",
+    "notifications",
+    "commands-shortcuts",
+    "quick-links",
+)
+
+def load_project_links() -> dict[str, str]:
+    project_urls = {}
+    for entry in importlib.metadata.metadata("archie").get_all("Project-URL", []):
+        label, separator, url = entry.partition(", ")
+        if separator:
+            project_urls[label] = url
+    return {
+        "repository": project_urls["Repository"],
+        "profile": project_urls["GitHub profile"],
+    }
+
+
+def main_tab_index(tab_id: str) -> int:
+    try:
+        return MAIN_TAB_IDS.index(tab_id)
+    except ValueError:
+        return 0
+
+
+def main_tab_id(page_index: int) -> str:
+    if 0 <= page_index < len(MAIN_TAB_IDS):
+        return MAIN_TAB_IDS[page_index]
+    return MAIN_TAB_IDS[0]
+
+
+def load_main_tab_index(store: PolicyStore | None = None) -> int:
+    try:
+        return main_tab_index((store or PolicyStore()).get(GUI_MAIN_TAB))
+    except StoreError:
+        return 0
+
+
+def save_main_tab(page_index: int, store: PolicyStore | None = None) -> None:
+    try:
+        (store or PolicyStore()).set(GUI_MAIN_TAB, main_tab_id(page_index))
+    except StoreError:
+        return
+
+
 KEYBOARD_SHORTCUTS_PATHS = [
     Path.cwd() / "docs/user/KEYBOARD_SHORTCUTS.md",
     Path(__file__).resolve().parents[2] / "docs/user/KEYBOARD_SHORTCUTS.md",
@@ -72,6 +125,73 @@ SHELL_COMMANDS_PATHS = [
 ]
 BRIGHTNESS_DEBOUNCE_MS = 500
 NOTIFICATION_HISTORY_POLL_SECONDS = 5
+NOTIFICATION_BODY_MAX_HEIGHT = 480
+
+
+def notification_shell_command(notification: DunstNotification) -> str:
+    message = "\n".join(
+        part for part in (notification.summary, notification.body) if part
+    )
+    return f"printf '%s\\n' {shlex.quote(message)}"
+
+def format_notification_data(notification: DunstNotification) -> str:
+    fields = [
+        f"Application: {notification.application}",
+        f"Summary: {notification.summary}",
+        f"Body: {notification.body}",
+        f"Timestamp: {notification.timestamp.isoformat()}",
+    ]
+    if notification.notification_id is not None:
+        fields.append(f"Dunst ID: {notification.notification_id}")
+    return "\n".join(fields)
+
+
+def build_dashboard_information(
+    snapshot: GuiSettingsSnapshot,
+) -> tuple[tuple[tuple[str, tuple[str, ...]], ...], str, str]:
+    brightness = parse_brightness_devices(snapshot.brightness_result.stdout)
+    brightness_text = (
+        ", ".join(f"{device.name} {device.percent}%" for device in brightness)
+        if snapshot.brightness_result.returncode == 0 and brightness
+        else "unavailable"
+    )
+    monitor_text = ", ".join(
+        f"{monitor.name} {monitor.label}: "
+        f"{'enabled' if monitor.enabled else 'disabled'}"
+        f"{' (focused)' if monitor.focused else ''}"
+        for monitor in snapshot.monitors
+    ) or "unavailable"
+    sections = (
+        (
+            "Hardware",
+            (
+                f"Brightness: {brightness_text}",
+                f"Monitors: {monitor_text}",
+                *format_peripherals_status({"peripherals": snapshot.peripherals}),
+            ),
+        ),
+        (
+            "Current Archie configuration",
+            (
+                f"Lid close behavior: {snapshot.lid_behavior}",
+                f"KDE Connect: {snapshot.kdeconnect}",
+                f"Power profile: {snapshot.power_profile}",
+                f"Waybar theme: {snapshot.waybar_theme}",
+                f"Notifications: {snapshot.notifications}",
+                f"Notification sounds: {snapshot.notification_sounds}",
+                f"Share: {snapshot.share_state}",
+                f"Shy mode: {'on' if snapshot.shy_mode.enabled else 'off'}",
+            ),
+        ),
+    )
+    version_line = f"Archie version: {installed_archie_version()}"
+    copy_lines: list[str] = []
+    for title, lines in sections:
+        if copy_lines:
+            copy_lines.append("")
+        copy_lines.extend((title, *lines))
+    copy_lines.extend(("", version_line))
+    return sections, version_line, "\n".join(copy_lines)
 
 
 @dataclass(frozen=True)
@@ -139,6 +259,7 @@ class ArchieControlsWindow:
         self.brightness_timeout_ids: dict[str, int] = {}
         self.documentation_tabs: dict[str, tuple[str, object]] = {}
         self.notification_history: tuple[DunstNotification, ...] = ()
+        self.expanded_notifications: set[DunstNotification] = set()
         self.notification_history_error: str | None = None
         self.notification_history_loading = False
         self.notification_live_updates = True
@@ -151,6 +272,19 @@ class ArchieControlsWindow:
         self.settings_refresh_pending = False
         self.brightness_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.monitor_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.builtin_usb_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.builtin_usb_button = Gtk.Button(label="Unplug devices and save built-in USB")
+        self.builtin_usb_button.set_tooltip_text(
+            "Save the USB devices currently connected as built-in devices to hide."
+        )
+        self.builtin_usb_button.connect("clicked", self.on_capture_builtin_usb_clicked)
+        self.builtin_usb_status = Gtk.Label(
+            label="Unplug external USB devices before clicking."
+        )
+        self.builtin_usb_status.set_xalign(0)
+        self.builtin_usb_status.set_wrap(True)
+        self.builtin_usb_box.append(self.builtin_usb_button)
+        self.builtin_usb_box.append(self.builtin_usb_status)
         self.lid_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.lid_box.add_css_class("archie-lid-segments")
         self.lid_box.add_css_class("linked")
@@ -266,12 +400,114 @@ class ArchieControlsWindow:
         Gtk = self.Gtk
         self.notebook = Gtk.Notebook()
         self.notebook.set_tab_pos(Gtk.PositionType.TOP)
+        dashboard_tab = self.build_dashboard_tab()
+        self.notebook.append_page(dashboard_tab, Gtk.Label(label="Dashboard"))
         self.notebook.append_page(self.build_system_settings_tab(), Gtk.Label(label="System settings"))
         self.notifications_tab = self.build_notifications_tab()
         self.notebook.append_page(self.notifications_tab, Gtk.Label(label="Notifications"))
-        self.notebook.append_page(self.build_commands_shortcuts_tab(), Gtk.Label(label="Commands & shortcuts"))
+        self.notebook.append_page(
+            self.build_commands_shortcuts_tab(),
+            Gtk.Label(label="Commands & shortcuts"),
+        )
+        self.notebook.append_page(
+            self.build_quick_links_tab(),
+            Gtk.Label(label="Quick links"),
+        )
         self.notebook.connect("switch-page", self.on_main_tab_switched)
         return self.notebook
+    def build_dashboard_tab(self):
+        Gtk = self.Gtk
+        self.dashboard_content = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=14,
+        )
+        self.dashboard_content.set_margin_top(14)
+        self.dashboard_content.set_margin_bottom(14)
+        self.dashboard_content.set_margin_start(14)
+        self.dashboard_content.set_margin_end(14)
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroller.set_child(self.dashboard_content)
+        self.dashboard_copy_button = Gtk.Button(label="Copy dashboard")
+        self.dashboard_copy_button.set_tooltip_text(
+            "Copy the current Dashboard information to the clipboard."
+        )
+        self.dashboard_copy_button.connect(
+            "clicked", self.on_dashboard_copy_clicked
+        )
+        self.dashboard_copy_text = ""
+        self.render_dashboard(None)
+        return scroller
+
+    def render_dashboard(self, snapshot: GuiSettingsSnapshot | None) -> None:
+        self.clear_box(self.dashboard_content)
+        self.dashboard_content.append(self.dashboard_copy_button)
+        self.dashboard_copy_button.set_sensitive(snapshot is not None)
+        if snapshot is None:
+            self.dashboard_copy_text = ""
+            self.add_dashboard_section("Hardware", ["System information is loading."])
+            return
+
+        sections, version_line, self.dashboard_copy_text = (
+            build_dashboard_information(snapshot)
+        )
+        for title, lines in sections:
+            self.add_dashboard_section(title, lines)
+        self.add_dashboard_line(version_line)
+
+    def on_dashboard_copy_clicked(self, _button) -> None:
+        if not self.dashboard_copy_text:
+            return
+        self._copy_text_to_clipboard(self.dashboard_copy_text)
+        self.set_status("Dashboard information copied.")
+
+    def add_dashboard_section(self, title: str, lines: Sequence[str]) -> None:
+        heading = self.Gtk.Label(label=title)
+        heading.set_xalign(0)
+        heading.add_css_class("archie-dashboard-heading")
+        self.dashboard_content.append(heading)
+        for line in lines:
+            self.add_dashboard_line(line)
+
+    def add_dashboard_line(self, line: str) -> None:
+        label = self.Gtk.Label(label=line)
+        label_text, separator, value_text = line.partition(": ")
+        if separator:
+            label.set_markup(
+                f"<b>{html.escape(label_text, quote=False)}:</b> "
+                f"{html.escape(value_text, quote=False)}"
+            )
+        label.set_xalign(0)
+        label.set_wrap(True)
+        label.set_selectable(True)
+        self.dashboard_content.append(label)
+
+
+    def build_quick_links_tab(self):
+        Gtk = self.Gtk
+        links = load_project_links()
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        root.set_margin_top(14)
+        root.set_margin_bottom(14)
+        root.set_margin_start(14)
+        root.set_margin_end(14)
+        heading = Gtk.Label(label="Archie around the web")
+        heading.set_xalign(0)
+        heading.add_css_class("archie-dashboard-heading")
+        root.append(heading)
+        root.append(
+            Gtk.LinkButton.new_with_label(
+                links["repository"],
+                "Archie source repository",
+            )
+        )
+        root.append(
+            Gtk.LinkButton.new_with_label(
+                links["profile"],
+                "Gabriel Chamon on GitHub",
+            )
+        )
+        return root
 
     def build_commands_shortcuts_tab(self):
         notebook = self.Gtk.Notebook()
@@ -310,6 +546,16 @@ class ArchieControlsWindow:
         self.notification_live_button = Gtk.ToggleButton(label="Live updates: on")
         self.notification_live_button.set_active(True)
         self.notification_live_button.connect("toggled", self.on_notification_live_toggled)
+        self.notification_reveal_all_button = Gtk.Button(label="Reveal all")
+        label_width = max(
+            self.notification_reveal_all_button.create_pango_layout(label).get_pixel_size()[0]
+            for label in ("Reveal all", "Collapse all")
+        )
+        self.notification_reveal_all_button.set_size_request(label_width + 48, -1)
+        self.notification_reveal_all_button.connect(
+            "clicked",
+            self.on_notification_toggle_all_clicked,
+        )
         self.notification_refresh_button = Gtk.Button(label="Refresh")
         self.notification_refresh_button.connect("clicked", self.on_notification_refresh_clicked)
         self.notification_clear_button = Gtk.Button(label="Clear history")
@@ -317,6 +563,7 @@ class ArchieControlsWindow:
         self.notification_clear_button.connect("clicked", self.on_notification_clear_clicked)
         toolbar.append(self.notification_search)
         toolbar.append(self.notification_live_button)
+        toolbar.append(self.notification_reveal_all_button)
         toolbar.append(self.notification_refresh_button)
         toolbar.append(self.notification_clear_button)
         root.append(toolbar)
@@ -361,6 +608,7 @@ class ArchieControlsWindow:
         options = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         options.append(self.build_setting_row("Screen brightness:", self.brightness_box))
         options.append(self.build_setting_row("Monitors:", self.monitor_box))
+        options.append(self.build_setting_row("Built-in USB devices:", self.builtin_usb_box))
         options.append(self.build_setting_row("Lid close behavior:", self.lid_box))
         options.append(self.build_setting_row("Notifications:", self.notifications_box))
         options.append(self.build_setting_row("Notification sounds:", self.notification_sounds_box))
@@ -490,7 +738,8 @@ class ArchieControlsWindow:
         self.clear_box(content)
         self.render_documentation_tables(markdown, content, search_entry.get_text())
 
-    def on_main_tab_switched(self, _notebook, page, _page_num: int) -> None:
+    def on_main_tab_switched(self, _notebook, page, page_num: int) -> None:
+        save_main_tab(page_num)
         if page is self.notifications_tab:
             self.refresh_notification_history()
             self.start_notification_polling()
@@ -530,7 +779,9 @@ class ArchieControlsWindow:
         self.notification_refresh_button.set_sensitive(True)
         if result.error is None:
             self.notification_history = result.notifications
+            self.expanded_notifications.intersection_update(result.notifications)
             self.notification_history_error = None
+            self.update_notification_toggle_button()
         else:
             self.notification_history_error = result.error
             self.set_status(f"Could not load notification history: {result.error}")
@@ -548,6 +799,89 @@ class ArchieControlsWindow:
             self.start_notification_polling()
         else:
             self.stop_notification_polling()
+
+    def on_notification_toggle_all_clicked(self, _button) -> None:
+        if self.notification_history and all(
+            notification in self.expanded_notifications
+            for notification in self.notification_history
+        ):
+            self.expanded_notifications.difference_update(self.notification_history)
+        else:
+            self.expanded_notifications.update(self.notification_history)
+        self.update_notification_toggle_button()
+        self.render_notification_history()
+
+    def update_notification_toggle_button(self) -> None:
+        all_expanded = bool(self.notification_history) and all(
+            notification in self.expanded_notifications
+            for notification in self.notification_history
+        )
+        self.notification_reveal_all_button.set_label(
+            "Collapse all" if all_expanded else "Reveal all"
+        )
+
+    def on_notification_disclosure_changed(
+        self,
+        expander,
+        _pspec,
+        notification: DunstNotification,
+        label,
+    ) -> None:
+        if expander.get_expanded():
+            self.expanded_notifications.add(notification)
+            label.set_text("Hide content")
+        else:
+            self.expanded_notifications.discard(notification)
+            label.set_text("Show content")
+        self.update_notification_toggle_button()
+    def on_notification_row_pointer_enter(
+        self,
+        _controller,
+        _x: float,
+        _y: float,
+        row,
+    ) -> None:
+        row.add_css_class("archie-notification-hover")
+
+    def on_notification_row_pointer_leave(self, _controller, row) -> None:
+        row.remove_css_class("archie-notification-hover")
+
+    def on_notification_replay_clicked(
+        self,
+        _button,
+        notification: DunstNotification,
+    ) -> None:
+        if notification.notification_id is None:
+            return
+        if DunstClient().history_pop(notification.notification_id):
+            self.set_status(f"Replayed {notification.application} notification with Dunst.")
+        else:
+            self.set_status(f"Could not replay {notification.application} notification with Dunst.")
+
+    def on_notification_check_with_shell_clicked(
+        self,
+        _button,
+        notification: DunstNotification,
+    ) -> None:
+        command = notification_shell_command(notification)
+        self._copy_text_to_clipboard(command)
+        self.set_status(f"Copied shell command for {notification.application}.")
+
+    def on_notification_copy_clicked(
+        self,
+        _button,
+        notification: DunstNotification,
+    ) -> None:
+        self._copy_text_to_clipboard(format_notification_data(notification))
+        self.set_status(f"Copied notification data for {notification.application}.")
+
+    def _copy_text_to_clipboard(self, text: str) -> None:
+        from gi.repository import Gdk, GObject  # type: ignore[attr-defined]
+
+        value = GObject.Value()
+        value.init(str)
+        value.set_string(text)
+        Gdk.Display.get_default().get_clipboard().set(value)
 
     def on_notification_refresh_clicked(self, _button) -> None:
         self.refresh_notification_history()
@@ -595,37 +929,120 @@ class ArchieControlsWindow:
         self.notification_history_content.append(label)
 
     def build_notification_row(self, notification: DunstNotification, query: str = ""):
-        row = self.Gtk.Box(orientation=self.Gtk.Orientation.VERTICAL, spacing=3)
+        row = self.Gtk.Box(orientation=self.Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.set_hexpand(True)
         row.add_css_class("archie-notification-row")
-        header = self.Gtk.Box(orientation=self.Gtk.Orientation.HORIZONTAL, spacing=8)
+        motion = self.Gtk.EventControllerMotion()
+        motion.connect("enter", self.on_notification_row_pointer_enter, row)
+        motion.connect("leave", self.on_notification_row_pointer_leave, row)
+        row.add_controller(motion)
+        information = self.Gtk.Box(
+            orientation=self.Gtk.Orientation.VERTICAL,
+            spacing=3,
+        )
+        information.set_hexpand(True)
+        source = self.Gtk.Box(orientation=self.Gtk.Orientation.HORIZONTAL, spacing=0)
         application = self.Gtk.Label()
         application.set_markup(highlight_matches_markup(notification.application, query))
         application.set_xalign(0)
-        application.set_hexpand(True)
         application.set_ellipsize(self.Pango.EllipsizeMode.END)
         application.add_css_class("archie-notification-application")
         timestamp = self.Gtk.Label()
         timestamp.set_markup(
-            highlight_matches_markup(notification.timestamp.strftime("%b %-d, %H:%M"), query)
+            highlight_matches_markup(
+                f" - {notification.timestamp.strftime('%b %-d, %H:%M')}",
+                query,
+            )
         )
-        timestamp.set_xalign(1)
+        timestamp.set_xalign(0)
         timestamp.add_css_class("archie-notification-timestamp")
-        header.append(application)
-        header.append(timestamp)
-        row.append(header)
+        source.append(application)
+        source.append(timestamp)
+        source.set_hexpand(True)
+        information.append(source)
+        actions = self.Gtk.Box(
+            orientation=self.Gtk.Orientation.VERTICAL,
+            spacing=4,
+        )
+        actions.set_valign(self.Gtk.Align.START)
+        actions.set_hexpand(False)
+        actions.set_size_request(176, -1)
+        actions.add_css_class("archie-notification-actions")
+        replay_button = self.Gtk.Button(label="Replay")
+        if notification.notification_id is None:
+            replay_button.set_sensitive(False)
+            replay_button.set_tooltip_text("Dunst did not provide a notification ID.")
+        else:
+            replay_button.connect(
+                "clicked",
+                self.on_notification_replay_clicked,
+                notification,
+            )
+        shell_button = self.Gtk.Button(label="Check with a shell")
+        shell_button.set_tooltip_text(
+            f"copy: {notification_shell_command(notification)}"
+        )
+        shell_button.connect(
+            "clicked",
+            self.on_notification_check_with_shell_clicked,
+            notification,
+        )
+        copy_button = self.Gtk.Button(label="Copy")
+        copy_button.set_tooltip_text("Copy notification data to the clipboard.")
+        copy_button.connect(
+            "clicked",
+            self.on_notification_copy_clicked,
+            notification,
+        )
+        actions.append(replay_button)
+        actions.append(shell_button)
+        actions.append(copy_button)
         summary = self.Gtk.Label()
         summary.set_markup(highlight_matches_markup(notification.summary, query))
         summary.set_xalign(0)
         summary.set_wrap(True)
         summary.add_css_class("archie-notification-summary")
-        row.append(summary)
+        information.append(summary)
         if notification.body:
+            expander = self.Gtk.Expander()
+            expander.set_hexpand(True)
+            label = self.Gtk.Label(label="Show content")
+            label.set_hexpand(True)
+            label.set_xalign(0)
+            accordion_header = self.Gtk.Box(
+                orientation=self.Gtk.Orientation.HORIZONTAL,
+            )
+            accordion_header.set_hexpand(True)
+            accordion_header.append(label)
+            expander.set_label_widget(accordion_header)
             body = self.Gtk.Label()
             body.set_markup(highlight_matches_markup(notification.body, query))
             body.set_xalign(0)
             body.set_wrap(True)
-            body.add_css_class("archie-notification-body")
-            row.append(body)
+            body.set_hexpand(True)
+            scroller = self.Gtk.ScrolledWindow()
+            scroller.set_policy(
+                self.Gtk.PolicyType.NEVER,
+                self.Gtk.PolicyType.AUTOMATIC,
+            )
+            scroller.set_propagate_natural_height(True)
+            scroller.set_max_content_height(NOTIFICATION_BODY_MAX_HEIGHT)
+            scroller.set_hexpand(True)
+            scroller.set_child(body)
+            expander.set_child(scroller)
+            expanded = notification in self.expanded_notifications
+            expander.set_expanded(expanded)
+            if expanded:
+                label.set_text("Hide content")
+            expander.connect(
+                "notify::expanded",
+                self.on_notification_disclosure_changed,
+                notification,
+                label,
+            )
+            information.append(expander)
+        row.append(information)
+        row.append(actions)
         return row
 
     def on_notification_clear_clicked(self, _button) -> None:
@@ -653,7 +1070,9 @@ class ArchieControlsWindow:
             self.set_status("Could not clear notification history.")
             return False
         self.notification_history = ()
+        self.expanded_notifications.clear()
         self.notification_history_error = None
+        self.update_notification_toggle_button()
         self.set_status("Notification history cleared.")
         self.render_notification_history()
         self.refresh_notification_history()
@@ -817,6 +1236,8 @@ class ArchieControlsWindow:
             snapshot.waybar_tooltip_font_size,
         )
         self.clear_box(self.system_settings_content)
+        self.dashboard_snapshot = snapshot
+        self.render_dashboard(snapshot)
         self.system_settings_content.append(self.build_system_settings_options())
         self.settings_visible = True
         self.set_system_settings_sensitive(controls_enabled)
@@ -844,6 +1265,7 @@ class ArchieControlsWindow:
             self.waybar_theme_box,
             self.waybar_font_box,
             self.waybar_menu_font_box,
+            self.builtin_usb_box,
             self.waybar_tooltip_font_box,
         ):
             self.set_box_sensitive(box, sensitive)
@@ -978,6 +1400,24 @@ class ArchieControlsWindow:
         self.clear_box(self.confirm_box)
         self.refresh()
         return False
+
+    def on_capture_builtin_usb_clicked(self, _button) -> None:
+        self.builtin_usb_button.set_sensitive(False)
+        self.builtin_usb_status.set_label("Recording devices currently connected…")
+        try:
+            count = capture_builtin_usb_devices()
+        except (OSError, RuntimeError, ValueError) as error:
+            self.builtin_usb_status.set_label(f"Could not record USB devices: {error}")
+            self.set_status("Built-in USB device capture failed.")
+        else:
+            self.builtin_usb_status.set_label(
+                f"Saved {count} built-in USB device{'s' if count != 1 else ''}. "
+                "Reconnect external devices to show them."
+            )
+            self.set_status("Built-in USB devices updated.")
+            self.refresh()
+        finally:
+            self.builtin_usb_button.set_sensitive(True)
 
     def on_lid_clicked(self, _button, behavior: str) -> None:
         self.begin_settings_change()
@@ -1148,6 +1588,7 @@ class ArchieControlsWindow:
         if active is None:
             active = get_waybar_theme()
         self.render_segmented_row(self.waybar_theme_box, WAYBAR_THEMES, active, self.on_waybar_theme_clicked)
+
 
     def render_waybar_font(
         self, container, surface_label: str, setting_prefix: str, family: str, size: int
@@ -1369,6 +1810,7 @@ class ArchieControlsWindow:
         self.clear_box(self.waybar_theme_box)
         self.render_waybar_theme()
         self.finish_settings_change()
+
 
     def on_waybar_font_apply(
         self, _button, container, surface_label: str, setting_prefix: str, font_button, size_spin
@@ -1613,6 +2055,7 @@ def get_waybar_theme() -> str:
     return result.stdout.strip()
 
 
+
 def get_waybar_font(setting_prefix: str) -> tuple[str, int]:
     family = run_cli(["archie", "system", "get", f"{setting_prefix}-family"])
     size = run_cli(["archie", "system", "get", f"{setting_prefix}-size"])
@@ -1653,9 +2096,10 @@ def store_write_warning(path: Path = STORE_DATABASE_PATH) -> str | None:
 
 
 def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
-    with ThreadPoolExecutor(max_workers=14) as executor:
-        monitors_future = executor.submit(list_monitors)
+    with ThreadPoolExecutor(max_workers=16) as executor:
         brightness_future = executor.submit(get_brightness_devices)
+        monitors_future = executor.submit(list_monitors)
+        peripherals_future = executor.submit(collect_connected_peripherals)
         lid_behavior_future = executor.submit(get_lid_behavior)
         notifications_future = executor.submit(get_notifications_state)
         notification_sounds_future = executor.submit(get_notification_sounds_state)
@@ -1671,6 +2115,7 @@ def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
         waybar_tooltip_font_future = executor.submit(
             get_waybar_font, "waybar-tooltip-font"
         )
+        share_state_future = executor.submit(detect_share_active)
         try:
             monitors = monitors_future.result()
             monitor_error = None
@@ -1692,6 +2137,14 @@ def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
         waybar_font = waybar_font_future.result()
         waybar_menu_font = waybar_menu_font_future.result()
         waybar_tooltip_font = waybar_tooltip_font_future.result()
+        try:
+            peripherals = peripherals_future.result()
+        except Exception:  # noqa: BLE001
+            peripherals = {}
+        try:
+            share_state = "on" if share_state_future.result() else "off"
+        except Exception:  # noqa: BLE001
+            share_state = "unknown"
     return GuiSettingsSnapshot(
         brightness_result=brightness,
         monitors=monitors,
@@ -1701,6 +2154,7 @@ def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
         notification_sounds=notification_sounds,
         notification_sound=notification_sound,
         shy_mode=shy_mode,
+        share_state=share_state,
         kdeconnect=kdeconnect,
         power_profile=power_profile,
         calendar_left_preset=calendar_settings["left"][0],
@@ -1718,6 +2172,7 @@ def load_gui_settings_snapshot() -> GuiSettingsSnapshot:
         waybar_menu_font_size=waybar_menu_font[1],
         waybar_tooltip_font_family=waybar_tooltip_font[0],
         waybar_tooltip_font_size=waybar_tooltip_font[1],
+        peripherals=peripherals,
     )
 
 

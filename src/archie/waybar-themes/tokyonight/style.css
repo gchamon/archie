@@ -23,11 +23,11 @@ window#waybar {
 
 #workspaces,
 #cpu,
-#memory,
+#custom-memory,
 #clock,
-#pulseaudio,
-#battery,
-#disk,
+#custom-sound,
+#custom-battery,
+#custom-disk,
 #tray,
 #custom-share,
 #custom-cam,
@@ -69,27 +69,27 @@ window#waybar #workspaces button {
     color: @purple;
 }
 
-#memory {
+#custom-memory {
     color: @cyan;
 }
 
-#pulseaudio {
+#custom-sound {
     color: @blue;
 }
 
-#battery {
+#custom-battery {
     color: @green;
 }
 
-#battery.warning {
+#custom-battery.warning {
     color: @yellow;
 }
 
-#battery.critical {
+#custom-battery.critical {
     color: @red;
 }
 
-#disk {
+#custom-disk {
     color: @orange;
 }
 

@@ -6,7 +6,7 @@ alias prettyjson='python -m json.tool'
 alias aws:list-profiles='aws configure list-profiles'
 alias sonar-branch='sonar-scanner -Dsonar.login=$SONAR_TOKEN -Dsonar.branch.name=$(git_current_branch) -Dsonar.branch.target=$(git_main_branch)'
 alias sonar-main='sonar-scanner -Dsonar.login=$SONAR_TOKEN'
-alias docker-swarm-remote='docker -H ssh://${DOCKER_SWARM_REMOTE_HOST} '
+alias docker-swarm-remote='docker -H ssh://${DOCKER_SWARM_REMOTE_HOST}'
 alias docker-swarm-remote-deploy='docker-swarm stack deploy -c docker-compose.yml $(basename $PWD)'
 alias docker-swarm-remote-rm='docker-swarm stack rm $(basename $PWD)'
 alias docker-swarm-remote-redeploy='docker-swarm-rm && docker-swarm-deploy'
@@ -34,8 +34,8 @@ alias aider='docker run \
   -v $HOME/.config/aider:$HOME/.config/aider:ro \
   -v $HOME/.aider:$HOME/.aider \
   -v $HOME/.gitconfig:$HOME/.gitconfig \
-  aider-chat --config $HOME/.config/aider/config.yaml --no-auto-commits '
-alias aider-update="docker rmi aider-chat && docker system prune --force && aider-build"
+  aider-chat --config $HOME/.config/aider/config.yaml --no-auto-commits'
+alias aider-update='docker rmi aider-chat && docker system prune --force && aider-build'
 
 aider-build() {
   docker build --pull -t aider-chat - <<EOF
@@ -153,7 +153,7 @@ urlencode() {
 
 urldecode() {
   local data=${1//+/ }
-  printf '%b' "${data//%/\x}"
+  printf '%b' "${data//\%/\x}"
 }
 
 beautify-clipboard() {

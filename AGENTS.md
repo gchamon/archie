@@ -99,6 +99,7 @@ Configuration verification is performed by reloading the respective service:
   - Kebab-case for scripts (`launch-waybar.sh`) and config files.
   - Distribution templates use `.dist` suffix (`device.dist.lua`).
 - **Pathing**: Always use `$HOME` or `~` instead of hardcoded paths when referring to user directories.
+- **Portable tracked configuration**: Keep files committed to Archie device- and network-agnostic. Hostnames, intranet domains, network addresses, and other machine-local values belong in untracked local configuration or in files created from tracked `.dist` templates, never in the shared base configuration.
 
 ### Shell Scripts (`bash`)
 
@@ -132,6 +133,7 @@ Configuration verification is performed by reloading the respective service:
 - **Sourcing**: Custom shell logic lives under `deployment-packages/local/lib/zsh/` and is sourced from `.zshrc`.
 - **Aliases and Functions**: Prefer adding shell helpers to the appropriate module under `deployment-packages/local/lib/zsh/commands-*.sh` and keep `commands.sh` as the loader only.
 - **Completion**: Use the built-in `zsh` completion system (`compinit`).
+- **Aliases**: Use single quotes for literal alias bodies and double quotes only for intentional definition-time expansion. End an alias body with a literal space only when it deliberately forwards the first user-supplied token for alias expansion, as in `alias sudo='sudo '` allowing `sudo l` to expand `l`.
 - **Prompt**: Powerlevel10k is configured via `.p10k.zsh`.
 
 ## 3. Project Structure & Key Files

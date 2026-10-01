@@ -27,6 +27,7 @@ from archie.privacy import (
     save_shy_mode_settings,
 )
 from archie.store import (
+    BUILTIN_USB_DEVICES,
     CALENDAR_BROWSER_URL,
     CALENDAR_CLICK,
     CALENDAR_LAUNCHER,
@@ -139,6 +140,7 @@ SYSTEM_STATUS_SETTINGS = [
     "waybar-theme",
     "brightness",
     "monitors",
+    "peripherals",
 ]
 
 LID_CLOSE_CONTENT_BY_MODE = {
@@ -419,6 +421,7 @@ def add_system_parser(
         choices=WAYBAR_THEMES,
         help="Use default, mechabar, or tokyonight.",
     )
+
     waybar_theme_set_parser.set_defaults(func=run_system_set)
 
     calendar_launcher_set_parser = set_subparsers.add_parser(
@@ -621,6 +624,7 @@ def collect_system_status(
         "monitors": lambda: [
             serialize_monitor(monitor) for monitor in list_monitors_quiet()
         ],
+        "peripherals": collect_connected_peripherals,
     }
     values: dict[str, object] = {}
     errors: dict[str, str] = {}
@@ -641,20 +645,182 @@ def collect_system_status(
         {setting: errors[setting] for setting in SYSTEM_STATUS_SETTINGS if setting in errors},
     )
 
-
 def serialize_monitor(monitor: MonitorOutput) -> dict[str, object]:
     return asdict(monitor) | {"enabled": monitor.enabled, "label": monitor.label}
 
 
+def usb_device_signatures(sysfs_root: Path = Path("/sys/bus/usb/devices")) -> dict[tuple[int, int], str]:
+    signatures = {}
+    for device in sysfs_root.iterdir():
+        try:
+            bus_number = int((device / "busnum").read_text().strip())
+            device_number = int((device / "devnum").read_text().strip())
+            vendor = (device / "idVendor").read_text().strip().lower()
+            product = (device / "idProduct").read_text().strip().lower()
+            if vendor == "1d6b":
+                continue
+            serial_path = device / "serial"
+            identity = serial_path.read_text().strip() if serial_path.exists() else ""
+            if not identity:
+                identity = f"port:{(device / 'devpath').read_text().strip()}"
+            signatures[(bus_number, device_number)] = f"{vendor}:{product}:{identity}"
+        except (OSError, ValueError):
+            continue
+    return signatures
+
+
+def parse_builtin_usb_signatures(value: str | None) -> set[str]:
+    try:
+        decoded = json.loads(value or "[]")
+    except json.JSONDecodeError:
+        return set()
+    return {item for item in decoded if isinstance(item, str)} if isinstance(decoded, list) else set()
+
+
+def capture_builtin_usb_devices(
+    store: PolicyStore | None = None,
+    *,
+    sysfs_root: Path = Path("/sys/bus/usb/devices"),
+) -> int:
+    active_store = store or PolicyStore()
+    signatures = sorted(set(usb_device_signatures(sysfs_root).values()))
+    active_store.set(BUILTIN_USB_DEVICES, json.dumps(signatures))
+    return len(signatures)
+
+
+def filter_builtin_usb_lines(
+    output: str,
+    signatures: Mapping[tuple[int, int], str],
+    builtin_signatures: set[str],
+) -> list[str]:
+    devices = []
+    for line in output.splitlines():
+        match = re.match(r"^Bus\s+(\d+)\s+Device\s+(\d+):", line)
+        if match is None:
+            continue
+        bus_number, device_number = (int(value) for value in match.groups())
+        signature = signatures.get((bus_number, device_number))
+        description = line.partition(": ")[2]
+        if description and not description.casefold().endswith("root hub") and signature not in builtin_signatures:
+            devices.append(description)
+    return devices
+
+def collect_connected_peripherals() -> dict[str, object]:
+    bluetooth_output = subprocess.run(
+        ["bluetoothctl", "devices", "Connected"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    usb_output = subprocess.run(
+        ["lsusb"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    network_output = subprocess.run(
+        ["nmcli", "--terse", "--fields", "DEVICE,TYPE,STATE,CONNECTION", "device", "status"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    bluetooth = [
+        match.group(1).strip()
+        for line in bluetooth_output.splitlines()
+        if (match := re.match(r"^Device\s+\S+\s+(.+)$", line))
+    ]
+    usb_signatures = usb_device_signatures()
+    try:
+        builtin_signatures = parse_builtin_usb_signatures(
+            PolicyStore().get_optional(BUILTIN_USB_DEVICES)
+        )
+    except StoreError:
+        builtin_signatures = set()
+    usb = filter_builtin_usb_lines(usb_output, usb_signatures, builtin_signatures)
+    network = []
+    for line in network_output.splitlines():
+        fields = [field.replace("\\:", ":") for field in re.split(r"(?<!\\):", line)]
+        if len(fields) == 4 and fields[1] in {"ethernet", "wifi"} and fields[2] == "connected":
+            network.append(
+                {"device": fields[0], "type": fields[1], "connection": fields[3]}
+            )
+    return {"bluetooth": bluetooth, "usb": usb, "network": network}
+
+
+def format_peripherals_status(
+    values: Mapping[str, object], *, multiline_lists: bool = False
+) -> tuple[str, str, str]:
+    peripherals = values.get("peripherals")
+    if not isinstance(peripherals, dict):
+        return ("Bluetooth: unavailable", "USB: unavailable", "Network: unavailable")
+    bluetooth = peripherals.get("bluetooth")
+    usb = peripherals.get("usb")
+    network = peripherals.get("network")
+    return (
+        format_peripheral_names("Bluetooth", bluetooth, multiline_lists=multiline_lists),
+        format_peripheral_names("USB", usb, multiline_lists=multiline_lists),
+        format_peripheral_network(network, multiline_lists=multiline_lists),
+    )
+
+
+def format_peripheral_names(
+    label: str, devices: object, *, multiline_lists: bool = False
+) -> str:
+    if not isinstance(devices, list):
+        return f"{label}: unavailable"
+    return format_status_list(
+        label,
+        [str(device) for device in devices],
+        empty="none connected",
+        multiline=multiline_lists,
+    )
+
+
+def format_peripheral_network(
+    devices: object, *, multiline_lists: bool = False
+) -> str:
+    if not isinstance(devices, list):
+        return "Network: unavailable"
+    return format_status_list(
+        "Network",
+        [
+            f"{device.get('type', 'unknown')} {device.get('device', 'unknown')}: "
+            f"{device.get('connection', 'unknown')}"
+            for device in devices
+            if isinstance(device, dict)
+        ],
+        empty="none connected",
+        multiline=multiline_lists,
+    )
+
+
+def format_status_list(
+    label: str,
+    entries: list[str],
+    *,
+    empty: str,
+    multiline: bool = False,
+) -> str:
+    if not entries:
+        return f"{label}: {empty}"
+    if multiline:
+        return f"{label}:\n" + "\n".join(f"    - {entry}" for entry in entries)
+    return f"{label}: {', '.join(entries)}"
+
 def format_system_status(
-    values: dict[str, object], *, shy_mode_status: str | None = None
+    values: dict[str, object],
+    *,
+    shy_mode_status: str | None = None,
+    multiline_lists: bool = False,
 ) -> str:
     shy_status = shy_mode_status or format_status_value(values.get("shy-mode"))
+    peripheral_lines = format_peripherals_status(values, multiline_lists=multiline_lists)
     return "\n".join(
         (
             "Hardware",
-            f"  {format_brightness_status(values)}",
-            f"  {format_monitors_status(values)}",
+            f"  {format_brightness_status(values, multiline_lists=multiline_lists)}",
+            f"  {format_monitors_status(values, multiline_lists=multiline_lists)}",
+            *(f"  {line}" for line in peripheral_lines),
             "",
             "Desktop",
             f"  Lid close: {format_status_value(values.get('lid-close-behavior'))}",
@@ -670,7 +836,6 @@ def format_system_status(
         )
     )
 
-
 def format_system_status_json(values: dict[str, object]) -> str:
     status = {
         setting: values.get(setting, UNKNOWN_MODE)
@@ -679,35 +844,49 @@ def format_system_status_json(values: dict[str, object]) -> str:
     return json.dumps(status, indent=2)
 
 
-def format_brightness_status(values: dict[str, object]) -> str:
+def format_brightness_status(
+    values: dict[str, object], *, multiline_lists: bool = False
+) -> str:
     devices = values.get("brightness")
     if not isinstance(devices, list):
         return "Brightness: unknown"
-    if not devices:
-        return "Brightness: unavailable"
-    details = ", ".join(
+    details = [
         f"{device.get('name', 'unknown')} {device.get('percent', 'unknown')}%"
         for device in devices
         if isinstance(device, dict)
+    ]
+    if not details:
+        return "Brightness: unavailable" if not devices else "Brightness: unknown"
+    return format_status_list(
+        "Brightness",
+        details,
+        empty="unavailable",
+        multiline=multiline_lists,
     )
-    return f"Brightness: {details}" if details else "Brightness: unknown"
 
 
-def format_monitors_status(values: dict[str, object]) -> str:
+def format_monitors_status(
+    values: dict[str, object], *, multiline_lists: bool = False
+) -> str:
     monitors = values.get("monitors")
     if not isinstance(monitors, list):
         return "Monitors: unknown"
-    if not monitors:
-        return "Monitors: unavailable"
-    details = ", ".join(
+    details = [
         f"{monitor.get('name', 'unknown')} "
         f"{monitor.get('label', monitor.get('name', 'unknown'))}: "
         f"{'enabled' if monitor.get('enabled') else 'disabled'}"
         f"{' (focused)' if monitor.get('focused') else ''}"
         for monitor in monitors
         if isinstance(monitor, dict)
+    ]
+    if not details:
+        return "Monitors: unavailable" if not monitors else "Monitors: unknown"
+    return format_status_list(
+        "Monitors",
+        details,
+        empty="unavailable",
+        multiline=multiline_lists,
     )
-    return f"Monitors: {details}" if details else "Monitors: unknown"
 
 
 def format_status_value(value: object) -> str:
@@ -1116,6 +1295,8 @@ def _set_waybar_theme(
     except (OSError, StoreError) as error:
         print(f"archie system set waybar-theme: {error}", file=sys.stderr)
         return 1
+
+
 
 
 def _set_waybar_font(setting: str, value: str | int, state_path: Path, style_path: Path) -> int:
@@ -1694,6 +1875,7 @@ def get_waybar_font_setting(setting: str, path: Path = WAYBAR_THEME_STATE_PATH) 
     return PolicyStore(StoreDatabase(path)).get(WAYBAR_FONT_POLICY_BY_SETTING[setting])
 
 
+
 def detect_waybar_theme(waybar_theme_state_path: Path = WAYBAR_THEME_STATE_PATH) -> str:
     try:
         theme = PolicyStore(StoreDatabase(waybar_theme_state_path)).get(WAYBAR_THEME)
@@ -1746,6 +1928,7 @@ def set_waybar_theme(
     return 0
 
 
+
 def render_waybar_calendar_click(
     config_text: str,
     settings: Mapping[str, tuple[str, str]],
@@ -1772,6 +1955,8 @@ def render_waybar_datetime_click(
             "datetime",
         )
     return config_text
+
+
 
 
 def render_waybar_click_actions(

@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from archie.cli import main
 from archie.store import (
+    BUILTIN_USB_DEVICES,
     CALENDAR_LAUNCHER,
     CALENDAR_LEFT_BROWSER_URL,
     CALENDAR_LEFT_PRESET,
@@ -45,10 +46,14 @@ from archie.system import (
     BrightnessDevice,
     WaybarFont,
     WaybarTypography,
+    capture_builtin_usb_devices,
     clamp_brightness_percent,
+    collect_connected_peripherals,
     detect_kdeconnect_state,
     detect_lid_close_behavior,
+    filter_builtin_usb_lines,
     format_brightness_device,
+    format_peripherals_status,
     format_system_status,
     format_system_status_json,
     get_calendar_settings,
@@ -62,6 +67,7 @@ from archie.system import (
     notification_sounds_config_path,
     open_calendar_launcher,
     open_datetime_launcher,
+    parse_builtin_usb_signatures,
     reload_logind_if_active,
     render_waybar_calendar_click,
     render_waybar_style,
@@ -72,6 +78,7 @@ from archie.system import (
     set_kdeconnect,
     set_waybar_font_setting,
     set_waybar_theme,
+    usb_device_signatures,
 )
 
 
@@ -503,6 +510,7 @@ class PolicyInitializationTest(unittest.TestCase):
                 self.assertIsNone(store.get_optional(CALENDAR_LAUNCHER))
 
 
+
 class WaybarTypographyTest(unittest.TestCase):
     def test_custom_fonts_are_persisted_and_materialized(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -703,6 +711,155 @@ class ShyModeCommandTest(unittest.TestCase):
                     main(arguments)
                 self.assertEqual(error.exception.code, 2)
 
+class ConnectedPeripheralsTest(unittest.TestCase):
+    @patch("archie.system.PolicyStore.get_optional", return_value="[]")
+    @patch("archie.system.usb_device_signatures", return_value={})
+    @patch("archie.system.subprocess.run")
+    def test_parses_connected_bluetooth_usb_and_network_devices(
+        self, run, _usb_signatures, _get_optional
+    ) -> None:
+        run.side_effect = [
+            subprocess.CompletedProcess([], 0, "Device AA:BB:CC:DD:EE:FF WH-1000XM5\n", ""),
+            subprocess.CompletedProcess(
+                [],
+                0,
+                "Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub\n"
+                "Bus 003 Device 002: ID 04f2:b7f5 Chicony Electronics Integrated Camera\n"
+            ),
+            subprocess.CompletedProcess(
+                [],
+                0,
+                "wlan0:wifi:connected:Home\\: 5G\n"
+                "enp1s0:ethernet:connected:Wired\n"
+                "lo:loopback:connected:lo\n"
+                "wlan1:wifi:disconnected:\n",
+                "",
+            ),
+        ]
+
+        self.assertEqual(
+            collect_connected_peripherals(),
+            {
+                "bluetooth": ["WH-1000XM5"],
+                "usb": ["ID 04f2:b7f5 Chicony Electronics Integrated Camera"],
+                "network": [
+                    {"device": "wlan0", "type": "wifi", "connection": "Home: 5G"},
+                    {"device": "enp1s0", "type": "ethernet", "connection": "Wired"},
+                ],
+            },
+        )
+
+    def test_connected_listing_uses_learned_builtin_usb_signatures(self) -> None:
+        with (
+            patch("archie.system.subprocess.run") as run,
+            patch(
+                "archie.system.usb_device_signatures",
+                return_value={(3, 2): "built-in-camera", (3, 3): "external-dongle"},
+            ),
+            patch("archie.system.PolicyStore") as store_factory,
+        ):
+            store_factory.return_value.get_optional.return_value = json.dumps(
+                ["built-in-camera"]
+            )
+            run.side_effect = [
+                subprocess.CompletedProcess([], 0, "", ""),
+                subprocess.CompletedProcess(
+                    [],
+                    0,
+                    "Bus 003 Device 002: ID 04f2:b7f5 Integrated Camera\n"
+                    "Bus 003 Device 003: ID 1234:5678 USB dongle\n",
+                    "",
+                ),
+                subprocess.CompletedProcess([], 0, "", ""),
+            ]
+
+            self.assertEqual(
+                collect_connected_peripherals()["usb"],
+                ["ID 1234:5678 USB dongle"],
+            )
+
+    def test_capture_builtin_devices_hides_only_recorded_usb_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            sysfs_root = root / "usb"
+            sysfs_root.mkdir()
+            database_path = root / "store.sqlite3"
+            database_path.touch()
+            store = PolicyStore(StoreDatabase(database_path))
+            built_in = sysfs_root / "1-2"
+            built_in.mkdir()
+            for name, value in {
+                "busnum": "1",
+                "devnum": "2",
+                "idVendor": "04f2",
+                "idProduct": "b7f5",
+                "devpath": "2",
+            }.items():
+                (built_in / name).write_text(value)
+
+            self.assertEqual(capture_builtin_usb_devices(store, sysfs_root=sysfs_root), 1)
+
+            dongle = sysfs_root / "1-3"
+            dongle.mkdir()
+            for name, value in {
+                "busnum": "1",
+                "devnum": "3",
+                "idVendor": "1234",
+                "idProduct": "5678",
+                "devpath": "3",
+            }.items():
+                (dongle / name).write_text(value)
+
+            devices = usb_device_signatures(sysfs_root)
+            self.assertEqual(
+                filter_builtin_usb_lines(
+                    "Bus 001 Device 002: ID 04f2:b7f5 Integrated Camera\n"
+                    "Bus 001 Device 003: ID 1234:5678 USB dongle\n",
+                    devices,
+                    parse_builtin_usb_signatures(store.get(BUILTIN_USB_DEVICES)),
+                ),
+                ["ID 1234:5678 USB dongle"],
+            )
+
+    @patch("archie.system.subprocess.run")
+    def test_fails_when_native_peripheral_command_fails(self, run) -> None:
+        run.side_effect = subprocess.CalledProcessError(1, ["bluetoothctl"])
+        with self.assertRaises(subprocess.CalledProcessError):
+            collect_connected_peripherals()
+
+    def test_formats_populated_and_unavailable_peripheral_status(self) -> None:
+        populated = {
+            "peripherals": {
+                "bluetooth": ["WH-1000XM5", "Keyboard"],
+                "usb": ["Integrated Camera", "USB mouse"],
+                "network": [
+                    {"device": "wlan0", "type": "wifi", "connection": "Home"},
+                    {"device": "enp2s0", "type": "ethernet", "connection": "Office"},
+                ],
+            }
+        }
+        self.assertEqual(
+            format_peripherals_status(populated),
+            (
+                "Bluetooth: WH-1000XM5, Keyboard",
+                "USB: Integrated Camera, USB mouse",
+                "Network: wifi wlan0: Home, ethernet enp2s0: Office",
+            ),
+        )
+        self.assertEqual(
+            format_peripherals_status(populated, multiline_lists=True),
+            (
+                "Bluetooth:\n    - WH-1000XM5\n    - Keyboard",
+                "USB:\n    - Integrated Camera\n    - USB mouse",
+                "Network:\n    - wifi wlan0: Home\n    - ethernet enp2s0: Office",
+            ),
+        )
+        self.assertEqual(
+            format_peripherals_status({}),
+            ("Bluetooth: unavailable", "USB: unavailable", "Network: unavailable"),
+        )
+
+
 
 class SystemStatusTest(unittest.TestCase):
     @patch("archie.system.collect_system_status")
@@ -750,6 +907,7 @@ class SystemStatusTest(unittest.TestCase):
             "waybar-theme",
             "brightness",
             "monitors",
+            "peripherals",
         ])
 
     @patch("archie.system.collect_system_status")
@@ -767,15 +925,32 @@ class SystemStatusTest(unittest.TestCase):
         values = {
             "notifications": "on",
             "notification-sounds": "off",
-            "brightness": [{"name": "amdgpu_bl1", "percent": 71}],
+            "brightness": [
+                {"name": "amdgpu_bl1", "percent": 71},
+                {"name": "acpi_video0", "percent": 68},
+            ],
             "monitors": [
                 {
                     "name": "eDP-1",
                     "label": "Built-in display",
                     "enabled": True,
                     "focused": True,
-                }
+                },
+                {
+                    "name": "HDMI-A-1",
+                    "label": "External display",
+                    "enabled": True,
+                    "focused": False,
+                },
             ],
+            "peripherals": {
+                "bluetooth": ["WH-1000XM5", "Keyboard"],
+                "usb": ["Integrated Camera", "USB mouse"],
+                "network": [
+                    {"device": "wlan0", "type": "wifi", "connection": "Home"},
+                    {"device": "enp2s0", "type": "ethernet", "connection": "Office"},
+                ],
+            },
             "lid-close-behavior": "lock",
             "kdeconnect": "on",
             "power-profile": "balanced",
@@ -785,10 +960,23 @@ class SystemStatusTest(unittest.TestCase):
         }
 
         self.assertEqual(
-            format_system_status(values),
+            format_system_status(values, multiline_lists=True),
             "Hardware\n"
-            "  Brightness: amdgpu_bl1 71%\n"
-            "  Monitors: eDP-1 Built-in display: enabled (focused)\n"
+            "  Brightness:\n"
+            "    - amdgpu_bl1 71%\n"
+            "    - acpi_video0 68%\n"
+            "  Monitors:\n"
+            "    - eDP-1 Built-in display: enabled (focused)\n"
+            "    - HDMI-A-1 External display: enabled\n"
+            "  Bluetooth:\n"
+            "    - WH-1000XM5\n"
+            "    - Keyboard\n"
+            "  USB:\n"
+            "    - Integrated Camera\n"
+            "    - USB mouse\n"
+            "  Network:\n"
+            "    - wifi wlan0: Home\n"
+            "    - ethernet enp2s0: Office\n"
             "\n"
             "Desktop\n"
             "  Lid close: lock\n"
@@ -802,6 +990,7 @@ class SystemStatusTest(unittest.TestCase):
             "  Shy mode: on\n"
             "  Share: off",
         )
+
 
     def test_json_uses_system_get_and_set_property_names(self) -> None:
         rendered = format_system_status_json(

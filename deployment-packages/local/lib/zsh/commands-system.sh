@@ -1,10 +1,10 @@
 #!/usr/bin/env zsh
 
-alias compton-restart="pkill compton && compton &> /dev/null &"
-alias ffpm="firefox -ProfileManager "
-alias myip='curl ipinfo.io/ip '
+alias compton-restart='pkill compton && compton &> /dev/null &'
+alias ffpm='firefox -ProfileManager'
+alias myip='curl ipinfo.io/ip'
 alias scheme='rlwrap scheme'
-alias vm="vboxmanage "
+alias vm='vboxmanage'
 
 alias archie:status='archie system status'
 alias archie:gui='archie gui'
@@ -61,4 +61,31 @@ dunst-history() {
         echo ---------------------------------------
       fi
     done
+}
+
+kitty:save-session() {
+  if [[ -z ${KITTY_WINDOW_ID:-} ]]; then
+    print -u2 -- "Run kitty:save-session inside a Kitty window."
+    return 1
+  fi
+
+  print -u2 -- "Restoring this session will rerun active foreground processes. Check the saved session before restoring it."
+  local confirm
+  read -q "confirm?Save the current Kitty session? [y/N] " || {
+    print
+    return 1
+  }
+  print
+
+  local session_dir="${XDG_DATA_HOME:-$HOME/.local/share}/kitty/sessions"
+  local session_file="$session_dir/session-$(date '+%Y%m%d-%H%M%S-%N').kitty-session"
+  mkdir -p "$session_dir" || return $?
+
+  if ! kitten @ action save_as_session "--use-foreground-process --save-only ${(q)session_file}"; then
+    print -u2 -- "Kitty could not save the session. Reload the Kitty config and confirm allow_remote_control yes is active."
+    return 1
+  fi
+
+  print -r -- "Session file: $session_file"
+  print -r -- "Restore with: kitty --session ${(q)session_file}"
 }

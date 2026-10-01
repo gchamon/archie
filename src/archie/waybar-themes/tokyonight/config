@@ -5,10 +5,10 @@
     "position": "top",
 
     "modules-left": [
-        "hyprland/workspaces",
+        "tray",
         "cpu",
-        "memory",
-        "disk"
+        "custom/memory",
+        "custom/disk"
     ],
     "modules-center": [
         "clock#1",
@@ -19,9 +19,9 @@
         "custom/share",
         "custom/cam",
         "custom/mic",
-        "pulseaudio",
-        "battery",
-        "tray"
+        "custom/sound",
+        "custom/battery",
+        "hyprland/workspaces"
     ],
 
     "hyprland/workspaces": {
@@ -65,29 +65,21 @@
             "deactivated": ""
         }
     },
-    "pulseaudio": {
-        "format": "{icon} {volume:2}%",
-        "format-bluetooth": "{icon} {volume}% ",
-        "format-muted": "󰝟 Mute",
-        "format-icons": {
-            "headphones": "",
-            "default": [
-                "",
-                "",
-                "",
-                "",
-                "",
-                ""
-            ]
-        },
-        "scroll-step": 1,
+    "custom/sound": {
+        "interval": 5,
+        "format": "{text}",
+        "exec": "~/.config/hypr/scripts/waybar-sound-indicator.sh",
+        "return-type": "json",
         "on-click": "pavucontrol",
         "on-click-right": "pamixer -t",
-        "reverse-scrolling": 1,
+        "on-scroll-up": "pamixer -d 1",
+        "on-scroll-down": "pamixer -i 1"
     },
-    "memory": {
+    "custom/memory": {
         "interval": 5,
-        "format": " {}%",
+        "format": " {text}",
+        "exec": "~/.config/hypr/scripts/waybar-memory-indicator.sh",
+        "return-type": "json",
         "on-click": "gnome-system-monitor --show-processes-tab"
     },
     "cpu": {
@@ -96,30 +88,23 @@
         "on-click": "kitty htop",
         "on-click-right": "gnome-system-monitor --show-resources-tab"
     },
-    "battery": {
-        "states": {
-            "good": 95,
-            "warning": 30,
-            "critical": 15
-        },
-        "format": "{icon} {capacity:2}%",
-        "format-icons": [
-            "",
-            "",
-            "",
-            "",
-            ""
-        ],
+    "custom/battery": {
+        "interval": 5,
+        "format": "{text}",
+        "exec": "~/.config/hypr/scripts/waybar-battery-indicator.sh",
+        "return-type": "json",
         "on-click": "tlpui"
     },
-    "disk": {
+    "custom/disk": {
         "interval": 5,
-        "format": "󱛟 {percentage_used:2}%",
-        "path": "/",
+        "format": "󱛟 {text}",
+        "return-type": "json",
+        "exec": "~/.config/hypr/scripts/waybar-disk-indicator.sh",
         "on-click": "kitty ncdu ~",
         "on-click-right": "gnome-system-monitor --show-file-systems-tab"
     },
     "tray": {
-        "icon-size": 20
+        "icon-size": 20,
+        "spacing": 1
     }
 }

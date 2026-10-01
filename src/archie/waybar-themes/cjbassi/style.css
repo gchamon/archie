@@ -18,11 +18,11 @@ window#waybar {
 #clock.1,
 #clock.2,
 #clock.3,
-#pulseaudio,
-#memory,
+#custom-sound,
+#custom-memory,
 #cpu,
-#battery,
-#disk,
+#custom-battery,
+#custom-disk,
 #tray,
 #custom-share,
 #custom-cam,
@@ -50,11 +50,11 @@ window#waybar {
   padding: 0 3px;
 }
 
-#pulseaudio {
+#custom-sound {
   color: #268bd2;
 }
 
-#memory {
+#custom-memory {
   color: #2aa198;
 }
 
@@ -62,19 +62,19 @@ window#waybar {
   color: #6c71c4;
 }
 
-#battery {
+#custom-battery {
   color: #859900;
 }
 
-#disk {
+#custom-disk {
   color: #b58900;
 }
 
 #clock,
-#pulseaudio,
-#memory,
+#custom-sound,
+#custom-memory,
 #cpu,
-#battery,
-#disk {
+#custom-battery,
+#custom-disk {
   padding: 0 10px;
 }
