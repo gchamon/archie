@@ -87,8 +87,10 @@ return function(device)
   hl.bind(main_mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
   -- Avoid code:N bindings: affected Hyprland Lua releases match KEY_UNKNOWN events.
-  hl.bind("SHIFT + Print", hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot/captureAll.sh"))
-  hl.bind("Print", hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot/captureArea.sh"))
+  hl.bind("Print", hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot.sh screen save"))
+  hl.bind("CTRL + Print", hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot.sh area save"))
+  hl.bind("SHIFT + Print", hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot.sh screen ksnip"))
+  hl.bind("CTRL + SHIFT + Print", hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot.sh area ksnip"))
   hl.bind(main_mod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
   hl.bind(main_mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
@@ -101,5 +103,6 @@ return function(device)
   hl.bind(main_mod .. " + CTRL + KP_Add", hl.dsp.exec_cmd(brightnessctl .. " set 10%+"))
   hl.bind(main_mod .. " + CTRL + KP_Subtract", hl.dsp.exec_cmd(brightnessctl .. " set 10%-"))
   hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd(brightnessctl .. " set 10%+"))
+  hl.bind("XF86AudioMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
   hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(brightnessctl .. " set 10%-"))
 end

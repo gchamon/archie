@@ -237,12 +237,22 @@ class DunstClientTest(unittest.TestCase):
         self.assertIsNone(client.history_count())
         self.assertFalse(client.history_pop())
 
+    def test_history_pop_targets_notification_id(self) -> None:
+        calls: list[list[str]] = []
+
+        def runner(command: list[str]) -> subprocess.CompletedProcess[str]:
+            calls.append(command)
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        self.assertTrue(DunstClient(runner).history_pop(274))
+        self.assertEqual(calls, [["dunstctl", "history-pop", "274"]])
+
     def test_parses_typed_history_and_sorts_newest_first(self) -> None:
         history = '''{
             "type": "aa{sv}",
             "data": [[
-                {"appname": {"data": "Mail"}, "summary": {"data": "Earlier"}, "body": {"data": "First"}, "timestamp": {"data": 1000000}},
-                {"appname": {"data": "Chat"}, "summary": {"data": "<b>New message</b>"}, "body": {"data": "Hello<br/>world &amp; friends"}, "timestamp": {"data": 3000000}}
+                {"id": {"data": 101}, "appname": {"data": "Mail"}, "summary": {"data": "Earlier"}, "body": {"data": "First"}, "timestamp": {"data": 1000000}},
+                {"id": {"data": 102}, "appname": {"data": "Chat"}, "summary": {"data": "<b>New message</b>"}, "body": {"data": "Hello<br/>world &amp; friends"}, "timestamp": {"data": 3000000}}
             ]]
         }'''
 
@@ -252,6 +262,7 @@ class DunstClientTest(unittest.TestCase):
         self.assertEqual(notifications[0].summary, "New message")
         self.assertEqual(notifications[0].body, "Hello world & friends")
         self.assertEqual(notifications[0].timestamp, datetime(2026, 1, 1, 0, 0, 3, tzinfo=UTC))
+        self.assertEqual(notifications[0].notification_id, 102)
 
     def test_skips_invalid_records_and_rejects_invalid_history_shape(self) -> None:
         history = '{"data":[[{"timestamp":{"data":"bad"}}, {"timestamp":{"data":1000}}]]}'

@@ -6,7 +6,7 @@ from archie.monitor import MonitorOutput
 from archie.privacy import ShyModeSettings
 
 GUI_SETTINGS_SNAPSHOT_ENV = "ARCHIE_GUI_SETTINGS_SNAPSHOT"
-GUI_SETTINGS_SNAPSHOT_VERSION = 7
+GUI_SETTINGS_SNAPSHOT_VERSION = 8
 
 
 @dataclass(frozen=True)
@@ -19,6 +19,7 @@ class GuiSettingsSnapshot:
     notification_sounds: str
     notification_sound: str
     shy_mode: ShyModeSettings
+    share_state: str
     kdeconnect: str
     power_profile: str
     calendar_left_preset: str
@@ -36,6 +37,7 @@ class GuiSettingsSnapshot:
     waybar_menu_font_size: int
     waybar_tooltip_font_family: str
     waybar_tooltip_font_size: int
+    peripherals: dict[str, object]
 
 
 def serialize_gui_settings_snapshot(snapshot: GuiSettingsSnapshot) -> str:
@@ -53,6 +55,7 @@ def serialize_gui_settings_snapshot(snapshot: GuiSettingsSnapshot) -> str:
             "notifications": snapshot.notifications,
             "notification_sounds": snapshot.notification_sounds,
             "notification_sound": snapshot.notification_sound,
+            "share_state": snapshot.share_state,
             "shy_mode": asdict(snapshot.shy_mode),
             "kdeconnect": snapshot.kdeconnect,
             "power_profile": snapshot.power_profile,
@@ -71,6 +74,7 @@ def serialize_gui_settings_snapshot(snapshot: GuiSettingsSnapshot) -> str:
             "waybar_menu_font_size": snapshot.waybar_menu_font_size,
             "waybar_tooltip_font_family": snapshot.waybar_tooltip_font_family,
             "waybar_tooltip_font_size": snapshot.waybar_tooltip_font_size,
+            "peripherals": snapshot.peripherals,
         },
         separators=(",", ":"),
     )
@@ -105,6 +109,7 @@ def deserialize_gui_settings_snapshot(payload: str) -> GuiSettingsSnapshot | Non
                 replay_count=_require_int(shy_mode, "replay_count"),
                 replay_interval=_require_number(shy_mode, "replay_interval"),
             ),
+            share_state=_require_str(data, "share_state"),
             kdeconnect=_require_str(data, "kdeconnect"),
             power_profile=_require_str(data, "power_profile"),
             calendar_left_preset=_require_str(data, "calendar_left_preset"),
@@ -122,6 +127,7 @@ def deserialize_gui_settings_snapshot(payload: str) -> GuiSettingsSnapshot | Non
             waybar_menu_font_size=_require_int(data, "waybar_menu_font_size"),
             waybar_tooltip_font_family=_require_str(data, "waybar_tooltip_font_family"),
             waybar_tooltip_font_size=_require_int(data, "waybar_tooltip_font_size"),
+            peripherals=_require_dict(data, "peripherals"),
         )
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         return None

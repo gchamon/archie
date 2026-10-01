@@ -73,6 +73,12 @@
     margin-top: 8px;
 }
 
+.archie-dashboard-heading {
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 8px;
+}
+
 .archie-shortcuts-grid {
     margin-bottom: 10px;
 }
@@ -92,6 +98,18 @@
 .archie-notification-row {
     padding-top: 8px;
     padding-bottom: 8px;
+}
+
+
+.archie-notification-actions {
+    opacity: 0;
+    transition: opacity 120ms ease-out;
+}
+
+.archie-notification-row.archie-notification-hover .archie-notification-actions,
+.archie-notification-row:hover .archie-notification-actions,
+.archie-notification-row:focus-within .archie-notification-actions {
+    opacity: 1;
 }
 
 .archie-notification-application,

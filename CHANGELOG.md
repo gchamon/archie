@@ -3,9 +3,13 @@
 <!--toc:start-->
 
 - [Changelog](#changelog)
-  - [[0.3.0] - 2026-09-19](#030-2026-09-19)
+  - [[0.4.0] - 2026-10-01](#040-2026-10-01)
     - [Changed](#changed)
     - [Added](#added)
+    - [Fixed](#fixed)
+  - [[0.3.0] - 2026-09-19](#030-2026-09-19)
+    - [Changed](#changed-1)
+    - [Added](#added-1)
   - [[0.2.0] - 2026-09-01](#020-2026-09-01)
     - [Changed](#changed)
     - [Added](#added)
@@ -23,6 +27,29 @@
     - [Added](#added-3)
   - [[1.0] - 2025-06-12](#10-2025-06-12)
 <!--toc:end-->
+
+## [0.4.0] - 2026-10-01
+
+### Changed
+
+- Replace monolith shell indicator scripts with modular Waybar indicators for battery, memory, disk, and sound across all bundled themes ([Waybar indicators](https://gitlab.com/gabriel.chamon/archie/-/commit/8702bf3))
+- Invert audio module scroll direction so scrolling up decreases volume and scrolling down increases volume across bundled Waybar themes ([Waybar themes](https://gitlab.com/gabriel.chamon/archie/-/merge_requests/19))
+- Standardize interactive Zsh alias expansion to avoid trailing spaces except on composition prefixes like `sudo` ([Zsh aliases](https://gitlab.com/gabriel.chamon/archie/-/commit/1d3733e))
+- Retain active Archie Controls tab selection across application restarts ([tab persistence](https://gitlab.com/gabriel.chamon/archie/-/commit/8702bf3))
+- Overhaul screenshot keybindings into unified save and ksnip editing modes for full-screen and area selection ([screenshot binds](https://gitlab.com/gabriel.chamon/archie/-/merge_requests/19))
+
+### Added
+
+- Add real-time hardware and peripherals dashboard tab in Archie Controls ([desktop dashboard](https://gitlab.com/gabriel.chamon/archie/-/commit/8702bf3))
+- Add built-in USB device enrollment to filter internal peripherals from external hardware views ([USB enrollment](https://gitlab.com/gabriel.chamon/archie/-/commit/85240a1))
+- Add expandable content disclosure and clipboard copying to notification history rows ([notification UI](https://gitlab.com/gabriel.chamon/archie/-/commit/085972e))
+- Add TTF (time-to-full) calculation and detailed battery health metrics to battery indicator tooltips ([battery indicator](https://gitlab.com/gabriel.chamon/archie/-/commit/5f4ee71))
+- Add desktop installation and provisioning support for Archinstall deployments ([desktop install](https://gitlab.com/gabriel.chamon/archie/-/commit/4217763))
+
+### Fixed
+
+- Fix `urldecode` shell implementation in developer tools ([devtools](https://gitlab.com/gabriel.chamon/archie/-/commit/0a82071))
+- Fix Archinstall CI test validation and package dependencies ([Archinstall CI](https://gitlab.com/gabriel.chamon/archie/-/commit/4d6b8e3))
 
 ## [0.3.0] - 2026-09-19
 
@@ -111,3 +138,4 @@ _First release._
 [1.2]: https://gitlab.com/gabriel.chamon/archie/-/tags/v1.2
 [1.1]: https://gitlab.com/gabriel.chamon/archie/-/tags/v1.1
 [1.0]: https://gitlab.com/gabriel.chamon/archie/-/tags/v1.0
+[0.4.0]: https://gitlab.com/gabriel.chamon/archie/-/tags/v0.4.0

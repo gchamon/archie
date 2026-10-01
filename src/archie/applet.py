@@ -214,6 +214,7 @@ def format_tooltip(
     return format_system_status(
         values,
         shy_mode_status=status,
+        multiline_lists=True,
     )
 
 

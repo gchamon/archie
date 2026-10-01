@@ -26,8 +26,12 @@ WAYBAR_MENU_FONT_FAMILY = "desktop.waybar.menu-font-family"
 WAYBAR_MENU_FONT_SIZE = "desktop.waybar.menu-font-size"
 WAYBAR_TOOLTIP_FONT_FAMILY = "desktop.waybar.tooltip-font-family"
 WAYBAR_TOOLTIP_FONT_SIZE = "desktop.waybar.tooltip-font-size"
+GUI_MAIN_TAB = "gui.main-tab"
+
+BUILTIN_USB_DEVICES = "desktop.usb.builtin-devices"
 
 POLICY_DEFAULTS: dict[str, str] = {
+    BUILTIN_USB_DEVICES: "[]",
     CALENDAR_LEFT_PRESET: "unset",
     CALENDAR_LEFT_BROWSER_URL: "",
     CALENDAR_RIGHT_PRESET: "gnome-calendar",
@@ -48,6 +52,7 @@ POLICY_DEFAULTS: dict[str, str] = {
     WAYBAR_MENU_FONT_SIZE: "20",
     WAYBAR_TOOLTIP_FONT_FAMILY: "MesloLGM Nerd Font",
     WAYBAR_TOOLTIP_FONT_SIZE: "20",
+    GUI_MAIN_TAB: "dashboard",
 }
 
 

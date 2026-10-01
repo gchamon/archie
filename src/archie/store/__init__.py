@@ -5,6 +5,7 @@ from archie.store.database import (
     StoreError,
 )
 from archie.store.policy import (
+    BUILTIN_USB_DEVICES,
     CALENDAR_BROWSER_URL,
     CALENDAR_CLICK,
     CALENDAR_LAUNCHER,
@@ -17,6 +18,7 @@ from archie.store.policy import (
     DATETIME_LEFT_PRESET,
     DATETIME_RIGHT_BROWSER_URL,
     DATETIME_RIGHT_PRESET,
+    GUI_MAIN_TAB,
     NOTIFICATION_SOUND_SOURCE,
     NOTIFICATION_SOUNDS_ENABLED,
     POLICY_DEFAULTS,
@@ -34,6 +36,7 @@ from archie.store.policy import (
 )
 
 __all__ = [
+    "BUILTIN_USB_DEVICES",
     "CALENDAR_BROWSER_URL",
     "CALENDAR_CLICK",
     "CALENDAR_LAUNCHER",
@@ -46,6 +49,7 @@ __all__ = [
     "DATETIME_LEFT_PRESET",
     "DATETIME_RIGHT_BROWSER_URL",
     "DATETIME_RIGHT_PRESET",
+    "GUI_MAIN_TAB",
     "NOTIFICATION_SOUNDS_ENABLED",
     "NOTIFICATION_SOUND_SOURCE",
     "POLICY_DEFAULTS",

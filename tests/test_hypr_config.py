@@ -13,8 +13,10 @@ class HyprlandBindingsTest(unittest.TestCase):
 
         self.assertNotRegex(bindings, r"hl\.bind\([^\n]*code:")
         for key in (
-            "SHIFT + Print",
             '"Print"',
+            "CTRL + Print",
+            "SHIFT + Print",
+            "CTRL + SHIFT + Print",
             "KP_Add",
             "KP_Subtract",
             "XF86MonBrightnessUp",

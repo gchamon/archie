@@ -43,6 +43,8 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `clear_scrollback` | Function | Clears the terminal and scrollback buffer. |
 | `psgrep` | Function | Searches running processes and filters out the `grep` process itself. |
 | `kitten:emoji` | Alias | Opens Kitty unicode input picker and copies the result to the Wayland clipboard. |
+| `headtail` | Function | Prints the first and last 10 lines of stdin; `-n count` sets both counts, while `-h count` and `-t count` set them independently. Overlapping lines print once. |
+
 
 ## `commands-git.sh`
 
@@ -127,6 +129,14 @@ This folder contains shell commands loaded by `~/.zshrc`. The main entrypoint is
 | `cpi` | Function | Copies files with `rsync --progress`. |
 | `de-reload` | Function | Reloads Hyprland twice with a short delay. |
 | `dunst-history` | Function | Prints Dunst notification history in a readable text format. |
+| `kitty:save-session` | Function | Saves the current Kitty instance to a timestamped session file and prints a `kitty --session` restore command. |
+
+The command requires `allow_remote_control yes` in Kitty. This lets local
+programs and programs running over SSH control Kitty; Kitty's documentation
+warns that this includes sending input and reading window contents.
+
+Session files include active foreground processes. Restoring one reruns them,
+so review the file before running the printed `kitty --session` command.
 
 ## `commands-devtools.sh`
 
@@ -199,12 +209,22 @@ Set `CLIPHIST_SQUASH_SILENT` in `~/.zshenv` or
 `cliphist:squash` functions.
 
 ## `commands-agents.sh`
+Persistent `omp:*` profile functions set their own default model role before starting `omp`; they preserve configured non-default roles and forward appended arguments. Shorthand aliases delegate to the corresponding profile function.
 
 | Name | Kind | Description |
 | --- | --- | --- |
-| `omp:openai` | Alias | Configures `omp` with OpenAI model tiers (smol: gpt-5.4-nano, slow/plan: gpt-5.4-pro, default: gpt-5.4). |
-| `omp:anthropic` | Alias | Configures `omp` with Anthropic model tiers (smol: claude-haiku-4-5, slow/plan: claude-opus-4-6, default: claude-sonnet-4-6). |
-| `omp:google` | Alias | Configures `omp` with Google model tiers (smol: gemini-3.1-flash-lite-preview, slow/plan: gemini-3.1-pro-preview, default: gemini-3-flash-preview). |
+| `_omp:set-default` | Internal function | Persists a default model role while preserving every configured non-default role. |
+| `omp:openai` | Function | Configures `omp` with OpenAI GPT-5.6 tiers (smol: gpt-5.6-luna:medium, slow: gpt-5.6-sol:medium, plan: gpt-5.6-terra:medium, default: gpt-5.6-luna:medium). |
+| `omp:anthropic` | Function | Configures `omp` with Anthropic model tiers (smol: claude-haiku-4-5, slow/plan: claude-opus-4-6, default: claude-sonnet-4-6). |
+| `omp:antigravity` | Function | Configures `omp` with Google Antigravity Gemini tiers (smol: gemini-3.8-flash:low, plan: gemini-3.8-flash:high, slow: gemini-3.1-pro:high, default: gemini-3.8-flash with medium effort). |
+| `omp:gpt` | Alias | Delegates to `omp:openai`. |
+| `omp:gemini` | Alias | Delegates to `omp:antigravity`. |
+| `omp:claude` | Alias | Delegates to `omp:anthropic`. |
+| `omp:local` | Alias | Delegates to `omp:qwen`. |
+| `omp:kimi` | Function | Configures `omp` with Kimi model tiers (smol: kimi-k2-turbo-preview, slow: kimi-for-coding:high, plan: kimi-for-coding:medium, default: kimi-for-coding with low effort). |
+| `omp:kiro-gpt` | Function | Configures `omp` with Kiro GPT tiers (smol: kiro/gpt-5.6-luna:low, the lowest supported effort; slow: kiro/gpt-5.6-sol; plan: kiro/gpt-5.6-terra; default: kiro/gpt-5.6-terra with medium effort). |
+| `omp:qwen` | Function | Configures `omp` with OpenAI-Codex tiers (smol: openai-codex/gpt-5.6-luna, slow: openai-codex/gpt-5.6-sol, plan: openai-codex/gpt-5.6-terra) and local default (llamacpp-qwen38/qwen38-27b-single-iq4xs with low effort); execute it from [`club-3090`](https://github.com/noonghunna/club-3090) or [`club-3090-server`](https://github.com/gchamon/club-3090-server). |
+| `omp:kiro-claude` | Function | Configures `omp` with Kiro Claude tiers (smol: kiro/claude-sonnet-5:low, the lowest supported effort; slow: kiro/claude-opus-5:high; plan: kiro/claude-opus-5:medium; default: kiro/claude-sonnet-5 with high effort). |
 
 ## `commands-pacman.sh`
 
